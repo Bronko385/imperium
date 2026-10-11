@@ -757,6 +757,41 @@ button.car{cursor:pointer;touch-action:manipulation}
 .choice .btn{width:100%;text-align:left;display:grid;gap:3px;font-size:21px;padding:12px 14px;white-space:normal}
 .choice .btn .sub{font:500 13px var(--f-body);letter-spacing:0}
 .choice .btn.dark{background:var(--night2);color:var(--paper)}
+/* 5.1 Safe & Knast: Knast-Hinweis, Knast-Fenster, Safe-Knopf neben den Coups, Safe-Fenster */
+.chipb.knast{background:var(--heat);color:var(--ink);pointer-events:auto;cursor:pointer;font:inherit;font-size:11.5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;text-align:left}
+/* Leiste unten: drei Comic-Knöpfe auf dunklem Grund (Coups | Safe | Kassieren) */
+.actbar{position:absolute;left:0;right:0;bottom:0;display:flex;gap:8px;padding:8px;background:var(--night);border-top:3px solid var(--ink);z-index:5}
+.actbar .coupbtn,.actbar .collectbtn{position:static;width:auto;display:contents}
+.actbar .collectbtn:empty{display:none}
+.actbar .btn{position:relative;width:auto;height:46px;border:3px solid var(--ink);border-radius:12px;box-shadow:2px 3px 0 var(--ink);font-size:15px;padding:0 8px;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;overflow:visible;min-width:0}
+.actbar .coupbtn .btn,.actbar .collectbtn .btn{border:3px solid var(--ink);border-radius:12px}
+.actbar .btn.violet{order:1;flex:none;padding:0 14px}
+.actbar .btn.safe{order:2;flex:none;width:72px;background:var(--teal);color:var(--ink);flex-direction:column;gap:0;padding:0 4px}
+.actbar .btn.safe .n{background:none;padding:0;font-size:11.5px;line-height:13px}
+.actbar .collectbtn .btn{order:3;flex:1}
+.actbar .collectbtn:empty~.coupbtn .btn.violet{flex:1}
+.actbar .btn .n{flex:none}
+@media (max-width:370px){.actbar .collectbtn .lbl{display:none}}
+.actbar .btn .n{font-family:var(--f-body);font-weight:800;font-size:13px;letter-spacing:0;background:rgba(0,0,0,.14);border-radius:999px;padding:2px 7px;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.actbar .coupbtn .cbadge{position:absolute;top:-10px;right:-7px;margin:0;min-width:20px;height:20px;line-height:16px;font-size:11px}
+.actbar .btn:active{transform:translate(1px,2px);box-shadow:1px 1px 0 var(--ink)}
+.tickbox{bottom:74px}
+.safein::placeholder{letter-spacing:2px;font-size:18px}
+.knastbox .kcell{position:relative;margin:4px auto 10px;width:150px;height:118px;border:4px solid var(--ink);border-radius:12px;background:var(--night);overflow:hidden;box-shadow:3px 3px 0 var(--ink)}
+.knastbox .kboss{position:absolute;left:50%;bottom:6px;transform:translateX(-50%)}
+.knastbox .kbars{position:absolute;inset:0;display:flex;justify-content:space-around;z-index:2;pointer-events:none}
+.knastbox .kbars i{width:8px;background:linear-gradient(90deg,#8a8fb8,#d5d8f0 45%,#6c7099);border-left:2px solid var(--ink);border-right:2px solid var(--ink)}
+.knastbox .ktime{display:grid;gap:5px;text-align:center;margin-bottom:6px}.knastbox .ktime b{font-family:var(--f-display);font-size:24px;letter-spacing:.5px;color:var(--heat)}
+.knastbox .ktime .qbar i{background:var(--heat)}
+.kline{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0 6px;padding:8px 10px;background:var(--heat);color:var(--ink);border:2px solid var(--ink);border-radius:10px;box-shadow:2px 2px 0 var(--ink)}
+.kline span{font-size:12.5px;font-weight:600}
+.safebox .sdoor{display:grid;gap:10px;justify-items:center;margin:4px 0 10px;padding:14px 12px;border:4px solid var(--ink);border-radius:16px;background:radial-gradient(circle at 50% 40%,#5d6396,#373c74 70%);box-shadow:3px 3px 0 var(--ink)}
+.safebox .spot{display:grid;justify-items:center;line-height:1.15}.safebox .spot small{color:var(--muted);font-size:12px}.safebox .spot b{font-family:var(--f-display);font-size:30px;letter-spacing:.5px}.safebox .spot span{font-size:12px;color:var(--muted)}
+.safebox .scode{display:flex;gap:8px}
+.safebox .scode i{font-style:normal;width:44px;height:54px;display:grid;place-items:center;border:3px solid var(--ink);border-radius:10px;background:var(--night);color:var(--faint);font-family:var(--f-display);font-size:30px;box-shadow:2px 2px 0 var(--ink)}
+.safebox .scode i.known{background:var(--yellow);color:var(--ink)}
+.safein{text-align:center;font-size:26px;letter-spacing:12px;font-family:var(--f-display)}
+.mono{font-family:var(--f-display);letter-spacing:2px}
 
 </style>
 </head>
@@ -1003,6 +1038,7 @@ function markSaved(sent){if(!lastSaved)lastSaved={};for(const k in sent)if(!SAVE
 function mergeMine(p){
   if(srvMoney()&&(+p.mver||0)>(+me.mver||0)){
     ['bar','clean','coins','basis','heat','eco_at','mver'].forEach(k=>{me[k]=+p[k]||0});me.wash_pool=p.wash_pool==null?null:+p.wash_pool;
+    me.jail=jailOf(p); // ab 5.1: Knast schreibt nur der Server
     bkQ.forEach(e=>bkLocal(e.k,e.d,1));
   }
   if(!lastSaved||saving)return;
@@ -1073,6 +1109,10 @@ function washCap(){let w=0;mySlots().forEach(([s,d])=>{if(TYPES[s.type].kind==='
 function upkeepOf(c){let u=0;for(const k in CREW)u+=(c[k]||0)*CREW[k].up;return u}
 /* ---------- Polizei (ab Beta 3.4): Abbau 5 pro Std., jeder Anwalt 4 ---------- */
 const HEAT_BASE=5, HEAT_LAW=4;
+/* Ab Beta 5.1 (wie eco.js): Läden heizen nur bis 80, darüber nur Taten. Über 80 sinkt die Hitze um mindestens 10 pro Std.,
+   machen die Läden Plus, aber nicht unter 80. Bei 100 kommt die große Razzia sofort und mit ihr 2 Std. Knast. */
+const HEAT_CAP=80, TAT_DECAY=10;
+function heatStep(h,net,dt){if(h<HEAT_CAP)return net>0?Math.min(HEAT_CAP,h+net*dt):clamp(h+net*dt,0,100);return clamp(h-Math.max(TAT_DECAY,-net)*dt,net>0?HEAT_CAP:0,100)}
 function heatDecay(c,o){c=c||me.crew;o=o||(me&&me.id);return (HEAT_BASE+(c.a||0)*HEAT_LAW+bossHeatBonus(o))*(holds(o,'tiergarten')?1.2:1)}
 function heatGainOf(o){let g=0;eachS((s,d)=>{if(s.owner===o)g+=heatOf(s,d)});return g}
 function heatNet(){return heatGainOf(me.id)-heatDecay()}
@@ -1081,7 +1121,7 @@ function heatGuess(o){
   if(me&&o===me.id)return me.heat;
   const p=players[o]; if(!p)return 0;
   const net=heatGainOf(o)-heatDecay(p.crew||{},o), since=Math.max(0,now()-(+p.eco_at||now()))/HOUR;
-  return clamp((+p.heat||0)+net*since,0,100);
+  return heatStep(clamp(+p.heat||0,0,100),net,since);
 }
 function flames(h){return h>=80?'🔥🔥🔥':h>=60?'🔥🔥':h>=30?'🔥':''}
 function heatWord(h){return h>=80?'sehr heiß':h>=60?'heiß':h>=30?'unter Beobachtung':'unauffällig'}
@@ -1152,11 +1192,14 @@ function kasseApply(r){
   const P=r.p; if(!P)return;
   ['bar','clean','coins','basis','heat','eco_at','mver'].forEach(k=>{me[k]=+P[k]||0});
   me.wash_pool=P.wash_pool==null?null:+P.wash_pool;
+  if('jail' in P)me.jail=jailOf(P);
   bkQ.forEach(e=>bkLocal(e.k,e.d,1)); // Buchungen, die nach dem Absenden dazukamen
   const fx=r.fx||{};
+  (r.hints||[]).forEach(h=>safeHintGot(h));
   if(fx.washed>0&&me.ruf!=null)daily('wash',fx.washed);
   (fx.quit||[]).forEach(k=>{if((me.crew[k]||0)>0){me.crew={...me.crew,[k]:me.crew[k]-1};normGuards();addEvent({kind:'info',actor:me.id,target:me.id,txt:`${me.name}: Ein ${CREW[k].name} hat gekündigt. Kein Lohn.`})}});
-  (fx.raids||[]).forEach(x=>raidNews(x.kind,x.did,x.lost,x.lc));
+  (fx.raids||[]).forEach(x=>raidNews(x.kind,x.did,x.lost,x.lc,x.jail));
+  if(pendingKnast&&document.getElementById('modal').hidden){pendingKnast=false;showModal(knastModal())}
   if((fx.quit||[]).length||(fx.raids||[]).length)savePlayer();
   if((r.res||[]).some(x=>!x.ok&&(x.why==='geld'||x.why==='preis')))toast('Die Bank hat eine Buchung nicht angenommen. Dein Geld ist wieder auf dem Stand vom Server.','bad');
   renderHUD();
@@ -1364,10 +1407,11 @@ function ecoAdvance(){
     if(me.bar>=wage)me.bar-=wage;
     else{wage-=me.bar;me.bar=0;if(me.clean>=wage)me.clean-=wage;else{me.clean=0;if(Math.random()<dt){const ks=Object.keys(CREW).filter(k=>me.crew[k]>0);if(ks.length){const k=pick(ks);me.crew[k]--;normGuards();addEvent({kind:'info',actor:me.id,target:me.id,txt:`${me.name}: Ein ${CREW[k].name} hat gekündigt. Kein Lohn.`})}}}}
     clampPool();
-    me.heat=clamp(me.heat+(heatG-heatDecay())*dt,0,100);
+    const hot=me.heat>=100;
+    me.heat=heatStep(me.heat,heatG-heatDecay(),dt);
     if(away&&copDone)continue;
     let hit=false;
-    if(me.heat>=100&&!away&&Math.random()<dt){raid('big');hit=true}
+    if((hot||me.heat>=100)&&!away){raid('big');hit=true}
     else if(me.heat>=80&&Math.random()<dt){raid('district');hit=true}
     else if(me.heat>=60&&me.heat<80&&Math.random()<dt/3){raid('small');hit=true}
     if(hit)copDone=true;
@@ -1415,7 +1459,7 @@ function raid(kind){
   raidNews('big',null,lost,lc);
 }
 /* Meldung und Folgen einer Razzia. Ab 5.0.4 würfelt der Server die Razzia, das Spiel schreibt Kurier, U-Haft und Kurs. */
-function raidNews(kind,did,lost,lc){
+function raidNews(kind,did,lost,lc,jail){
   const x=did?{d:{id:did,name:dname(did)}}:null;
   if(kind==='small'){
     addEvent({kind:'cop',actor:me.id,target:me.id,district:x?x.d.id:null,amount:lost,txt:`👮 Kontrolle bei ${me.name}${x?` in ${x.d.name}`:''}: ${lost?fmt(lost)+' aus der Kasse beschlagnahmt.':'nichts gefunden.'}`});
@@ -1426,9 +1470,164 @@ function raidNews(kind,did,lost,lc){
     toast('🚨 RAZZIA im Viertel! Hitze −30.','bad'); return;
   }
   const who=jailOne();
-  addEvent({kind:'cop',actor:me.id,target:me.id,amount:lost,txt:`🚨🚨 GROSSE RAZZIA bei ${me.name}! ${fmt(lost)} beschlagnahmt${lc?` und ${de(lc,1)} BratCoin`:''}, alle Kassen leer.${who} BratCoin −3 %.`});
+  addEvent({kind:'cop',actor:me.id,target:me.id,amount:lost,txt:`🚨🚨 GROSSE RAZZIA bei ${me.name}! ${fmt(lost)} beschlagnahmt${lc?` und ${de(lc,1)} BratCoin`:''}, alle Kassen leer.${who}${jail?` Der Boss muss 2 Std. in den Knast.`:''} BratCoin −3 %.`});
   coinPush(-.03,'event');
-  toast('🚨 GROSSE RAZZIA! Bargeld beschlagnahmt.','bad');
+  toast(jail?'🚔 GROSSE RAZZIA! Ab in den Knast.':'🚨 GROSSE RAZZIA! Bargeld beschlagnahmt.','bad');
+  // Ab 5.1: Der Spezl bekommt Bescheid und kann die Kaution zahlen
+  if(jail){const sp=allyOf(me.id);if(sp&&!isNpc(sp))addEvent({kind:'knast',actor:me.id,target:sp,amount:bailOf(me),txt:`🚔 Dein Spezl ${me.name} sitzt im Knast. Du kannst die Kaution (${fmt(bailOf(me))}) in seiner Bandenübersicht zahlen.`});
+    pendingKnast=true}
+}
+/* ======================================================================
+   Beta 5.1 „Safe & Knast“
+   Knast: Bei 100 Hitze kommt die große Razzia sofort und der Boss sitzt 2 Std. Er kann wirtschaften (bauen, kassieren,
+   waschen, Ware, Lieferungen), aber nicht angreifen, keine Coups, keine Tipps, kein Safe. Raus kommt er nach Ablauf,
+   mit einem Ausbruch (Minispiel, 1 Versuch) oder mit Kaution (selbst oder vom Spezl). Ein Rivale kann den Richter
+   schmieren (+1 Std.). Im Knast verliert eine Bande höchstens einen Laden. Alles Geld rechnet der Server (kasse).
+   ====================================================================== */
+const BREAK_P=[.2,.4,.6,.8], BREAK_ADD=30*60000, JUDGE_ADD=HOUR, JUDGE_VAL=3000;
+let pendingKnast=false;
+function jailOf(p){let j=p&&p.jail;if(typeof j==='string'){try{j=JSON.parse(j)}catch(e){j=null}}return j&&typeof j==='object'?j:null}
+function jailOn(o){if(!o)return null;const p=me&&o===me.id?me:players[o];const j=jailOf(p);return j&&+j.until>now()?j:null}
+function jailLeft(o){const j=jailOn(o);return j?Math.max(0,Math.ceil((+j.until-now())/1000)):0}
+function bailOf(p){return Math.max(1000,Math.round(((+p.bar||0)+(+p.clean||0))*.1/100)*100)}
+function knastBlock(){return me&&jailOn(me.id)?`🚔 Du sitzt im Knast, noch ${dur(jailLeft(me.id))}. Wirtschaften geht, zuschlagen nicht.`:''}
+/* Läden, die eine Bande seit Beginn ihres Knasts verloren hat (bis 5.1.1 aus dem Kurier, dann rechnet der Server) */
+function jailLost(o){const j=jailOn(o);if(!j)return 0;return events.filter(e=>e.kind==='atk'&&e.target===o&&+e.ts>=+j.at&&/ abgenommen!/.test(e.txt||'')).length}
+function judgeCoins(){return JUDGE_VAL/priceAt(now())}
+function knastChip(){
+  if(!me||!jailOn(me.id))return '';
+  return `<button class="chipb knast" data-act="knast"><b>🚔 KNAST</b>frei in ${dur(jailLeft(me.id))}${jailOf(me).tried?'':' · Ausbruch?'}</button>`;
+}
+function knastModal(){
+  const j=jailOn(me.id);
+  if(!j)return `<div class="mbox" role="dialog" aria-label="Knast"><div class="mtop"><span></span><h3>Knast</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
+    <p>🚶 Du bist wieder draußen.</p><button class="btn wide" data-act="close">Fertig</button></div>`;
+  const bail=bailOf(me), can=me.bar+me.clean>=bail, sp=allyOf(me.id), hint=(safeInfo&&safeInfo.hints||[]).find(h=>h.src==='knast');
+  const tot=Math.max(1,+j.until-+j.at), pct=Math.round(100*clamp((now()-+j.at)/tot,0,1));
+  return `<div class="mbox knastbox" role="dialog" aria-label="Knast"><div class="mtop"><span></span><h3>Knast</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
+    <div class="kcell"><div class="kbars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="kboss">${portrait(me.id,64)}</div></div>
+    <div class="ktime"><b>frei in ${dur(jailLeft(me.id))}</b><div class="qbar"><i style="width:${pct}%"></i></div>${j.judge?'<small>⚖️ Jemand hat den Richter geschmiert: 1 Std. länger.</small>':''}</div>
+    <p class="small">Wirtschaften geht weiter: bauen, kassieren, waschen, Crew. Angriffe, Coups, Tipps und der Safe warten, bis du draußen bist. Im Knast verlierst du höchstens einen Laden.</p>
+    <button class="btn violet wide" data-act="kbreak" ${j.tried?'disabled':''}>🪚 Ausbrechen<span class="sub">${j.tried?'Du hattest deinen Versuch schon.':'1 Versuch: 3 Gitterstäbe durchsägen. Klappt es, bist du sofort frei, sonst 30 Min. länger.'}</span></button>
+    <button class="btn mint wide" data-act="kbail" ${can?'':'disabled'}>💸 Kaution zahlen · ${fmt(bail)}<span class="sub">${can?'10 % deines Geldes, erst Bargeld, dann sauber. Du bist sofort frei.':'Dafür reicht dein Geld gerade nicht.'}</span></button>
+    ${sp?`<p class="small muted">🤝 ${esc(ownerInfo(sp).name)} weiß Bescheid und kann die Kaution für dich zahlen.</p>`:''}
+    <h4>🔢 Zellennachbar</h4>
+    <p class="small">${hint?`Er hat dir verraten: <b>Stelle ${hint.pos} ist eine ${hint.digit}</b>. Das steht auch im Safe.`:'Er flüstert dir gleich etwas über den Sparkassen-Safe.'}</p>
+    <button class="btn ghost wide" data-act="close">Absitzen</button></div>`;
+}
+async function knastCall(q){
+  const r=await kasse({knast:q});
+  if(!r)throw new Error('Keine Verbindung');
+  return r.kn||{ok:false,why:'?'};
+}
+const KN_WHY={frei:'Die Bande ist schon draußen.',schon:'Das ging schon einmal.',geld:'Dafür reicht dein Geld nicht.',spezl:'Das geht nur bei deinem Spezl.',knast:'Aus dem Knast heraus geht das nicht.',ziel:'Diese Bande gibt es hier nicht.',art:'Geht nicht.'};
+function knastBreak(){
+  const j=jailOn(me.id); if(!j||j.tried)return;
+  playGame('ausbruch',(mult,hits)=>guard(async()=>{
+    const k=await knastCall({a:'ausbruch',hits});
+    if(!k.ok){showResult(false,'GEHT NICHT',KN_WHY[k.why]||'Geht gerade nicht.','');return}
+    if(k.win){
+      addEvent({kind:'info',actor:me.id,txt:`🏃 Ausbruch! ${me.name} hat sich aus dem Knast gesägt und ist wieder auf der Straße.`});
+      showResult(true,'AUSGEBROCHEN!','Drei Stäbe, ein Bettlaken, ab über die Mauer.','🚶 Du bist frei','c-yellow',true);
+    }else showResult(false,'ERWISCHT!','Der Wärter hat die Säge gefunden.','🚔 30 Min. länger','',true);
+    dirty=true;
+  }),{title:'AUSBRUCH!',sub:'Drei Gitterstäbe. Säg sie durch!',btn:'SÄGEN',mode:'bar'});
+}
+function knastBail(o){return guard(async()=>{
+  const self=!o||o===me.id;
+  const k=await knastCall(self?{a:'kaution'}:{a:'kaution',who:o});
+  if(!k.ok){toast(KN_WHY[k.why]||'Geht gerade nicht.','bad');if(!self)showGang(o);else showModal(knastModal(),true);return}
+  if(self){
+    addEvent({kind:'info',actor:me.id,amount:k.cost,txt:`💸 ${me.name} ist gegen ${fmt(k.cost)} Kaution wieder frei.`});
+    showResult(true,'FREI!','Der Anwalt hat unterschrieben, das Tor geht auf.',`💸 −${fmt(k.cost)} Kaution · 🔢 geht in den Safe`,'c-clean',true);
+  }else{
+    const v=ownerInfo(o).name; addRuf(40);
+    addEvent({kind:'info',actor:me.id,target:o,amount:k.cost,txt:`💸 ${me.name} hat für ${v} die Kaution gezahlt (${fmt(k.cost)}). Auf Spezln ist Verlass.`});
+    if(players[o])players[o].jail={...(jailOf(players[o])||{}),until:now()};
+    showResult(true,'SPEZL FREI!',`${esc(v)} ist wieder draußen. Das vergisst er dir nicht.`,`💸 −${fmt(k.cost)} · ⭐ +40 Ruf`,'c-clean',true);
+  }
+  dirty=true;
+})}
+function knastJudge(o){return guard(async()=>{
+  const k=await knastCall({a:'richter',who:o});
+  if(!k.ok){toast(k.why==='geld'?`Du brauchst 🪙 ${de(k.c||judgeCoins(),2)} BratCoin.`:KN_WHY[k.why]||'Geht gerade nicht.','bad');showGang(o);return}
+  const v=ownerInfo(o).name;
+  addEvent({kind:'info',actor:null,target:o,txt:`⚖️ Jemand hat den Richter geschmiert: ${v} sitzt 1 Std. länger.`});
+  if(players[o])players[o].jail={...(jailOf(players[o])||{}),until:k.until,judge:1};
+  showResult(true,'GESCHMIERT!','Ein Umschlag, ein Nicken. Der Richter hat es nicht eilig.',`🪙 −${de(k.c,2)} BratCoin · ${esc(v)} +1 Std. Knast`,'c-crypto',true);
+  dirty=true;
+})}
+/* Im Bandenfenster: Knast-Zeile, für den Spezl die Kaution, für Rivalen der Richter */
+function knastGangHTML(o){
+  const j=jailOn(o); if(!j||!me)return '';
+  const own=o===me.id, p=own?me:players[o];
+  let h=`<div class="kline"><b>🚔 Sitzt im Knast</b><span>frei in ${dur(jailLeft(o))}${j.judge?' · ⚖️ Richter geschmiert':''}</span></div>`;
+  if(own)return h+`<button class="btn ghost wide sm" data-act="knast">🚔 Zum Knast</button>`;
+  if(isNpc(o))return h;
+  if(isAlly(o)){const c=bailOf(p),can=me.bar+me.clean>=c;return h+`<button class="btn mint wide" data-act="kbailfor" data-o="${o}" ${can?'':'disabled'}>💸 Kaution für deinen Spezl · ${fmt(c)}<span class="sub">${can?'Er ist sofort frei, du bekommst ⭐ +40 Ruf.':'Dafür reicht dein Geld gerade nicht.'}</span></button>`}
+  const c=judgeCoins(), bl=knastBlock()||(j.judge?'Der Richter wurde schon geschmiert':(me.coins<c?`Du brauchst 🪙 ${de(c,2)} BratCoin`:''));
+  return h+`<button class="btn ghost wide" data-act="kjudge" data-o="${o}" ${bl?'disabled':''}>⚖️ Richter schmieren · 🪙 ${de(c,2)}<span class="sub">${bl||'Gegenwert 3.000. Sie sitzt 1 Std. länger, der Kurier nennt keinen Namen.'}</span></button>`;
+}
+
+/* ---------- Sparkassen-Safe ---------- */
+let safeInfo=null, safeAt=0, safeBusy=false;
+async function loadSafe(){
+  if(!me||!srvMoney())return;
+  try{const {data,error}=await sb.rpc('safe_info',{p_world:WORLD,p_player:me.id});if(error)throw error;safeInfo=data||null;safeAt=now();dirty=true}catch(e){console.warn(e)}
+}
+function safeHintGot(h){
+  if(!h)return;
+  const L=safeInfo&&safeInfo.hints?safeInfo.hints:[];
+  if(safeInfo&&!L.some(x=>+x.pos===+h.pos))safeInfo.hints=[...L,{pos:h.pos,digit:h.digit,src:h.src}].sort((a,b)=>a.pos-b.pos);
+  toast(h.src==='knast'?`🔢 Dein Zellennachbar flüstert: Stelle ${h.pos} des Safes ist eine ${h.digit}.`:`🔢 Glücksfund: Stelle ${h.pos} des Safes ist eine ${h.digit}.`,'good');
+  setTimeout(loadSafe,1500);
+}
+function dots(v){return String(Math.round(+v||0)).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
+function kShort(v){v=Math.round(+v||0);return v>=1e6?de(v/1e6,1)+' Mio':v>=1e4?Math.round(v/1000)+'k':fmt(v)}
+const SAFE_ICO='<svg class="sico" viewBox="0 0 40 40" width="22" height="22" aria-hidden="true"><rect x="4" y="5" width="32" height="28" rx="5" fill="#9aa6d6" stroke="#11132a" stroke-width="3"/><rect x="9" y="10" width="22" height="18" rx="3" fill="#c9d1f2" stroke="#11132a" stroke-width="2.5"/><circle cx="20" cy="19" r="6" fill="#ffd23f" stroke="#11132a" stroke-width="2.5"/><path d="M20 13.5v3M20 21.5v3M14.5 19h3M22.5 19h3" stroke="#11132a" stroke-width="2"/><rect x="31" y="15" width="4" height="8" rx="2" fill="#11132a"/><path d="M9 33v3M31 33v3" stroke="#11132a" stroke-width="3.5" stroke-linecap="round"/></svg>';
+function safeBtn(){
+  if(!me||!srvMoney())return '';
+  if(!safeInfo&&now()-safeAt>30000){safeAt=now();loadSafe()}
+  const s=safeInfo; return `<button class="btn sm safe" data-act="safe" aria-label="Sparkassen-Safe">${SAFE_ICO}<span class="n">${s?(s.winner?'✓':dots(s.pot)):'Safe'}</span></button>`;
+}
+function safeBlock(){
+  const s=safeInfo; if(!s)return 'Der Safe lädt noch';
+  if(s.winner)return 'Geknackt. Sonntag um 20 Uhr steht ein neuer Safe da';
+  const kb=knastBlock(); if(kb)return '🚔 Aus dem Knast heraus geht das nicht';
+  if(s.today)return `Heute hast du schon probiert (${s.today}). Morgen wieder`;
+  return '';
+}
+function safeModal(){
+  const s=safeInfo;
+  if(!s)return `<div class="mbox" role="dialog" aria-label="Sparkassen-Safe"><div class="mtop"><span></span><h3>Sparkassen-Safe</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div><p class="muted">Lädt …</p></div>`;
+  const H={}; (s.hints||[]).forEach(h=>H[h.pos]=h.digit);
+  const bl=safeBlock(), left=Math.max(0,Math.ceil((+s.ends-now())/1000)), when=left>86400?'Sonntag um 20 Uhr':'in '+dur(left);
+  const win=s.winner?ownerInfo(s.winner):null;
+  return `<div class="mbox safebox" role="dialog" aria-label="Sparkassen-Safe"><div class="mtop"><span></span><h3>Sparkassen-Safe</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
+    <div class="sdoor"><div class="spot"><small>${s.winner?'Geknackt von':'Im Safe'}</small><b class="${s.winner?'':'c-clean'}">${s.winner?esc(win?win.name:'?'):dots(s.pot)+' ✦'}</b><span>${s.winner?`Beute ${dots(s.won)} ✦ · neuer Safe ${when}`:`neuer Code ${when}`}</span></div>
+      <div class="scode">${[1,2,3,4].map(i=>`<i class="${H[i]!=null?'known':''}">${H[i]!=null?H[i]:'?'}</i>`).join('')}</div></div>
+    ${s.winner?'':`<input id="safein" class="inp safein" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="4 Ziffern" value="${[1,2,3,4].every(i=>H[i]!=null)?[1,2,3,4].map(i=>H[i]).join(''):''}" ${bl?'disabled':''}>
+    <button class="btn wide" data-act="safetry" ${bl?'disabled':''}>🔢 Knacken<span class="sub">${bl||'Ein Versuch pro Tag. Der Kurier zeigt, welche Stellen gepasst haben.'}</span></button>`}
+    <h4>Deine Hinweise</h4>
+    ${(s.hints||[]).length?`<ul class="list">${s.hints.map(h=>`<li><span>Stelle ${h.pos} ist eine <b>${h.digit}</b></span><small>${h.src==='knast'?'Zellennachbar':'Glücksfund'}</small></li>`).join('')}</ul>`:'<p class="small muted">Noch keine. Mit etwas Glück fallen sie bei Coups und Überfällen ab, und im Knast erzählt der Zellennachbar einen.</p>'}
+    ${(s.tries||[]).length?`<h4>Versuche diese Woche</h4><ul class="list">${s.tries.map(t=>`<li><span>${esc(ownerInfo(t.p).name)}</span><b class="mono">${t.ok?'💰 ':''}${t.pattern}</b></li>`).join('')}</ul>`:''}
+    <p class="small muted">Jeden Sonntag um 20 Uhr ein neuer Safe mit 4-stelligem Code. Er startet mit 10.000 und wächst mit 10 % aller Wäsche-Gebühren und Bestechungen, dazu Kaution und Richter-Schmiergeld. Wer ihn knackt, bekommt alles sauber. Knackt ihn keiner, verrät der Kurier am Sonntag den Code, und das Geld wandert in den nächsten Safe.</p>
+    <button class="btn ghost wide" data-act="close">Fertig</button></div>`;
+}
+function safeTry(){
+  if(safeBusy||safeBlock())return;
+  const el=document.getElementById('safein'), code=String(el&&el.value||'').replace(/\D/g,'');
+  if(code.length!==4){toast('Der Code hat 4 Ziffern.','bad');return}
+  safeBusy=true;
+  return guard(async()=>{try{
+    const {data,error}=await sb.rpc('safe_try',{p_world:WORLD,p_player:me.id,p_code:code});
+    if(error)throw error;
+    const r=data||{};
+    if(!r.ok){toast({heute:'Heute hast du schon probiert.',knast:'Aus dem Knast heraus geht das nicht.',weg:'Zu spät, jemand war schneller.',off:'Der Safe ist in dieser Stadt noch zu.'}[r.why]||'Geht gerade nicht.','bad');await loadSafe();showModal(safeModal(),true);return}
+    await loadSafe(); await kasse();
+    if(r.win){addRuf(50);showResult(true,'GEKNACKT!','Klick. Klick. Klick. Klack. Die Tür schwingt auf.',`💰 +${fmt(r.pot)} sauber · ⭐ +50 Ruf`,'c-clean',true)}
+    else showResult(false,'ZU!',`Die Tür bleibt zu. Gepasst hat: <b class="mono">${r.pattern}</b>`,'Morgen wieder','',true);
+  }finally{safeBusy=false}});
 }
 async function flushSlotWrites(){
   while(pendingSlotWrites.length){const w=pendingSlotWrites.shift();try{await casSlot(w.d,w.i,w.expect,w.patch)}catch(e){console.warn(e)}}
@@ -1582,6 +1781,7 @@ function tipsState(){const t=me.tips||{};const day=berlinDay();return {n:t.day==
 function tipBlock(o){
   if(!players[o]||o===me.id)return 'Nur gegen andere Mitspieler';
   if(isAlly(o))return '🤝 Nicht gegen deine Spezln';
+  if(knastBlock())return '🚔 Aus dem Knast heraus geht das nicht';
   if(!unlocked('tip'))return lockTxt('tip');
   if(newbieProt(o))return '🍼 Neulingsschutz: Diese Bande ist noch zu klein';
   const st=tipsState();
@@ -1793,6 +1993,8 @@ async function sellCoin(f){
 }
 
 function attackReq(kind,victim){
+  const kb=knastBlock(); if(kb)return kb; // ab 5.1
+  if(kind==='uebernahme'&&victim&&jailOn(victim)&&jailLost(victim)>=1)return '🚔 Sitzt im Knast und hat schon einen Laden verloren. Mehr gibt es erst, wenn sie draußen ist';
   if(kind==='uebernahme'&&!unlocked('uebernahme'))return lockTxt('uebernahme');
   if(kind==='hack')return !unlocked('hack')?lockTxt('hack'):me.crew.h>=1?null:'Braucht 1 Hacker';
   // Ab Beta 4.8: Trupp im Auto, pro Gegner nur ein Angriff gleichzeitig
@@ -1887,14 +2089,17 @@ function attack(did,i,kind){
         refund();showResult(false,'GESCHÜTZT','Das ist das letzte Geschäft dieser Bande. Das lassen wir ihr. Raub es lieber aus.','');await savePlayer();return;
       }
       if(ok){
+        // Ab 5.1: Spitzenreiter-Prämie, wer der Nr. 1 der Rangliste einen Laden abnimmt, bekommt doppelten Ruf
+        const top=rankOf(victim).pos===1;
         const done=await casSlot(did,i,{owner:victim,ver:s.ver},{owner:me.id,stock:0,stock_at:now(),sec:0,ver:s.ver+1});
         if(!done){refund();showResult(false,'ZU SPÄT','Hat sich gerade etwas geändert.','');await savePlayer();return}
-        bk('take',{heat:15+cam(s)}); addRuf(25);
-        let extra=`${T.ico} ${T.name} gehört dir`;
+        bk('take',{heat:15+cam(s)}); addRuf(top?50:25);
+        let extra=`${T.ico} ${T.name} gehört dir${top?' · 🎯 Spitzenreiter-Prämie: ⭐ doppelt':''}`;
         if(controller(d)===me.id)extra+=` · 👑 ${d.name} unter deiner Kontrolle`;
         const bty=await claimBounty(victim); if(bty)extra+=` · 💰 Kopfgeld +${fmt(bty)} sauber`;
         addEvent({kind:'atk',actor:me.id,target:victim,district:did,txt:`${me.name} hat ${vName} ${art(s.type)} ${T.name} in ${d.name} abgenommen!${isNpc(victim)?'':' BratCoin −1 %.'}`});
         if(!isNpc(victim))coinPush(-.01,'event');
+        if(top)addEvent({kind:'info',actor:me.id,target:victim,district:did,txt:`🎯 ${me.name} legt sich mit der Nr. 1 an: ${vName} verliert ${art(s.type)} ${T.name} in ${d.name}!`});
         showResult(true,'ÜBERNOMMEN!',pick(LINES.takeOk),extra,'c-yellow');
       }else{
         bk('heat',{heat:8+cam(s)}); const lost=hurtCrew(trip.n,trip.id);
@@ -2009,6 +2214,7 @@ function coupReward(c,mult){const D=coupD(c);return Math.round(D.bar*coupScale()
 function startCoup(id){
   const c=coupOffers().find(x=>x.id===id), D=c&&coupD(c);
   if(!c||coupDone(id))return;
+  if(knastBlock()){toast(knastBlock(),'bad');return}
   if(energyNow()<D.e){toast(`Zu wenig Energie. Nächste in ${dur(energyNext())}.`,'bad');return}
   setEnergy(energyNow()-D.e); savePlayer(); renderHUD();
   playGame('coup',(mult,hits)=>guard(async()=>{
@@ -2087,6 +2293,7 @@ function coupModal(){
   const offers=coupOffers(), left=Math.ceil((CWIN-(now()%CWIN))/1000);
   return `<div class="mbox" role="dialog" aria-label="Coups"><div class="mtop"><span></span><h3>Coups</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
     <div class="enrow"><b>⚡ ${e} / ${EMAX} Energie</b><span>${e>=EMAX?'voll':`+1 in ${dur(nx)}`}</span></div>
+    ${knastBlock()?`<p class="warn">${knastBlock()} <button class="minib" data-act="knast">Zum Knast</button></p>`:''}
     ${sunMul()>1?`<p class="small">☀️ Sonne über Nürnberg: Coups bringen gerade +20 % Beute.</p>`:''}
     <div class="coups">${offers.map(c=>{const D=coupD(c),done=coupDone(c.id),lo=coupReward(c,1),hi=coupReward(c,1.6);
       return `<div class="coup ${done?'done':''}${c.fest?' fest':''}"><div class="cp-head"><b>${c.name}</b><span class="chip ${c.fest?'fest':'d'+c.diff}">${c.fest?'🎄 '+D.label:D.label}</span></div>
@@ -2647,6 +2854,7 @@ function truckModal(){
 function crackTruck(){
   const t=truckNow(); if(!t)return;
   const r=truckRow[t.id]; if((r&&r.winner)||me.truck_try===t.id||energyNow()<TRUCK_E)return;
+  if(knastBlock()){toast(knastBlock(),'bad');return}
   setEnergy(energyNow()-TRUCK_E); me.truck_try=t.id; savePlayer();
   playGame('ueberfall',(mult,hits)=>guard(async()=>{
     if(hits<2){bk('heat',{heat:6});await savePlayer();showResult(false,'ALARM!','Der Fahrer hat Gas gegeben. Diesmal nicht.','+6 Hitze');return}
@@ -3091,6 +3299,7 @@ function heistReady(){return heists.find(h=>{const m=heistMine(h);return m&&!m.r
 function heistShare(n){return Math.round((n>=3?25000:20000)*coupScale()/10)*10}
 function heistStartBlock(){
   if(!unlocked('heist'))return lockTxt('heist');
+  if(knastBlock())return '🚔 Aus dem Knast heraus geht das nicht';
   if(heistOpen())return 'Gerade plant schon jemand einen Großcoup';
   if(heistToday())return 'Heute warst du schon bei einem Großcoup dabei';
   const h=berlinHour(); if(h<8||h>=21)return 'Großcoups starten zwischen 8 und 21 Uhr';
@@ -3100,6 +3309,7 @@ function heistStartBlock(){
 function heistJoinBlock(h){
   if(!unlocked('heist'))return lockTxt('heist');
   if(heistMine(h))return null;
+  if(knastBlock())return '🚔 Aus dem Knast heraus geht das nicht';
   if(h.members.length>=HEIST_MAX)return 'Schon 3 Banden dabei';
   if(heistToday())return 'Heute warst du schon bei einem Großcoup dabei';
   if(energyNow()<HEIST_E)return 'Zu wenig Energie';
@@ -3437,6 +3647,7 @@ function updateMap(){
 /* Ab 4.6.2: oben auf der Karte nur eine Zeile (Online, wichtigster Hinweis, +N), alles andere im Fenster „Wos is los?“ */
 function overlayItems(){
   const L=[],add=(h,g,s)=>{if(h)L.push({h,g,s})};
+  add(knastChip(),'you');
   if(ui.revenge&&now()<ui.revenge.until)add(`<div class="chipb rev"><b>RACHE</b>gegen ${esc(ownerInfo(ui.revenge.o).name)} · ${dur(Math.ceil((ui.revenge.until-now())/1000))}</div>`,'now');
   add(heistChip(),'now'); add(smugChip(),'now'); add(truckChip(),'now'); add(orderChip(),'now');
   famItems().forEach(h=>add(h,'you'));
@@ -3486,7 +3697,7 @@ function viewStadt(m){
       <div class="chips" id="chips"></div>
       <div class="mapui"><button data-act="zhome" aria-label="Auf Innenstadt zentrieren">⌖</button></div>
       <div class="hint" id="hint">Ziehen zum Verschieben · zwei Finger zum Zoomen</div>
-      <div class="tickbox" id="ticker"></div><div class="collectbtn" id="collect"></div><div class="coupbtn" id="coupbtn"></div></div>
+      <div class="tickbox" id="ticker"></div><div class="actbar"><div class="collectbtn" id="collect"></div><div class="coupbtn" id="coupbtn"></div></div></div>
       <section class="dbar" id="dbar"></section>`;
     if(!view)setHome();
     bindMap(document.getElementById('mapsvg'));
@@ -3499,9 +3710,9 @@ function viewStadt(m){
   let half=wr.half; mySlots().forEach(([x,dd])=>{if(TYPES[x.type].kind==='racket'&&curStock(x,dd)>=cap(x,dd)*.5)half=true});
   const show=st>=1000||half, wi=Object.keys(wr.w).map(k=>`${WARE[k].ico}${wr.w[k]}`).join(' ');
   cb.className='collectbtn'+(show?' full':'');
-  cb.innerHTML=show?`<button class="btn sm" data-act="collectall">💵 Kassieren${st>=1||wi?`<span class="n">${st>=1?`+${fmt(st)}`:''}${st>=1&&wi?' ':''}${wi}</span>`:''}</button>`:'';
+  cb.innerHTML=show?`<button class="btn sm" data-act="collectall">💵 <span class="lbl">Kassieren</span>${st>=1||wi?`<span class="n">${st>=1?`+${fmt(st)}`:''}${st>=1&&wi?' ':''}${wi}</span>`:''}</button>`:'';
   const cpb=document.getElementById('coupbtn'), cl=coupsLeft();
-  if(cpb)cpb.innerHTML=`<button class="btn sm violet" data-act="coups">🎯 Coups<span class="n">⚡${energyNow()}</span>${cl?`<span class="cbadge" aria-label="${cl} offen">${cl}</span>`:''}</button>`;
+  if(cpb)cpb.innerHTML=`<button class="btn sm violet" data-act="coups">🎯 Coups${cl?`<span class="cbadge" aria-label="${cl} offen">${cl}</span>`:''}</button>${safeBtn()}`;
   document.getElementById('hint').hidden=show||hintDone;
   const db=document.getElementById('dbar'); db.className='dbar'+(ui.dopen?' open':''); db.innerHTML=dbarHTML();
 }
@@ -3741,9 +3952,9 @@ function heatModal(){
     ${list.length?`<ul class="list">${list.map(x=>`<li class="tap" data-act="goto" data-d="${x.d.id}"><span>${TYPES[x.s.type].ico} ${TYPES[x.s.type].name}${x.s.lvl>1?' '+x.s.lvl:''} · ${x.d.name}${x.d.heat?` (×${de(x.d.heat,1)})`:''}</span><b class="c-heat">+${de(x.v,1)}</b></li>`).join('')}</ul>`:'<p class="small muted">Keiner deiner Läden macht Hitze.</p>'}
     <h4>Baut Hitze ab</h4>
     <ul class="list"><li><span>🕰️ Die Zeit (immer)</span><b class="c-clean">−${HEAT_BASE}</b></li><li><span>⚖️ ${me.crew.a||0}× Anwalt (je −${HEAT_LAW})</span><b class="c-clean">−${(me.crew.a||0)*HEAT_LAW}</b></li></ul>
-    <p class="small muted">Angriffe machen zusätzlich Hitze: Überfall +8, Übernahme +15, Hack +4, misslungen etwas weniger, bei Läden mit Kamera +5 extra. Ein anonymer Tipp gegen dich bringt +15.</p>
+    <p class="small muted">Deine Läden heizen höchstens bis ${HEAT_CAP}. Darüber kommst du nur durch Taten: Überfall +8, Übernahme +15, Hack +4, misslungen etwas weniger, bei Läden mit Kamera +5 extra. Ein anonymer Tipp gegen dich bringt +15. Über ${HEAT_CAP} sinkt die Hitze um mindestens ${TAT_DECAY} pro Std.</p>
     <h4>Was die Polizei macht</h4>
-    <div class="tiers"><div><b>60</b><span>👮 Kontrolle (etwa alle 3 Std.): die Hälfte einer Kasse weg, Hitze −10</span></div><div><b>80</b><span>🚨 Razzia im heißesten Viertel (etwa stündlich): dort alle Kassen und 20 % Bargeld weg, Hitze −30</span></div><div><b>100</b><span>🚨🚨 Große Razzia: 40 % Bargeld, alle Kassen, ein Crew-Mitglied in U-Haft, Hitze −40</span></div></div>
+    <div class="tiers"><div><b>60</b><span>👮 Kontrolle (etwa alle 3 Std.): die Hälfte einer Kasse weg, Hitze −10</span></div><div><b>80</b><span>🚨 Razzia im heißesten Viertel (etwa stündlich): dort alle Kassen und 20 % Bargeld weg, Hitze −30</span></div><div><b>100</b><span>🚔 Sofort die große Razzia: 40 % Bargeld, alle Kassen, ein Crew-Mitglied in U-Haft, Hitze −40 und 2 Std. Knast für den Boss</span></div></div>
     <p class="small muted">Bist du weg, gibt es höchstens ein Polizei-Ereignis und nie die große Razzia.</p>
     <p class="small muted">Bestechen kostet heute ${fmt(bribeCost())} ✦, jedes weitere Mal 1.000 mehr (höchstens 9.000), ab Mitternacht wieder 3.000.</p>
     <button class="btn pink wide" data-act="bribe" ${me.clean<bribeCost()||me.heat<1?'disabled':''}>🤝 Polizei schmieren · ${fmt(bribeCost())} ✦ · −25 Hitze</button>
@@ -3774,6 +3985,7 @@ function gangHTML(o,st){
     <div class="ghead">${portrait(o,64)}<div><b>${esc(oi.name)}${nameTag(o)}${own&&!me.renamed?` <button class="minib" data-act="rename" aria-label="Bande umbenennen">✏️</button>`:''}</b><span>${sub}</span></div></div>
     ${bossLine(o,own)}${homeLine(o)}
     ${!own&&!npc?`<button class="btn ghost wide sm" data-act="dm" data-o="${o}">💬 Nachricht an ${esc(oi.name)}</button>`:''}
+    ${knastGangHTML(o)}
     ${famHTML(o)}
     ${own?rufBar():''}
     <div class="stats"><div class="stat"><small>Rang</small><b class="c-yellow">${rk.pos===1?'♛':rk.pos}<span class="of">/${rk.n}</span></b></div><div class="stat"><small>Punkte</small><b>${fmt(rk.w)}</b></div><div class="stat"><small>Viertel</small><b>${ctrl.length}</b></div></div>
@@ -3940,7 +4152,7 @@ function viewGeldOld(){
     <p class="small muted">Sauberes Geld brauchst du für Immobilien, Bestechung und manche Upgrades. Mitspieler mit Hackern können es dir klauen.</p></section>
   <section class="card"><h2 class="c-heat">Polizei</h2>
     <p>Hitze ${Math.round(me.heat)} / 100 · ${hn>0?`steigt um ${de(hn,1)} pro Std`:`sinkt um ${de(-hn,1)} pro Std`}.</p>
-    <div class="tiers"><div><b>60</b><span>👮 Kontrolle (etwa alle 3 Std.): die Hälfte einer Kasse weg, Hitze −10</span></div><div><b>80</b><span>🚨 Razzia im heißesten Viertel (etwa stündlich): dort alle Kassen und 20 % Bargeld weg, Hitze −30</span></div><div><b>100</b><span>🚨🚨 Große Razzia: 40 % Bargeld, alle Kassen, ein Crew-Mitglied in U-Haft, Hitze −40</span></div></div>
+    <div class="tiers"><div><b>60</b><span>👮 Kontrolle (etwa alle 3 Std.): die Hälfte einer Kasse weg, Hitze −10</span></div><div><b>80</b><span>🚨 Razzia im heißesten Viertel (etwa stündlich): dort alle Kassen und 20 % Bargeld weg, Hitze −30</span></div><div><b>100</b><span>🚔 Sofort die große Razzia: 40 % Bargeld, alle Kassen, ein Crew-Mitglied in U-Haft, Hitze −40 und 2 Std. Knast für den Boss</span></div></div>
     <p class="small muted">Bist du weg, gibt es höchstens ein Polizei-Ereignis und nie die große Razzia.</p>
     <button class="btn pink" data-act="bribe" ${me.clean<bribeCost()||me.heat<1?'disabled':''}>Polizei schmieren · ${fmt(bribeCost())} ✦ · −25 Hitze</button>
     <button class="btn ghost" data-act="heat">🔎 Woher kommt meine Hitze?</button></section>`;
@@ -4154,6 +4366,13 @@ document.addEventListener('click',e=>{
     case 'sec':buySec(did,i);return;
     case 'tip':giveTip(a.dataset.o);return;
     case 'coups':showModal(coupModal());return;
+    case 'knast':showModal(knastModal());return;
+    case 'kbreak':knastBreak();return;
+    case 'kbail':knastBail();return;
+    case 'kbailfor':knastBail(a.dataset.o);return;
+    case 'kjudge':knastJudge(a.dataset.o);return;
+    case 'safe':showModal(safeModal());loadSafe().then(()=>{const m=document.getElementById('modal'),ae=document.activeElement;if(!m.hidden&&/Sparkassen-Safe/.test(m.innerHTML)&&!(ae&&ae.id==='safein'))showModal(safeModal(),true)});return;
+    case 'safetry':safeTry();return;
     case 'coupgo':startCoup(a.dataset.c);return;
     case 'fest':showModal(festModal());return;
     case 'wx':showModal(wxModal());return;
@@ -4318,7 +4537,7 @@ function doReload(){
 }
 
 /* ---------- Menü, Anleitung, FAQ, Versionsverlauf ---------- */
-const CURRENT_VERSION='Beta 5.0.4', SEEN_KEY='imperium-seen-version';
+const CURRENT_VERSION='Beta 5.1', SEEN_KEY='imperium-seen-version';
 /* ---------- Ab Beta 5.0 „Wahrzeichen“: drei gleichzeitig, Kaiserburg und Plärrer fest, das dritte wechselt sonntags um 20 Uhr ----------
    Erobert wird nur über die Datenbank-Funktion landmark_attack (der Server würfelt, feste Verteidigung 10, Türsteher zählen nicht).
    Tabelle landmarks: {id, district, pos, active, owner, since, shield_until}, owner null = Stadtwache. */
@@ -4361,6 +4580,7 @@ function lmBlock(id){
   if(!l||!r||!r.active)return LM_WHY.inactive;
   if(!unlocked('lm'))return lockTxt('lm');
   if(holds(me.id,id))return '';
+  if(knastBlock())return '🚔 Aus dem Knast heraus geht das nicht';
   const h=heldBy(me.id); if(h)return `Du hältst schon ${h.art} ${lmName(h)}. Pro Bande nur ein Wahrzeichen.`;
   if(lmShield(id))return `🛡️ Schonzeit nach der Eroberung, noch ${dur(Math.ceil(lmShield(id)/1000))}`;
   const o=lmHolder(id); if(o&&isAlly(o))return LM_WHY.ally;
@@ -4454,6 +4674,14 @@ function dayPhase(t){t=t||now();const s=sunTimes(t),D=40*60000;if(t>s.rise+D&&t<
 function applyPhase(){const svg=document.getElementById('mapsvg'),box=document.getElementById('mapbox');if(!svg)return;const p=dayPhase();['day','dusk','night'].forEach(k=>{svg.classList.toggle(k,k===p);if(box)box.classList.toggle(k,k===p)})}
 
 const VERSIONS=[
+  {v:'Beta 5.1',date:'11.10.2026',title:'Safe & Knast',items:[
+    '🔢 Sparkassen-Safe: Jeden Sonntag um 20 Uhr ein neuer Code mit 4 Ziffern, ein Versuch pro Tag. Wer ihn knackt, bekommt den ganzen Topf sauber. Der Knopf sitzt neben den Coups',
+    '🧩 Hinweise auf den Code gibt es mit etwas Glück aus Coups und Überfällen, und im Knast verrät der Zellennachbar eine Ziffer',
+    '🚨 Hitze neu: Läden heizen nur noch bis 80. Darüber bringen dich nur Angriffe, und dort sinkt die Hitze um mindestens 10 pro Stunde',
+    '🚔 Knast: Bei 100 Hitze kommt die große Razzia sofort und du sitzt 2 Stunden. Wirtschaften geht weiter, zuschlagen nicht. Raus kommst du per Ausbruch, Kaution oder mit deinem Spezl',
+    '⚖️ Sitzt ein Rivale, kannst du den Richter schmieren: 1 Stunde länger, und der Kurier nennt keinen Namen',
+    '🎯 Spitzenreiter-Prämie: Wer der Nr. 1 der Rangliste einen Laden abnimmt, bekommt doppelten Ruf und eine Schlagzeile'
+  ]},
   {v:'Beta 5.0.4',date:'11.10.2026',title:'Server rechnet Geld',items:[
     '🏦 Dein Geld rechnet jetzt der Server: Einnahmen, Waschen, Löhne, Razzien, Kassieren und BratCoin',
     '📱 Du kannst auf mehreren Geräten gleichzeitig spielen, ohne dass sich dein Geld überschreibt',
@@ -4695,6 +4923,7 @@ function stufenHTML(){
 }
 const GUIDE=[
   ['🎓 Erste Schritte','Neue Banden sehen auf der Karte „Erste Schritte“: fünf kleine Aufgaben, jede mit 1.000 Bargeld und ⭐ 20 Ruf, alle zusammen mit 3.000 und ⚡ 2 obendrauf.','start'],
+  ['🔢 Sparkassen-Safe','Neben den Coups unten links sitzt der 🔢 Safe. Jeden Sonntag um 20 Uhr steht ein neuer Safe mit einem Code aus 4 Ziffern da. Er startet mit 10.000 und wächst mit 10 % aller Wäsche-Gebühren und Bestechungen in der Stadt, dazu Kaution und Richter-Schmiergeld. Jede Bande hat einen Versuch pro Tag (nicht aus dem Knast). Danach steht im Kurier, welche Stellen gepasst haben, etwa „4-7-?-?“, das sehen alle. Hinweise („Stelle 2 ist eine 7“) fallen mit etwas Glück bei Coups und Überfällen ab, und im Knast verrät der Zellennachbar eine Ziffer. Wer den Code knackt, bekommt den ganzen Topf als sauberes Geld, alle bekommen Bescheid. Knackt ihn bis Sonntag 20 Uhr niemand, verrät der Kurier den Code und das Geld wandert in den neuen Safe.','akt'],
   ['🎯 Coups','Tipp auf 🎯 auf der Karte, auf „Coups“ unten links oder auf ⚡ oben. Alle 2 Stunden gibt es drei neue Coups: leicht (⚡1), mittel (⚡2) und schwer (⚡3). Im Minispiel blinken Alarm-Lichter, die du nachtippst. Jede Runde kommt ein Licht dazu, das ergibt bis zu 3 Treffer. Bei leichten Coups brauchst du einen Treffer, bei mittleren und schweren zwei. Leichte Coups kannst du auch „schnell erledigen“, das zählt wie 2 Treffer. Gelingt der Coup, gibt es Bargeld und Ruf, manchmal einen Glücksfund. Coups machen etwas Hitze. Energie lädt sich alle 20 Minuten um 1 auf, höchstens 5.','akt'],
   ['✅ Tagesziele & ⭐ Ruf','Jeden Tag gibt es drei Ziele: zwei wie Coups machen, kassieren oder waschen und eins mit Mitspielern, also einen Überfall auf eine echte Bande gewinnen, auf Kurier-Meldungen anderer Banden reagieren oder nach einem Kampf einen Spruch hinterlassen. Jedes bringt Bargeld und Ruf, alle drei zusammen Bonus-Ruf, 2 Energie und verlängern deine Serie. Ruf bekommst du auch fürs Bauen und für gewonnene Angriffe. Mit jeder Stufe wird etwas freigeschaltet, siehe ⭐ Stufen.','akt'],
   ['⭐ Stufen',stufenHTML(),'start'],
@@ -4705,7 +4934,7 @@ const GUIDE=[
   ['🏠 Heimatviertel','Im Crew-Tab tippst du daheim auf „📍 Daheim einchecken“. Das Spiel schaut einmal, in welchem Viertel du bist, und merkt sich nur das Viertel, nie den Standort. Deine Läden dort verteidigen dann 24 Std. lang mit +2. In den letzten 6 Std. kannst du verlängern, dann gilt es wieder 24 Std. ab da. Wechseln geht einmal pro Woche. Wer nicht in Nürnberg wohnt, wählt eine Wahlheimat und bekommt dauerhaft +1. Sind zwei Banden im selben Viertel daheim, ist das ein ⚔️ Lokalderby: Zwischen ihnen zählt kein Heimvorteil, und wer dort mehr Läden hat, ist 🦌 Platzhirsch.','kampf'],
   ['👑 Viertel kontrollieren','Wer mindestens die Hälfte der Plätze in einem Viertel hält und mehr als jede andere Bande, kontrolliert es. Das bringt 1.000 Schutzgeld pro Stunde, bessere Verteidigung und Punkte für die Rangliste.','kampf'],
   ['👊 Angreifen','Tipp auf einen fremden Laden: Überfall räumt die Kasse aus, Übernahme schnappt dir den Laden, Hack klaut sauberes Geld. Jede Angriffsart hat ihr Minispiel: Beim Überfall tippst du, wenn der Zeiger im grünen Feld steht, bei der Übernahme knackst du ein Drehrad, beim Hack tippst du nur die grünen Pakete. Gegen KI-Banden kannst du auch „schnell erledigen“, das zählt wie 2 Treffer. Für Überfall und Übernahme wählst du mit − und +, wie viele Schläger mitfahren: In jedes Auto passen 3 Schläger, dein eigenes fährt umsonst, jedes Fahrer-Auto braucht 1 🥃 Fusel. Pro Angriff fahren höchstens 3 Autos, also 9 Schläger. Der Trupp ist ein paar Minuten unterwegs, deine Türsteher bleiben auf Posten. Mit genug Autos laufen mehrere Angriffe gleichzeitig, auf dieselbe Bande aber immer nur einer. Geht ein Angriff schief, fällt jeder 4. Mitfahrer 1 Std. verletzt aus. Nach einem Hack machen nur deine Hacker 10 Minuten Pause. Ein gelungener Überfall auf Mitspieler holt auch 20 % ihres Lagers, ein Hack auch 12 % ihrer BratCoins.','kampf'],
-  ['🚨 Polizei-Hitze','Wettbüros, Hehlerlager, Clubs und Angriffe erhöhen die Hitze. Pro Stunde sinkt sie um 5, jeder Anwalt senkt sie um 4 mehr. Ab 60 kommen Kontrollen, ab 80 Razzien im heißesten Viertel, ab 100 die große Razzia. Bist du weg, gibt es höchstens ein Polizei-Ereignis und nie die große Razzia. Tipp oben auf 🚨: Dort steht alles im Detail. Bestechung senkt die Hitze sofort um 25, jedes weitere Mal am Tag kostet 1.000 mehr.','pol'],
+  ['🚨 Polizei-Hitze','Wettbüros, Hehlerlager, Clubs und Angriffe erhöhen die Hitze. Pro Stunde sinkt sie um 5, jeder Anwalt senkt sie um 4 mehr. Deine Läden heizen höchstens bis 80, darüber bringen dich nur Angriffe, und dort sinkt die Hitze um mindestens 10 pro Stunde. Ab 60 kommen Kontrollen, ab 80 Razzien im heißesten Viertel, bei 100 sofort die große Razzia und 2 Stunden 🚔 Knast. Bist du weg, gibt es höchstens ein Polizei-Ereignis und nie die große Razzia. Tipp oben auf 🚨: Dort steht alles im Detail. Bestechung senkt die Hitze sofort um 25, jedes weitere Mal am Tag kostet 1.000 mehr.','pol'],
   ['🚪 Türsteher & Sicherung','Türsteher heuerst du ab Stufe 2 im Crew-Tab unter 🚪 Türsteher an und stellst sie dort (oder über 🚪 in der Viertel-Leiste) in ein Viertel: Leere Tür antippen stellt einen hin, volle Tür zieht ihn ab. Jeder verteidigt alle deine Läden im Viertel mit +2,5, höchstens 3 pro Viertel zählen. Türsteher greifen nicht an, Schläger verteidigen nicht. Dazu kann jeder Laden eine Sicherung bekommen: 🚪 Stahltür (+3 Verteidigung), 📹 Kamera (Angreifer bekommen +5 Hitze), 🔐 Tresor (Überfälle holen höchstens die Hälfte der Kasse).','kampf'],
   ['📻 Stadtfunk','Im Kurier oben auf „📻 Funk“ tippen. „Stadt“ lesen alle Banden mit. Eine Direktnachricht schreibst du über 💬 in der Übersicht einer Bande, dann erscheint sie oben als eigener Kanal. Höchstens 200 Zeichen, eine Nachricht alle 5 Sekunden, ohne Schimpfwörter. Eine eigene Nachricht antippen, dann erscheint „🗑️ Löschen“. Nachrichten verschwinden nach 7 Tagen. Für Direktnachrichten gibt es eine Mitteilung, das schaltest du unter ☰ → Mitteilungen.','stadt'],
   ['🚗 Autos & Trupp','Deine Garage steht oben im Crew-Tab: dein eigenes Auto und eins pro Fahrer, mit Uhr, solange es unterwegs ist. Ein Fahrer kostet beim Anheuern 1.000 Bargeld und 3 🔩 Teile für sein Auto, jede Fahrt 1 🥃 Fusel. Teile bauen das Auto, Fusel füllt den Tank. Im Angriffsfenster wählst du mit − und +, wie viele Schläger mitfahren, die Autos füllen sich von selbst. Angriffskraft ist 1 plus die Schläger im Trupp. Mehr Fahrer in der Bande machen jede Fahrt schneller, bis 6 Fahrer (dann 3 Minuten).','kampf'],
@@ -4714,6 +4943,7 @@ const GUIDE=[
   ['🍺 Feierabend-Coup','Der zweite Geldtransporter des Tages kommt fest um 22 Uhr: In einem Viertel wird die Tageskasse abgeholt, 30 Minuten lang. Alle bekommen eine Mitteilung, auf der Karte erscheint 🍺. Wie beim Geldtransporter: ⚡ 2, zwei Treffer, ein Versuch pro Bande. Der erste Erfolg kassiert 30.000 Bargeld und ⭐ 50. Keine KI-Bande schnappt ihn weg, er gehört den echten Banden.','akt'],
   ['🎄 Feste','Zu Festen in Nürnberg passiert in der Stadt mehr. Vom 27.11. (17:30 Uhr) bis 24.12. (14 Uhr) ist Christkindlesmarkt: Läden in der Altstadt bringen +25 % Bargeld, und in jedem 2-Stunden-Fenster gibt es einen 🎄 Markt-Coup (⚡1). Gelungen bringt er Bargeld und ❤️ 3 Lebkuchenherzen, geplatzt ❤️ 1. Herzen gibt es höchstens 25 am Tag, auch wer spät einsteigt, kann aufholen. Im Rang-Tab zeigt „🎄 Markt“ die Rangliste der echten Banden, sonntags berichtet der Kurier. Am 24.12. um 14 Uhr bekommen die ersten drei 30.000, 15.000 und 10.000 sauber, der Sieger trägt den 🎄 für immer am Namen, jede Bande mit mindestens 30 ❤️ ein Jahr lang den 🍪.','stadt'],
   ['🛷 Lebkuchen-Schmuggel','Nur während des Christkindlesmarkts: Einmal am Tag zwischen 9 und 22 Uhr kannst du eine Ladung Lebkuchen durch die Altstadt schmuggeln (⚡2, im Fest-Fenster oder bei den Coups). Sie ist 20 Minuten unterwegs, alle anderen echten Banden bekommen eine Mitteilung und sehen 🛷 auf der Karte. Kommt sie durch, bekommst du ❤️ 10 und Bargeld. Abfangen kostet ⚡1, das Minispiel ist schwer, jede Bande hat einen Versuch, Spezln nicht. Wer zuerst trifft, bekommt ❤️ 6 und das Bargeld, der Schmuggler geht leer aus.','akt'],
+  ['🎯 Spitzenreiter-Prämie','Nimmst du der Nr. 1 der Rangliste einen Laden ab, bekommst du doppelten Ruf (⭐ 50 statt 25) und eine Schlagzeile im Kurier. Das gilt für jede Bande, egal wie groß du selbst bist.','kampf'],
   ['🏴 Zielscheibe','Die stärkste echte Bande hängt in der Rangliste immer ganz vorn auf dem WANTED-Plakat. Hast du höchstens halb so viele Punkte, bringt dir ein gelungener Überfall auf sie +50 % Prämie obendrauf (bis 10.000) und doppelten Ruf. Ist dieselbe Bande 3 Tage lang vorn, berichtet der Kurier.','kampf'],
   ['⚔️ Revanche','Hat dich eine Bande ausgeraubt oder gehackt, während du weg warst, siehst du das beim Öffnen. Ein Tipp auf „Revanche“ bringt dich zu ihrem Laden mit der vollsten Kasse, und 10 Minuten lang hast du gegen sie +25 % Angriffskraft. Im Kurier geht das weiter über „Rache“.','kampf'],
   ['🏰 Wahrzeichen','Drei Wahrzeichen sind jede Woche umkämpft: die 🏰 Kaiserburg, der 🚇 U-Bahnhof Plärrer und ein drittes, das jeden Sonntag wechselt. Ab Stufe 3 findest du sie im Coups-Fenster (🎯 Coups) und in der Viertel-Leiste und stürmst sie mit deinen Schlägern. Verteidigt wird immer mit 10, Türsteher zählen dort nicht, mit 9 Schlägern hast du also 50 % Chance. Jede Bande kann nur eins halten, nach einer Eroberung gibt es 1 Std. Schonzeit. Solange du es hältst, bekommst du seinen Bonus. Beim Plärrer zeigt das Fenster die U-Bahn-Viertel, dort steht dann unten „🚇 +1 Angriff“. Sonntag um 20 Uhr bekommt jeder Halter 10.000 sauber, danach gehört alles wieder der Stadtwache.','stadt'],
@@ -4721,6 +4951,7 @@ const GUIDE=[
   ['📻 Funkgerät & Mitteilungen','Unter ☰ → Mitteilungen schaltest du sie ein. Beim ersten Mal gibt es einmal 5.000 Bargeld. Banden ohne Mitteilungen haben in der Rangliste ein 📵. Neu ist eine Mitteilung, wenn dich eine Bande überholt (höchstens alle 3 Stunden), und eine bei neuen Versionen. Mitteilungen kommen nur, wenn das Spiel nicht offen ist.','stadt'],
   ['💰 Kopfgeld','In der Übersicht einer anderen Bande kannst du 5.000, 10.000 oder 25.000 sauberes Geld als Kopfgeld aussetzen, anonym und nur auf Banden ab Stufe 3 (Kiezbande). Mehrere Kopfgelder werden zusammengezählt. Der erste gelungene Überfall oder die erste Übernahme kassiert alles, dein eigenes Kopfgeld kannst du nicht selbst kassieren. Nach 7 Tagen ohne Treffer bekommst du dein Geld zurück. Banden mit Kopfgeld hängen auf den WANTED-Plakaten in der Rangliste, auf der Karte haben ihre Läden einen roten Rand und in der Viertel-Leiste ein 💰.','kampf'],
   ['📰 Kurier','Im Kurier steht alles, was in der Stadt passiert, ganz oben die Schlagzeile. Unter jeder Meldung kannst du mit 😂 💀 🔥 reagieren. Nach einem gelungenen Angriff auf einen Mitspieler kannst du ihm einen Spruch hinterlassen. Wehrst du einen Überfall ab, darfst du dem Angreifer einen Spruch zurückschicken. Bewegt sich BratCoin um 5 % oder mehr, meldet der Börsenticker 📈📉 die Gründe, höchstens einmal pro Stunde.','stadt'],
+  ['🚔 Knast','Erreicht deine Hitze 100, kommt sofort die große Razzia (40 % Bargeld, alle Kassen) und dein Boss sitzt 2 Stunden. Wirtschaften geht weiter: bauen, kassieren, waschen, Crew. Angriffe, Coups, Tipps und der Safe warten. Im Knast verlierst du höchstens einen Laden. Raus kommst du so: 🪚 Ausbruch (ein Versuch, Minispiel mit drei Gitterstäben; klappt er, bist du sofort frei, sonst 30 Minuten länger), 💸 Kaution (10 % von Bargeld und sauberem Geld, mindestens 1.000) oder dein 🤝 Spezl zahlt sie und bekommt ⭐ 40 Ruf. Ein Rivale kann einmal den Richter schmieren (BratCoin im Wert von 3.000): 1 Stunde länger, der Kurier nennt keinen Namen. Kaution und Schmiergeld wandern in den Sparkassen-Safe. Dein Zellennachbar verrät dir pro Aufenthalt eine Ziffer des Safes.','pol'],
   ['📞 Anonymer Tipp','In der Übersicht einer anderen Bande kannst du für 2.500 sauberes Geld die Polizei auf sie hetzen: ihre Hitze +15. Mit 20 % Chance fliegst du selbst auf: +10 Hitze für dich, und der Kurier nennt deinen Namen. Höchstens 3 Tipps am Tag und einer pro Bande alle 12 Stunden.','pol'],
   ['🪙 BratCoin','BratCoin kaufst du mit Bargeld und verkaufst ihn gegen sauberes Geld (12 % Gebühr beim Kauf, 2 % beim Verkauf). Der Kurs ist für alle gleich und wird von den Spielern gemacht: Jede 10.000 Kauf treibt ihn um 1 % hoch, Verkäufe drücken ihn, höchstens 5 % pro Geschäft. Du zahlst immer den Kurs vor deinem eigenen Geschäft. Nachrichten im Kurier bewegen ihn um 8 bis 20 %, eine große Razzia drückt ihn um 3 %, ruhige Stunden ohne Überfälle heben ihn ein wenig. Alles zusammen wirkt höchstens ±20 % und klingt alle 6 Stunden zur Hälfte ab, dazu schwankt er leicht von selbst. Vorsicht: Hacker klauen 12 % deiner Coins, Razzien 20 bis 40 %. Geschäfte ab 20.000 meldet der Kurier mit Namen.','geld'],
   ['🥃 Ware & Lager','Brennerei (🥃 Fusel, etwas Hitze) und Schrottplatz (🔩 Teile) baust du ab Stufe 2 (Eckbande). Sie füllen sich wie eine Kasse: 4 pro Stunde, mit jeder Stufe mehr, nach 3 Stunden voll. Abholen geht mit „Kassieren“ auf der Karte. Die Ware liegt dann im Lager (Crew-Tab → 📦 Lager). Dort verkaufst du sie jederzeit an den Hehler (600 pro Fusel, 500 pro Teil) oder baust Ausrüstung daraus. Ein gelungener Überfall auf dich raubt 20 % vom Lager, die Polizei lässt es in Ruhe.','geld'],
@@ -4755,7 +4986,7 @@ const FAQ=[
   ['Was heißt 📵 in der Rangliste?','Diese Bande hat keine Mitteilungen an. Sie merkt also erst beim nächsten Öffnen, wenn du sie überfällst. Wer Mitteilungen einschaltet, bekommt einmal 5.000 Bargeld.','stadt'],
   ['Warum hat das Spiel gerade neu geladen?','Wenn es eine neue Version gibt und du in die App zurückkommst, lädt sie einmal von selbst. Dein Spielstand liegt in der Datenbank, es geht nichts verloren.','start'],
   ['Warum wird mein Bargeld weniger?','Drei Gründe: Deine Fassaden waschen Bargeld zu sauberem Geld, deine Crew bekommt Lohn, und bei einer Razzia beschlagnahmt die Polizei 40 %. Oben im Geld-Tab zeigt der Geldfluss, was pro Stunde rein- und rausgeht.','geld'],
-  ['Wie funktioniert Hitze?','Jedes Wettbüro, jedes Hehlerlager und jeder Club macht pro Stunde Hitze, höhere Stufen mehr, am Flughafen und in Erlenstegen noch mehr. Angriffe machen zusätzlich Hitze. Pro Stunde sinkt sie von selbst um 5 und mit jedem Anwalt um 4 mehr. Ab 60 kommen Kontrollen (die Hälfte einer Kasse weg), ab 80 Razzien im heißesten Viertel (dort alle Kassen und 20 % Bargeld weg), ab 100 die große Razzia (40 % Bargeld, alle Kassen, ein Crew-Mitglied in U-Haft). Tipp auf 🚨 oben zeigt alles im Detail. Ist die Mitteilung „Hitze-Vorwarnung“ an, bekommst du etwa 2 Stunden vorher Bescheid.','pol'],
+  ['Wie funktioniert Hitze?','Jedes Wettbüro, jedes Hehlerlager und jeder Club macht pro Stunde Hitze, höhere Stufen mehr, am Flughafen und in Erlenstegen noch mehr. Angriffe machen zusätzlich Hitze. Pro Stunde sinkt sie von selbst um 5 und mit jedem Anwalt um 4 mehr. Deine Läden heizen höchstens bis 80, darüber bringen dich nur Angriffe. Ab 60 kommen Kontrollen (die Hälfte einer Kasse weg), ab 80 Razzien im heißesten Viertel (dort alle Kassen und 20 % Bargeld weg), bei 100 sofort die große Razzia (40 % Bargeld, alle Kassen, ein Crew-Mitglied in U-Haft) und 2 Stunden Knast für den Boss. Tipp auf 🚨 oben zeigt alles im Detail. Ist die Mitteilung „Hitze-Vorwarnung“ an, bekommst du etwa 2 Stunden vorher Bescheid.','pol'],
   ['Warum zeigt der Geldfluss weniger, als meine Läden bringen?','Volle Kassen verdienen nichts mehr, bis du kassierst. Sie zählen deshalb nicht mit und stehen in den Details als „voll“.','geld'],
   ['Warum wäscht mein Späti am Anfang nichts?','Gewaschen wird nur Bargeld, das du verdienst: aus Kassen, Schutzgeld und Beute. Dein Startgeld bleibt dir so zum Bauen. Bau ein Wettbüro, Hehlerlager oder einen Club, dann hat dein Späti zu tun. Das gilt für alle Banden, die ab Beta 3.3.1 gegründet wurden.','geld'],
   ['Wie viel Bargeld wasche ich gerade?','Das steht im Geldfluss bei „Wäsche“, dazu die Quote: welcher Anteil deines Bargelds sauber wird. Liegt genug Bargeld über deiner Reserve, waschen alle Fassaden mit voller Leistung. Liegt es an der Reserve, wird nur gewaschen, was nach den Löhnen reinkommt. Kommt nichts rein, pausiert die Wäsche. Kommt mehr Bargeld rein, als du waschen kannst, lohnt sich eine weitere Fassade.','geld'],
@@ -4767,6 +4998,9 @@ const FAQ=[
   ['Was ist ein anonymer Tipp, und was kann ich dagegen tun?','Andere Banden können dich für 2.500 sauberes Geld bei der Polizei verpfeifen: deine Hitze steigt um 15, höchstens bis 99. Du bekommst eine Mitteilung, sobald du das Spiel öffnest. Dagegen helfen Anwälte, Bestechung und ein Auge auf deine Hitze. Wer verpfeift, fliegt mit 20 % Chance selbst auf.','pol'],
   ['Warum kostet Bestechen mal 3.000 und mal mehr?','Der erste Umschlag am Tag kostet 3.000, jeder weitere 1.000 mehr, höchstens 9.000. Um Mitternacht fängt es wieder bei 3.000 an. Dauerhaft weniger Hitze bringen Anwälte.','pol'],
   ['Kann ich alles verlieren?','Nein. Dein letztes Geschäft kann dir niemand per Übernahme abnehmen, und du kannst es auch nicht abreißen, nur umbauen. Geld und Läden kannst du aber durch Überfälle, Übernahmen und Razzien verlieren.','start'],
+  ['Ich sitze im Knast. Was jetzt?','Tipp oben auf der Karte auf 🚔 KNAST. Du kannst einmal ausbrechen (Minispiel, klappt es, bist du sofort frei, sonst 30 Minuten länger) oder Kaution zahlen: 10 % deines Geldes, mindestens 1.000. Hast du einen Spezl, bekommt er eine Mitteilung und kann für dich zahlen. Oder du sitzt die 2 Stunden ab und wirtschaftest so lange weiter. Mehr als einen Laden kann dir in der Zeit niemand abnehmen.','pol'],
+  ['Kann ich nur durch Läden in den Knast kommen?','Nein. Läden heizen höchstens bis 80. In den Knast bringen dich nur Angriffe und anonyme Tipps, die dich über 80 treiben. Wer nur baut, bekommt Kontrollen und Viertel-Razzien, aber nie die große Razzia.','pol'],
+  ['Wie knacke ich den Safe?','Tipp unten links neben den Coups auf 🔢. Gib 4 Ziffern ein, einmal am Tag. Was gepasst hat, steht danach im Kurier, auch für alle anderen. Hinweise bekommst du mit Glück bei Coups und Überfällen und im Knast vom Zellennachbarn. Jeden Sonntag um 20 Uhr gibt es einen neuen Code.','akt'],
   ['Was passiert, während ich offline bin?','Die Stadt läuft weiter: Kassen füllen sich, Geld wird gewaschen, Löhne laufen, und andere Banden können dich angreifen. Von der Polizei gibt es während deiner Abwesenheit höchstens ein Ereignis und nie die große Razzia. Beim nächsten Öffnen siehst du, was passiert ist.','start'],
   ['Wer sind die KI-Banden?','Schäufele-Syndikat (🥊 Schläger-Boss Schäufele-Schorsch), Lebkuchen-Clan (💼 Geschäftsfrau Oma Lebkuchen) und Die Drei im Weggla (🎲 Zocker, die Weggla-Brüder). Sie bauen, wachsen und greifen ab und zu an. Sie spielen immer dann eine Runde, wenn jemand online ist.','stadt'],
   ['Wie funktioniert BratCoin, und wann mache ich Gewinn?','Du kaufst mit Bargeld und verkaufst gegen sauberes Geld. Beim Kauf gehen 12 % als Mixer-Gebühr weg, deshalb brauchst du etwa 14 % Kursplus für Gewinn. Den Kurs machen die Spieler: Käufe treiben ihn hoch, Verkäufe drücken ihn, dazu kommen Nachrichten im Kurier. Unter Geld siehst du deinen Einstand und deinen Gewinn oder Verlust. Geklaute Coins zählen dort mit dem Kurs vom Hack.','geld'],
@@ -4845,9 +5079,9 @@ function showMenu(){
 const CHAPTERS=[
   {id:'start',ico:'🎓',name:'Einstieg',sub:'Ziel, erste Schritte, Karte, Hinweise, Stufen',order:['🎯 Ziel','🎓 Erste Schritte','🗺️ Karte lesen','📣 Wos is los?','⭐ Stufen']},
   {id:'geld',ico:'💵',name:'Geld',sub:'Verdienen, waschen, Ware, BratCoin',order:['💵 Bargeld verdienen','🧼 Geld waschen','💸 Geldfluss','🥃 Ware & Lager','📦 Angebote','🪙 BratCoin','🔁 Umbauen & 🧨 Abreißen']},
-  {id:'akt',ico:'🎯',name:'Aktionen',sub:'Coups, Großcoups, Tagesziele, Transporter, Schmuggel',order:['🎯 Coups','💰 Großcoups','🛷 Lebkuchen-Schmuggel','✅ Tagesziele & ⭐ Ruf','🚚 Geldtransporter','🍺 Feierabend-Coup','📦 Bestellungen']},
-  {id:'kampf',ico:'👊',name:'Kampf',sub:'Angreifen, Duell, Ausrüstung, Kopfgeld',order:['👊 Angreifen','🚨 Überfall als Duell','🥊 Hilfe im Duell','🚪 Türsteher & Sicherung','🚗 Autos & Trupp','🧰 Ausrüstung','💰 Kopfgeld','🏴 Zielscheibe','⚔️ Revanche','👑 Viertel kontrollieren']},
-  {id:'pol',ico:'🚨',name:'Polizei',sub:'Hitze, Razzien, anonymer Tipp',order:['🚨 Polizei-Hitze','📞 Anonymer Tipp']},
+  {id:'akt',ico:'🎯',name:'Aktionen',sub:'Coups, Safe, Großcoups, Tagesziele, Transporter, Schmuggel',order:['🎯 Coups','🔢 Sparkassen-Safe','💰 Großcoups','🛷 Lebkuchen-Schmuggel','✅ Tagesziele & ⭐ Ruf','🚚 Geldtransporter','🍺 Feierabend-Coup','📦 Bestellungen']},
+  {id:'kampf',ico:'👊',name:'Kampf',sub:'Angreifen, Duell, Ausrüstung, Kopfgeld',order:['👊 Angreifen','🚨 Überfall als Duell','🥊 Hilfe im Duell','🚪 Türsteher & Sicherung','🚗 Autos & Trupp','🧰 Ausrüstung','💰 Kopfgeld','🎯 Spitzenreiter-Prämie','🏴 Zielscheibe','⚔️ Revanche','👑 Viertel kontrollieren']},
+  {id:'pol',ico:'🚨',name:'Polizei',sub:'Hitze, Razzien, Knast, anonymer Tipp',order:['🚨 Polizei-Hitze','🚔 Knast','📞 Anonymer Tipp']},
   {id:'stadt',ico:'🏴',name:'Banden & Stadt',sub:'Live-Stadt, Spieltag, Wetter, Bündnis, Boss, Feste, Kurier',order:['🟢 Live-Stadt','⚽ Club-Spieltag','🌧️ Wetter','🤝 Bündnis','🎩 Boss','🏆 Boss der Woche','🎄 Feste','🏴 Banden','📰 Kurier','📻 Stadtfunk','📻 Funkgerät & Mitteilungen']}];
 function chTiles(act,list){return `<div class="chtiles">${CHAPTERS.map(c=>{const n=list.filter(x=>x[2]===c.id).length;return `<button class="cht" data-act="${act}" data-k="${c.id}"><span>${c.ico}</span><b>${c.name}</b><small>${act==='fch'?n+' Fragen':c.sub}</small></button>`}).join('')}</div>`}
 function chHead(title,back){return `<div class="mtop"><button class="back" data-act="${back}" aria-label="Zurück zur Übersicht">‹</button><h3>${title}</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>`}
@@ -4997,6 +5231,7 @@ async function sync(full){
     if(full||syncN%3===0)await loadMoneyCfg();
     if(srvMoney())await kasse();else{ecoAdvance(); await flushSlotWrites()}
     await applyHacks(); await applyTips(); await savePlayer();
+    if(full||syncN%6===0)await loadSafe();
     if(syncN%3===0||full){await loadLm();lmFusel();await npcRoutine();await applyWeekBoss();await applyFestPrize();await loadReacts();await loadMsgs()}
     await syncUnterwelt(full||syncN%3===0);
     checkDefense();
@@ -5416,6 +5651,7 @@ function smugMine(){return me?smuggles.find(x=>x.smuggler===me.id&&smugOn(x))||n
 function smugTried(id){const x=me&&me.fest;return !!x&&Array.isArray(x.tr)&&x.tr.includes(id)}
 function smugCatchBlock(x){
   if(!x||!smugOn(x))return 'Die Ladung ist nicht mehr unterwegs';
+  if(knastBlock())return '🚔 Aus dem Knast heraus geht das nicht';
   if(x.smuggler===me.id)return 'Das ist deine eigene Ladung';
   if(isAlly(x.smuggler))return 'Deinen Spezl fängst du nicht ab';
   if(smugTried(x.id))return 'Du hattest deinen Versuch schon';
@@ -5425,6 +5661,7 @@ function smugCatchBlock(x){
 function smugTarget(){return smuggles.filter(smugOn).find(x=>x.smuggler!==me.id&&!smugCatchBlock(x))||null}
 function smugStartBlock(){
   const F=festNow(); if(!F||!F.smuggle)return 'Schmuggeln geht nur während des Fests';
+  if(knastBlock())return '🚔 Aus dem Knast heraus geht das nicht';
   const h=berlinHour(); if(h<SMUG_FROM||h>=SMUG_TO)return `Schmuggeln geht von ${SMUG_FROM} bis ${SMUG_TO} Uhr`;
   if(now()+SMUG_MS>F.b)return 'Der Markt schließt gleich';
   if(smugMine())return 'Deine Ladung ist noch unterwegs';
