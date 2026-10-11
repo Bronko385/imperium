@@ -58,6 +58,7 @@ label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--m
 .d{color:var(--dirty)} .c{color:var(--clean)} .k{color:var(--crypto)} .h{color:var(--heat)}
 .chip{display:inline-block;font-size:11px;font-weight:700;color:var(--ink);padding:2px 7px;border-radius:999px;border:2px solid var(--ink);white-space:nowrap;background:var(--paper)}
 .chip.red{background:var(--heat)}
+.det{margin-top:2px;line-height:1.35}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:var(--ink);padding:3px;border-radius:10px}
 .seg button{border:0;background:none;padding:7px 0;border-radius:8px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer}
 .seg button.on{background:var(--yellow);color:var(--ink)}
@@ -292,15 +293,34 @@ function vGang() {
   <div class="card" style="gap:6px"><h3>Letzte Buchungen</h3><div class="log">${log || '<div class="sm">Noch keine.</div>'}</div></div>
   <button class="btn red" data-a="s-delete">🗑️ BANDE LÖSCHEN<span class="sub">mit Namen bestätigen</span></button>`;
 }
+// Ein Fall unter „Auffällig“: Symbol, Kopfzeile und kurze Detailzeilen
+const COL = { ware: 'Ware', bar: 'Bargeld', clean: 'Sauber', coins: 'BratCoin', basis: 'Einstand', heat: 'Hitze', ruf: 'Ruf', crew: 'Crew', guards: 'Türsteher', gear: 'Ausrüstung', energy: 'Energie', name: 'Name', color: 'Farbe', home: 'Heimatviertel', boss: 'Boss', wash_pool: 'Waschtopf', reserve: 'Reserve', owner: 'Ladenbesitzer', type: 'Ladenart', lvl: 'Ladenstufe', stock: 'Kasse', sec: 'Sicherheit', laden: 'Laden', insert: 'neu angelegt', delete: 'gelöscht' };
+const span = (a, b) => (!a || hm(a) === hm(b) ? hm(b) : `${hm(a)}–${hm(b)}`);
+function flagView(x) {
+  if (x.kind === 'bad') return ['🚫', `${x.name} · ${x.n}× abgelehnt`,
+    [...(x.by || [{ k: x.k, why: x.why, n: x.n }]).map((b) => `${b.n}× ${kname(b.k)}: ${WHY[b.why] || b.why}`), span(x.from, x.ts)]];
+  if (x.kind === 'fast') return ['📈', `${x.name} · +${fmt(x.v)} in 1 Std.`,
+    [...(x.top || []).map((t) => `${kname(t.k)} +${fmt(t.v)} (${t.n}×)`), span(x.from, x.ts)]];
+  if (x.kind === 'api') return ['🤖', `${x.name} · ${x.n}× per Programm geändert`, [
+    `Geändert: ${x.cols.map((c) => `${COL[c.c] || c.c} ${c.n}×`).join(', ')}`,
+    `Mit: ${x.tools.join(', ')} · ${span(x.from, x.ts)}`,
+    x.other && x.other.length ? `⚠️ An fremder Bande: ${x.other.join(', ')}` : '',
+    x.sameNet === true ? 'Vom selben Anschluss wie das Spiel der Bande' : x.sameNet === false ? '⚠️ Auch von einem anderen Anschluss als das Spiel' : '']];
+  const net = x.nets === 1 ? (x.n === 1 ? 'Ein Anschluss' : 'Alle vom selben Anschluss') : x.nets > 1 ? `${x.nets} verschiedene Anschlüsse` : 'Anschluss unbekannt';
+  return ['📱', `${x.name} · ${x.n === 1 ? 'neues Gerät' : x.n + ' neue Geräte'}`, [
+    (x.kinds || []).filter((k) => k.k !== 'unbekannt').map((k) => `${k.n}× ${k.k}`).join(', ') || 'Gerätart unbekannt',
+    `${net}${x.oldNet === true ? ', wie bisher' : x.oldNet === false ? ', neu für diese Bande' : ''} · ${span(x.from, x.ts)}`,
+    x.prog ? `⚠️ ${x.prog === x.n ? 'Alle' : x.prog} per Programm statt aus dem Spiel` : '',
+    x.revoked ? `${x.revoked} davon schon abgemeldet` : '']];
+}
 function vFlags() {
   const seg = `<div class="seg">${[['bad', '⚠️ Auffällig'], ['big', '💰 Große'], ['admin', '🛠️ Admin']].map(([k, t]) => `<button class="${S.seg === k ? 'on' : ''}" data-a="seg" data-v="${k}">${t}</button>`).join('')}</div>`;
   const f = S.data.flags; if (!f) return seg + loading();
   let rows = '';
   if (S.seg === 'bad') rows = f.list.map((x) => {
-    const [ico, head, sub] = x.kind === 'bad' ? ['🚫', `${x.name} · ${x.n}× abgelehnt`, `${kname(x.k)}: ${WHY[x.why] || x.why} · ${hm(x.ts)}`]
-      : x.kind === 'fast' ? ['📈', `${x.name} · +${fmt(x.v)} in 1 Std.`, `${hm(x.from)}–${hm(x.ts)}`]
-      : ['📱', `${x.name} · ${x.n === 1 ? 'neues Gerät' : x.n + ' neue Geräte'}`, `per Bandencode · ${hm(x.ts)}`];
-    return `<button class="row" data-a="gang" data-v="${esc(x.id)}" style="align-items:flex-start"><span style="font-size:20px">${ico}</span><div><div class="nm">${esc(head)}</div><div class="sm">${esc(sub)}</div></div><div class="r">›</div></button>`;
+    const [ico, head, lines] = flagView(x);
+    const det = lines.filter(Boolean).map((l) => `<div class="sm det">${esc(l)}</div>`).join('');
+    return `<button class="row" data-a="gang" data-v="${esc(x.id)}" style="align-items:flex-start"><span style="font-size:20px">${ico}</span><div><div class="nm">${esc(head)}</div>${det}</div><div class="r">›</div></button>`;
   }).join('');
   if (S.seg === 'big') rows = f.list.map((x) => `<button class="row" data-a="gang" data-v="${esc(x.id)}"><div><div class="nm">${esc(x.name)}</div><div class="sm">${esc(kname(x.k))} · ${dayhm(x.ts)}</div></div><div class="r ${x.v > 0 ? 'd' : 'h'}">${x.v > 0 ? '+' : '−'}${fmt(Math.abs(x.v))}</div></button>`).join('');
   if (S.seg === 'admin') rows = `<div class="card" style="gap:6px"><div class="log">${f.list.map(logRow).join('') || '<div class="sm">Noch nichts.</div>'}</div></div>`;
