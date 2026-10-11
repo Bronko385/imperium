@@ -1,0 +1,10 @@
+{
+  "name": "Imperium Nürnberg",
+  "short_name": "Imperium",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1e2250",
+  "theme_color": "#1e2250",
+  "icons": [{ "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }]
+}
