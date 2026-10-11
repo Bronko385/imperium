@@ -59,6 +59,9 @@ label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--m
 .chip{display:inline-block;font-size:11px;font-weight:700;color:var(--ink);padding:2px 7px;border-radius:999px;border:2px solid var(--ink);white-space:nowrap;background:var(--paper)}
 .chip.red{background:var(--heat)}
 .det{margin-top:2px;line-height:1.35}
+.sday{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:10px 0 2px}.sday:first-child{margin-top:0}
+.sline{display:grid;grid-template-columns:auto 22px 1fr;gap:6px;align-items:baseline;font-size:14px;line-height:1.35;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.06)}.sline .t{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;white-space:nowrap}.sline .i{text-align:center}.sline b{color:var(--yellow)}
+.flag{display:grid;gap:6px}.flag .acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:6px;padding-left:34px}.flag .acts .btn{font-size:13px;padding:7px 6px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:var(--ink);padding:3px;border-radius:10px}
 .seg button{border:0;background:none;padding:7px 0;border-radius:8px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer}
 .seg button.on{background:var(--yellow);color:var(--ink)}
@@ -199,12 +202,14 @@ async function verify() {
 
 // ---------- Laden der Reiter ----------
 async function show(tab, extra) {
-  S.tab = tab; if (tab !== 'gang') S.gang = null; Object.assign(S, extra || {});
+  S.tab = tab; if (tab !== 'gang' && tab !== 'story') S.gang = null; Object.assign(S, extra || {});
   render();
   await run(async () => {
     if (tab === 'gangs') S.data.gangs = await api('gangs');
     if (tab === 'gang') S.data.gang = await api('gang', { id: S.gang });
-    if (tab === 'flags') S.data.flags = await api(S.seg === 'big' ? 'big' : S.seg === 'admin' ? 'log' : 'flags');
+    if (tab === 'flags' && S.seg === 'story') S.data.story = await api('story');
+    else if (tab === 'flags') S.data.flags = await api(S.seg === 'big' ? 'big' : S.seg === 'admin' ? 'log' : 'flags');
+    if (tab === 'story') S.data.story = await api('story', { id: S.gang });
     if (tab === 'city') S.data.chat = await api('chat');
     if (tab === 'log') S.data.log = await api('log');
     if (tab === 'srv') { const [s, n] = await Promise.all([api('status'), api('stats')]); S.data.srv = s.s; S.data.stats = n; }
@@ -218,7 +223,7 @@ function render() {
   $('#who').innerHTML = app ? `${esc(WORLD)}<br><button data-a="logout">Abmelden</button>` : '';
   $('#tabs').classList.toggle('hide', !app);
   if (app) $('#tabs').innerHTML = [['gangs', '👥', 'Banden'], ['flags', '⚠️', 'Auffällig'], ['city', '📣', 'Stadt'], ['log', '📜', 'Protokoll'], ['srv', '🩺', 'Server']]
-    .map(([k, i, t]) => `<button class="tab${S.tab === k || (k === 'gangs' && S.tab === 'gang') ? ' on' : ''}" data-a="tab" data-v="${k}"><i>${i}</i>${t}</button>`).join('');
+    .map(([k, i, t]) => `<button class="tab${S.tab === k || (k === 'gangs' && (S.tab === 'gang' || S.tab === 'story')) ? ' on' : ''}" data-a="tab" data-v="${k}"><i>${i}</i>${t}</button>`).join('');
   $('#main').innerHTML = S.step === 'login' ? vLogin() : S.step === 'enroll' ? vEnroll() : S.step === 'code' ? vCode() : vApp();
 }
 function vLogin() {
@@ -256,6 +261,7 @@ function vApp() {
   if (S.tab === 'gangs') return vGangs();
   if (S.tab === 'gang') return vGang();
   if (S.tab === 'flags') return vFlags();
+  if (S.tab === 'story') return `<button class="btn ghost sm" style="justify-self:start" data-a="gang" data-v="${esc(S.gang)}">‹ ${esc(G() ? G().name : 'BANDE')}</button><h2>📜 Verlauf</h2>` + vStory();
   if (S.tab === 'city') return vCity();
   if (S.tab === 'log') return vLog();
   if (S.tab === 'srv') return vSrv();
@@ -290,8 +296,9 @@ function vGang() {
   </div>
   <div class="two"><button class="btn mint" data-a="s-book">💸 GELD<span class="sub">gutschreiben / abziehen</span></button><button class="btn teal" data-a="s-code">🔑 NEUER CODE<span class="sub">alle Geräte fliegen raus</span></button></div>
   <div class="two"><button class="btn violet" data-a="s-rename">✏️ NAME<span class="sub">umbenennen</span></button><button class="btn ghost" data-a="s-restore">⏪ BACKUP<span class="sub">Stand einer Nacht</span></button></div>
+  <button class="btn ghost" data-a="story" data-v="${esc(p.id)}">📜 VERLAUF<span class="sub">alles der letzten 48 Std. in Klartext</span></button>
   <div class="card" style="gap:6px"><h3>Letzte Buchungen</h3><div class="log">${log || '<div class="sm">Noch keine.</div>'}</div></div>
-  <button class="btn red" data-a="s-delete">🗑️ BANDE LÖSCHEN<span class="sub">mit Namen bestätigen</span></button>`;
+  <div class="two"><button class="btn violet" data-a="s-merge" data-v="gang">🔗 ZUSAMMENLEGEN<span class="sub">in eine andere Bande</span></button><button class="btn red" data-a="s-delete">🗑️ LÖSCHEN<span class="sub">mit Namen bestätigen</span></button></div>`;
 }
 // Ein Fall unter „Auffällig“: Symbol, Kopfzeile und kurze Detailzeilen
 const COL = { ware: 'Ware', bar: 'Bargeld', clean: 'Sauber', coins: 'BratCoin', basis: 'Einstand', heat: 'Hitze', ruf: 'Ruf', crew: 'Crew', guards: 'Türsteher', gear: 'Ausrüstung', energy: 'Energie', name: 'Name', color: 'Farbe', home: 'Heimatviertel', boss: 'Boss', wash_pool: 'Waschtopf', reserve: 'Reserve', owner: 'Ladenbesitzer', type: 'Ladenart', lvl: 'Ladenstufe', stock: 'Kasse', sec: 'Sicherheit', laden: 'Laden', insert: 'neu angelegt', delete: 'gelöscht' };
@@ -306,6 +313,20 @@ function flagView(x) {
     `Mit: ${x.tools.join(', ')} · ${span(x.from, x.ts)}`,
     x.other && x.other.length ? `⚠️ An fremder Bande: ${x.other.join(', ')}` : '',
     x.sameNet === true ? 'Vom selben Anschluss wie das Spiel der Bande' : x.sameNet === false ? '⚠️ Auch von einem anderen Anschluss als das Spiel' : '']];
+  if (x.kind === 'net') return ['🔌', `${x.gangs.length} Banden vom selben Anschluss`, [
+    ...x.gangs.map((g) => `${g.name}: ${g.dev}`),
+    x.sameUa ? '⚠️ Gleiches Gerätemodell und gleiche Version' : 'Verschiedene Geräte',
+    x.both ? 'Schon gleichzeitig online gewesen' : '⚠️ Nie gleichzeitig online',
+    x.nets > 1 ? `${x.nets} gemeinsame Anschlüsse` : 'Kann auch WLAN oder Mobilfunk sein, den mehrere nutzen'], x.gangs];
+  if (x.kind === 'pair') return ['🔁', `${x.gangs[0].name} und ${x.gangs[1].name} nie gleichzeitig online`, [
+    `${x.swaps}× direkt abgewechselt (unter 15 Min.)`,
+    `Online in 7 Tagen: ${x.gangs.map((g) => `${g.name} ${String(g.h).replace('.', ',')} Std.`).join(', ')}`,
+    x.sameNet ? '⚠️ Vom selben Anschluss' : ''], x.gangs];
+  if (x.kind === 'give') return ['🎁', `${x.name} gibt ${x.share} % an ${x.toName} ab`, [
+    `Gegründet ${when(x.born)}`, `+${fmt(x.v)} an ${x.toName}: ${x.ks.join(', ')}`], [{ id: x.to, name: x.toName }, { id: x.id, name: x.name }]];
+  if (x.kind === 'bot') return ['🤖', `${x.name} · vielleicht ein Bot`, [
+    x.hours >= 18 ? `⚠️ In ${x.hours} von 24 Std. online, längste Pause ${x.gap} Std.` : `In ${x.hours} von 24 Std. online`,
+    x.takt ? `⚠️ ${x.takt.n} Aktionen im gleichen Takt, alle ${x.takt.every}` : ''], [{ id: x.id, name: x.name }]];
   const net = x.nets === 1 ? (x.n === 1 ? 'Ein Anschluss' : 'Alle vom selben Anschluss') : x.nets > 1 ? `${x.nets} verschiedene Anschlüsse` : 'Anschluss unbekannt';
   return ['📱', `${x.name} · ${x.n === 1 ? 'neues Gerät' : x.n + ' neue Geräte'}`, [
     (x.kinds || []).filter((k) => k.k !== 'unbekannt').map((k) => `${k.n}× ${k.k}`).join(', ') || 'Gerätart unbekannt',
@@ -314,26 +335,63 @@ function flagView(x) {
     x.revoked ? `${x.revoked} davon schon abgemeldet` : '']];
 }
 function vFlags() {
-  const seg = `<div class="seg">${[['bad', '⚠️ Auffällig'], ['big', '💰 Große'], ['admin', '🛠️ Admin']].map(([k, t]) => `<button class="${S.seg === k ? 'on' : ''}" data-a="seg" data-v="${k}">${t}</button>`).join('')}</div>`;
+  const seg = `<div class="seg">${[['bad', '⚠️ Auffällig'], ['story', '📜 Verlauf'], ['big', '💰 Große'], ['admin', '🛠️ Admin']].map(([k, t]) => `<button class="${S.seg === k ? 'on' : ''}" data-a="seg" data-v="${k}">${t}</button>`).join('')}</div>`;
+  if (S.seg === 'story') return seg + vStory();
   const f = S.data.flags; if (!f) return seg + loading();
   let rows = '';
-  if (S.seg === 'bad') rows = f.list.map((x) => {
-    const [ico, head, lines] = flagView(x);
+  if (S.seg === 'bad') rows = f.list.map((x, i) => {
+    const [ico, head, lines, gs] = flagView(x);
     const det = lines.filter(Boolean).map((l) => `<div class="sm det">${esc(l)}</div>`).join('');
-    return `<button class="row" data-a="gang" data-v="${esc(x.id)}" style="align-items:flex-start"><span style="font-size:20px">${ico}</span><div><div class="nm">${esc(head)}</div>${det}</div><div class="r">›</div></button>`;
+    const row = `<button class="row" data-a="gang" data-v="${esc(x.id)}" style="align-items:flex-start"><span style="font-size:20px">${ico}</span><div><div class="nm">${esc(head)}</div>${det}</div><div class="r">›</div></button>`;
+    if (!gs) return row;
+    const acts = [
+      ...(gs.length > 1 ? [`<button class="btn violet" data-a="s-merge" data-v="${i}">🔗 ZUSAMMEN</button>`] : []),
+      ...gs.map((g) => `<button class="btn red" data-a="fdel" data-v="${i}|${esc(g.id)}">${S.sure === `fdel${i}|${g.id}` ? `SICHER? ${esc(g.name)}` : `🗑️ ${esc(g.name)}`}</button>`)];
+    return `<div class="flag">${row}<div class="acts">${acts.join('')}</div></div>`;
   }).join('');
   if (S.seg === 'big') rows = f.list.map((x) => `<button class="row" data-a="gang" data-v="${esc(x.id)}"><div><div class="nm">${esc(x.name)}</div><div class="sm">${esc(kname(x.k))} · ${dayhm(x.ts)}</div></div><div class="r ${x.v > 0 ? 'd' : 'h'}">${x.v > 0 ? '+' : '−'}${fmt(Math.abs(x.v))}</div></button>`).join('');
   if (S.seg === 'admin') rows = `<div class="card" style="gap:6px"><div class="log">${f.list.map(logRow).join('') || '<div class="sm">Noch nichts.</div>'}</div></div>`;
-  return seg + (rows || '<div class="mut">Heute nichts Auffälliges. 👍</div>') + (S.seg === 'bad' ? '<div class="mut">Letzte 24 Stunden. Antippen öffnet die Bande.</div>' : '');
+  return seg + (rows || '<div class="mut">Heute nichts Auffälliges. 👍</div>') + (S.seg === 'bad' ? '<div class="mut">Geld 24 Std., Anschlüsse und Online-Zeiten 7 Tage. Antippen öffnet die Bande.</div>' : '');
 }
 function logRow(x) {
-  const n = (x.d && x.d.name) || '';
-  const t = x.act === 'book' ? `${CURI[x.d.cur] || ''} ${x.d.amt > 0 ? '+' : '−'}${x.d.cur === 'coins' ? coin(Math.abs(x.d.amt)) : fmt(Math.abs(x.d.amt))}`
-    : x.act === 'code' ? 'neuer Bandencode' : x.act === 'rename' ? `„${x.d.from}“ → „${x.d.to}“` : x.act === 'delete' ? `Bande „${n}“ gelöscht`
-    : x.act === 'say' ? `📣 „${x.d.txt}“${x.d.push ? ' + Push' : ''}` : x.act === 'hide' ? `Chat ausgeblendet: „${x.d.txt}“` : x.act === 'restore' ? `aus Backup ${x.d.file || ''} zurückgeholt`
-    : x.act === 'arm' ? `Geld-Schalter ${x.d.on ? 'AN' : 'AUS'}` : x.act;
+  const t = admText(x);
   const who = gname(x.target);
   return `<div><span class="t">${dayhm(x.ts)}</span><span>${who ? `<b>${esc(who)}</b>: ` : ''}${esc(t)}${x.why ? ` <span class="sm">„${esc(x.why)}“</span>` : ''}</span></div>`;
+}
+function admText(x) {
+  const n = (x.d && x.d.name) || '';
+  return x.act === 'book' ? `${CURI[x.d.cur] || ''} ${x.d.amt > 0 ? '+' : '−'}${x.d.cur === 'coins' ? coin(Math.abs(x.d.amt)) : fmt(Math.abs(x.d.amt))}`
+    : x.act === 'code' ? 'neuer Bandencode' : x.act === 'rename' ? `„${x.d.from}“ → „${x.d.to}“` : x.act === 'delete' ? `Bande „${n}“ gelöscht`
+    : x.act === 'say' ? `📣 „${x.d.txt}“${x.d.push ? ' + Push' : ''}` : x.act === 'hide' ? `Chat ausgeblendet: „${x.d.txt}“` : x.act === 'restore' ? `aus Backup ${x.d.file || ''} zurückgeholt`
+    : x.act === 'merge' ? `„${x.d.name}“ hineingelegt (+${fmt((x.d.bar || 0) + (x.d.clean || 0))}, ${x.d.slots || 0} Läden)`
+    : x.act === 'arm' ? `Geld-Schalter ${x.d.on ? 'AN' : 'AUS'}` : x.act;
+}
+// 📜 Verlauf: eine Zeile in Klartext → [Symbol, Satz]
+const EVI = { atk: '⚔️', def: '🛡️', duel: '⚔️', dres: '⚔️', win: '🏆', cop: '🚓', hack: '💻', taunt: '💬', offer: '📦', offerok: '🤝', deal: '📦', ally: '🤝', allyask: '🤝', betray: '🗡️', bounty: '🎯', heist: '💰', heistk: '💰', lm: '🏛️', lmx: '🏛️', lmwin: '🏛️', tip: '🕵️', join: '🆕', info: '📰' };
+const money = (v) => `${v > 0 ? '+' : '−'}${fmt(Math.abs(v))}`;
+function storyLine(x) {
+  const mins = x.to && x.to - x.ts >= 60e3 ? Math.round((x.to - x.ts) / 60e3) : 0;
+  if (x.t === 'money') return [x.v < 0 ? '💸' : x.c && !x.v ? '🪙' : '💵', `${kname(x.k)}${x.n > 1 ? ` ${x.n}×` : ''}${x.v ? ` ${money(x.v)}` : ''}${x.c ? ` ${x.c > 0 ? '+' : '−'}${coin(Math.abs(x.c))} 🪙` : ''}${x.ref ? ` („${x.ref}“)` : ''}${x.n > 1 && mins ? ` in ${mins} Min.` : ''}`];
+  if (x.t === 'bad') return ['🚫', `${kname(x.k)} abgelehnt${x.n > 1 ? ` (${x.n}×)` : ''}: ${WHY[x.why] || x.why || 'Server sagt nein'}${x.v ? `, wollte ${money(x.v)}` : ''}`];
+  if (x.t === 'api') return ['🤖', `Per Programm (${x.tool}) geändert: ${x.cols.map((c) => COL[c] || c).join(', ')}${x.n > 1 ? ` (${x.n}×)` : ''}${x.other.length ? ` ⚠️ bei fremder Bande ${x.other.map((o) => S.names[o] || 'Bande').join(', ')}` : ''}`];
+  if (x.t === 'dev') return [x.prog ? '⚠️' : '📱', `${x.n > 1 ? `${x.n} neue Geräte` : 'Neues Gerät'} angemeldet: ${x.dev === 'unbekannt' ? 'Gerätart unbekannt' : x.dev}${x.revoked ? ` (${x.n > 1 ? `${x.revoked} ` : ''}inzwischen abgemeldet)` : ''}`];
+  if (x.t === 'on') return ['🟢', `Im Spiel, ${mins < 60 ? `${Math.max(5, mins)} Min.` : `${String(Math.round(mins / 6) / 10).replace('.', ',')} Std.`}`];
+  if (x.t === 'adm') return ['🛠️', `Admin: ${admText(x)}${x.why ? ` („${x.why}“)` : ''}`];
+  return [EVI[x.kind] || '📰', x.txt];
+}
+function vStory() {
+  const f = S.data.story; if (!f) return loading();
+  S.names = f.names || {};
+  let day = '';
+  const rows = f.list.map((x) => {
+    const [ico, txt] = storyLine(x);
+    const d = new Date(x.ts).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'numeric', timeZone: 'Europe/Berlin' });
+    const head = d !== day ? `<div class="sday">${esc(d)}</div>` : ''; day = d;
+    const tm = x.to && x.to - x.ts >= 60e3 ? `${hm(x.ts)}–${hm(x.to)}` : hm(x.ts);
+    const who = !S.gang && x.g ? `<b>${esc(S.names[x.g] || 'Bande')}</b> ` : '';
+    return `${head}<div class="sline"><span class="t">${tm}</span><span class="i">${ico}</span><span>${who}${esc(txt)}</span></div>`;
+  }).join('');
+  return `<div class="card" style="gap:2px">${rows || '<div class="sm">Nichts passiert.</div>'}</div><div class="mut">${S.gang ? 'Letzte 48 Stunden' : 'Letzte 24 Stunden, alle Banden'}, neueste oben. Gleiche Buchungen kurz hintereinander sind zusammengefasst.</div>`;
 }
 const CURI = { bar: '💵', clean: '🧼', coins: '🪙' };
 function gname(id) { if (!id) return ''; const g = S.data.gangs && S.data.gangs.list.find((p) => p.id === id); return g ? g.name : 'Bande'; }
@@ -406,6 +464,18 @@ async function sRestore() {
       ${r.list.map((f) => `<button class="row" data-a="restore" data-v="${esc(f.file)}"><div><div class="nm">${esc(f.file.replace('.json', ''))} · ${new Date(f.at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })}</div><div class="sm">${esc(when(f.at))}</div></div><div class="r">${S.sure === 'restore' + f.file ? '<b class="h">WIRKLICH?</b>' : '›'}</div></button>`).join('') || '<div class="sm">Keine Sicherung gefunden.</div>'}`);
   });
 }
+// Zusammenlegen: m.src geht in m.dst auf
+function sMerge() {
+  const m = S.merge;
+  if (!m.dst) return sheet(`<h2>🔗 Zusammenlegen</h2><div class="sm"><b>${esc(m.src.name)}</b> geht in welcher Bande auf?</div>
+    ${(S.data.gangs ? S.data.gangs.list : []).filter((g) => g.id !== m.src.id).map((g) => `<button class="row" data-a="mpick" data-v="${esc(g.id)}"><span class="dot" style="background:${esc(g.color)}"></span><div class="nm">${esc(g.name)}</div><div class="r">›</div></button>`).join('') || '<div class="sm">Keine andere Bande.</div>'}`);
+  sheet(`<h2>🔗 Zusammenlegen</h2>
+    <div class="card" style="gap:4px"><div class="nm">${esc(m.src.name)} → ${esc(m.dst.name)}</div>
+    <div class="sm">Bargeld, Sauber, BratCoin, Läden und Wahrzeichen von ${esc(m.src.name)} gehen an ${esc(m.dst.name)}. Danach wird ${esc(m.src.name)} gelöscht. Crew, Ware und Ruf verfallen.</div></div>
+    <button class="btn ghost sm" data-a="mswap">⇄ UMDREHEN</button>
+    <div><label for="mwhy">Grund (steht im Protokoll)</label><input id="mwhy" class="inp" maxlength="120" placeholder="z. B. Zweitbande" value="${esc(m.why || '')}"></div>
+    <button class="btn violet" data-a="merge">${S.sure === 'merge' ? 'WIRKLICH?' : 'ZUSAMMENLEGEN'}</button>`);
+}
 function sDelete() {
   const p = G();
   sheet(`<h2>🗑️ Bande löschen</h2><div class="sm">Löscht <b>${esc(p.name)}</b> komplett: Geld, Crew, Geräte, Code, Nachrichten. Ihre Läden werden frei. Der Kurier bleibt. Zurück geht es nur über ein Backup.</div>
@@ -426,14 +496,34 @@ document.addEventListener('click', async (e) => {
     case 'copy': try { await navigator.clipboard.writeText(S.mfa.secret); toast('Schlüssel kopiert.'); } catch (_) { toast('Bitte von Hand abschreiben.', true); } return;
     case 'logout': return logout();
     case 'tab': return show(v);
-    case 'seg': S.seg = v; S.data.flags = null; return show('flags');
+    case 'seg': S.seg = v; S.data.flags = null; S.data.story = null; return show('flags');
     case 'gang': S.gang = v; S.data.gang = null; return show('gang', { gang: v });
+    case 'story': S.data.story = null; return show('story', { gang: v });
     case 'close': return closeSheet();
     case 's-book': S.book = null; return sBook();
     case 's-code': S.sure = null; return sCode();
     case 's-rename': return sRename();
     case 's-restore': S.sure = null; return sRestore();
     case 's-delete': return sDelete();
+    case 's-merge': {
+      S.sure = null;
+      if (v === 'gang') { S.merge = { src: { id: G().id, name: G().name } }; if (!S.data.gangs) await run(async () => { S.data.gangs = await api('gangs'); }); return sMerge(); }
+      const gs = flagView(S.data.flags.list[+v])[3]; S.merge = { src: gs[1], dst: gs[0] }; return sMerge();
+    }
+    case 'mpick': { const g = S.data.gangs.list.find((x) => x.id === v); S.merge.dst = { id: g.id, name: g.name }; return sMerge(); }
+    case 'mswap': { const w = $('#mwhy'); S.merge.why = w ? w.value : ''; S.merge = { ...S.merge, src: S.merge.dst, dst: S.merge.src }; S.sure = null; return sMerge(); }
+    case 'merge': {
+      const m = S.merge, w = $('#mwhy'); m.why = w ? w.value.trim() : '';
+      if (!twice('merge')) return sMerge();
+      await run(async () => { const r = await api('merge', { id: m.src.id, into: m.dst.id, confirm: m.src.name, why: m.why }); closeSheet(); toast(`${m.src.name} ist jetzt Teil von ${r.into} (+${fmt(r.bar + r.clean)}, ${r.slots} Läden).`); S.data.gangs = null; S.data.flags = null; });
+      return S.tab === 'gang' ? show('gangs') : show('flags');
+    }
+    case 'fdel': {
+      if (!twice('fdel' + v)) return render();
+      const [i, id] = v.split('|'), g = flagView(S.data.flags.list[+i])[3].find((x) => x.id === id);
+      await run(async () => { await api('delete', { id, confirm: g.name, why: 'Auffällig' }); toast(`${g.name} gelöscht.`); S.data.gangs = null; S.data.flags = null; });
+      return show('flags');
+    }
     case 'bcur': keepBook(); S.book.cur = v; return sBook();
     case 'bsign': keepBook(); S.book.sign = +v; return sBook();
     case 'book': {
