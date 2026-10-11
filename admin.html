@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Imperium Admin">
+<meta name="theme-color" content="#1e2250">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Imperium Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#11132a; --night:#1e2250; --night2:#282d66; --panel:#30367a; --panel2:#3a4190;
+  --paper:#fff4d6; --muted:#c3bfe6; --faint:#7d79a8;
+  --yellow:#ffd23f; --pink:#ff5d8f; --teal:#3cc6e8;
+  --dirty:#cfe24f; --clean:#5be6b4; --crypto:#bfa2ff; --heat:#ff5a3d;
+  --f-display:'Bangers','Impact','Arial Black',sans-serif;
+  --f-body:'Rubik',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background-color:var(--night);background-image:radial-gradient(rgba(255,244,214,.06) 1px,transparent 1.5px);background-size:11px 11px;color:var(--paper);font-family:var(--f-body);font-size:14px;-webkit-tap-highlight-color:transparent}
+button,input,textarea{font:inherit}
+:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+#app{display:flex;flex-direction:column;height:100%;max-width:520px;margin:0 auto}
+.hud{flex:none;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 10px;display:flex;align-items:center;gap:10px;border-bottom:3px solid var(--ink);background:var(--night)}
+.logo{font-family:var(--f-display);font-size:26px;letter-spacing:.05em;color:var(--yellow);text-shadow:2px 2px 0 var(--ink),-1px -1px 0 var(--ink),1px -1px 0 var(--ink),-1px 1px 0 var(--ink);transform:rotate(-2deg);display:inline-block}
+.adm{font-family:var(--f-display);font-size:15px;letter-spacing:.06em;background:var(--heat);color:var(--ink);border:2px solid var(--ink);border-radius:7px;padding:2px 7px;transform:rotate(2deg)}
+.who{margin-left:auto;font-size:11px;color:var(--muted);text-align:right;line-height:1.35}
+.who button{background:none;border:0;color:var(--muted);text-decoration:underline;padding:0;cursor:pointer;font-size:11px}
+main{flex:1;overflow-y:auto;padding:14px;display:grid;gap:12px;align-content:start;-webkit-overflow-scrolling:touch}
+.card{background:var(--panel);border:3px solid var(--ink);border-radius:14px;box-shadow:4px 4px 0 var(--ink);padding:14px;display:grid;gap:10px}
+h2{font-family:var(--f-display);font-weight:400;letter-spacing:.05em;color:var(--yellow);font-size:22px;margin:0}
+h3{font-family:var(--f-display);font-weight:400;letter-spacing:.05em;color:var(--yellow);font-size:18px;margin:0}
+.btn{font-family:var(--f-display);letter-spacing:.06em;font-size:17px;line-height:1;background:var(--yellow);color:var(--ink);border:3px solid var(--ink);border-radius:10px;box-shadow:3px 3px 0 var(--ink);padding:10px 12px;cursor:pointer;touch-action:manipulation;text-align:center}
+.btn:active:not([disabled]){transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn[disabled]{opacity:.42;cursor:not-allowed}
+.btn.pink{background:var(--pink)} .btn.teal{background:var(--teal)} .btn.mint{background:var(--clean)} .btn.violet{background:var(--crypto)} .btn.red{background:var(--heat)}
+.btn.ghost{background:var(--night2);color:var(--paper)}
+.btn.sm{font-size:15px;padding:7px 10px}
+.btn .sub{display:block;font-family:var(--f-body);font-size:11px;letter-spacing:0;margin-top:3px}
+.inp{width:100%;background:var(--paper);color:var(--ink);border:3px solid var(--ink);border-radius:10px;padding:10px 12px;font-size:16px}
+textarea.inp{resize:vertical;min-height:70px}
+.code6{letter-spacing:.35em;font-weight:700;text-align:center;font-size:22px}
+label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:4px}
+.tabs{flex:none;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:6px 8px calc(env(safe-area-inset-bottom,0px) + 8px);background:var(--night);border-top:3px solid var(--ink)}
+.tab{background:none;border:2px solid transparent;text-align:center;padding:5px 0;border-radius:10px;font-size:11px;color:var(--muted);cursor:pointer}
+.tab i{font-style:normal;display:block;font-size:21px}
+.tab.on{background:var(--panel);color:var(--yellow);border-color:var(--ink)}
+.row{display:flex;align-items:center;gap:10px;background:var(--night2);border:2px solid var(--ink);border-radius:10px;padding:8px 10px;width:100%;color:inherit;text-align:left;cursor:pointer}
+.row.warn{border-color:var(--heat)}
+.dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--ink);flex:none}
+.nm{font-weight:700;font-size:14px}
+.sm{font-size:11px;color:var(--muted)}
+.r{margin-left:auto;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;white-space:nowrap}
+.d{color:var(--dirty)} .c{color:var(--clean)} .k{color:var(--crypto)} .h{color:var(--heat)}
+.chip{display:inline-block;font-size:11px;font-weight:700;color:var(--ink);padding:2px 7px;border-radius:999px;border:2px solid var(--ink);white-space:nowrap;background:var(--paper)}
+.chip.red{background:var(--heat)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:var(--ink);padding:3px;border-radius:10px}
+.seg button{border:0;background:none;padding:7px 0;border-radius:8px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--yellow);color:var(--ink)}
+.pills{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.m{background:var(--night2);border:2px solid var(--ink);border-radius:10px;padding:4px 8px;min-width:0}
+.m small{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.m b{font-size:15px;font-variant-numeric:tabular-nums}
+.log{display:grid;gap:5px;font-size:12px}
+.log div{display:flex;gap:8px;border-bottom:1px dashed var(--faint);padding-bottom:4px;align-items:baseline}
+.log .t{color:var(--muted);width:42px;flex:none;font-variant-numeric:tabular-nums}
+.log .v{margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mut{color:var(--muted);font-size:12px;text-align:center}
+.lock{font-size:46px;text-align:center}
+.qr{background:#fff;border:3px solid var(--ink);border-radius:12px;padding:10px;width:190px;height:190px;margin:0 auto}
+.qr img{width:100%;height:100%}
+.secret{font-family:ui-monospace,Menlo,monospace;font-size:15px;letter-spacing:.08em;word-break:break-all;text-align:center;background:var(--ink);color:var(--yellow);border-radius:10px;padding:8px}
+.steps{margin:0;padding-left:20px;font-size:13px;line-height:1.5}
+.big{font-family:var(--f-display);font-size:34px;letter-spacing:.04em;text-align:center}
+.codebox{font-family:var(--f-display);letter-spacing:.12em;font-size:28px;text-align:center;color:var(--yellow);background:var(--ink);border-radius:10px;padding:10px}
+.dim{position:fixed;inset:0;background:rgba(10,10,30,.6);z-index:20}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;z-index:21;background:var(--panel);border-top:3px solid var(--ink);border-radius:18px 18px 0 0;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 20px);display:grid;gap:10px;max-height:88vh;overflow-y:auto}
+.check{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--yellow)}
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 64px);transform:translateX(-50%);z-index:30;background:var(--paper);color:var(--ink);border:3px solid var(--ink);border-radius:10px;padding:8px 12px;font-weight:700;box-shadow:3px 3px 0 var(--ink);max-width:90vw}
+.toast.bad{background:var(--heat)}
+.stat{display:flex;align-items:center;gap:10px;font-size:13px}
+.stat b{margin-left:auto;font-variant-numeric:tabular-nums}
+.nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.nums .m b{font-size:22px}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="hud"><span class="logo">IMPERIUM</span><span class="adm">ADMIN</span><div class="who" id="who"></div></div>
+  <main id="main"></main>
+  <nav class="tabs hide" id="tabs"></nav>
+</div>
+<div id="layer"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+window.IMPERIUM_CONFIG={url:'https://isvlyqovfublvhnitvvs.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlzdmx5cW92ZnVibHZobml0dnZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2Mjc0ODEsImV4cCI6MjEwNzIwMzQ4MX0.A0AOZtevtSW0VhKWRQ2eiBzX2SQSBVYTpOttF34KEM0',world:'nbg-beta-1'};
+</script>
+<script>
+'use strict';
+// Imperium Nürnberg · Admin-Konsole (nur für den Betreiber). Kein Geheimnis in dieser Datei: Jede Aktion prüft die
+// Edge Function admin (echtes Konto + Zwei-Faktor-Code + Eintrag in admins). Die Anmeldung wird nirgends
+// gespeichert (nur im Arbeitsspeicher), nach 30 Minuten ohne Tippen ist man wieder abgemeldet.
+const CFG = window.IMPERIUM_CONFIG || {};
+const WORLD = new URLSearchParams(location.search).get('welt') || CFG.world || 'nbg-beta-1';
+const IDLE_MS = 30 * 60e3;
+const mem = {}; // Speicher nur im Arbeitsspeicher: nichts landet im Browser
+const sb = supabase.createClient(CFG.url, CFG.key, { auth: { persistSession: false, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'imperium-admin', storage: { getItem: (k) => mem[k] ?? null, setItem: (k, v) => { mem[k] = v; }, removeItem: (k) => { delete mem[k]; } } } });
+
+const S = { step: 'login', tab: 'gangs', gang: null, seg: 'bad', data: {}, busy: false, sure: null, mfa: null };
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (n) => Math.round(+n || 0).toLocaleString('de-DE');
+const coin = (n) => (+n || 0).toLocaleString('de-DE', { maximumFractionDigits: 2 });
+const hm = (t) => new Date(t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' });
+const when = (t) => { if (!t) return '–'; const d = Date.now() - t; if (d < 90e3) return 'gerade'; if (d < 3600e3) return `vor ${Math.round(d / 60e3)} Min.`; if (d < 86400e3) return `vor ${Math.round(d / 3600e3)} Std.`; const n = Math.round(d / 86400e3); return n === 1 ? 'gestern' : `vor ${n} Tagen`; };
+const dayhm = (t) => { const d = new Date(t), now = new Date(); const same = d.toDateString() === now.toDateString(); return same ? hm(t) : d.toLocaleDateString('de-DE', { weekday: 'short', timeZone: 'Europe/Berlin' }); };
+const KIND = { admin: 'Admin-Buchung', collect: 'Kasse geleert', raid: 'Razzia', coinbuy: 'BratCoin gekauft', coinsell: 'BratCoin verkauft', rob: 'Überfall', duel: 'Überfall-Duell', take: 'Übernahme', hack: 'Hack', coup: 'Coup', truck: 'Geldtransporter', heist: 'Großcoup', smug: 'Schmuggel', order: 'Auftrag', sell: 'Ware verkauft', goal: 'Club-Tor', step: 'Schritte', ring: 'Brunnen', radio: 'Radio', drivers: 'Fahrer', shop: 'Laden', offer: 'Angebot', bounty: 'Kopfgeld', boss: 'Boss der Woche', lmwin: 'Wahrzeichen-Prämie', fest: 'Fest', lm: 'Wahrzeichen', heat: 'Hitze', tip: 'Tipp', bribe: 'Bestechung', frei: 'Freikaufen', nitro: 'Nitro', build: 'Laden gebaut', up: 'Ausbau', conv: 'Umbau', sec: 'Sicherheit', crew: 'Crew', tipcost: 'Tipp gekauft', bosschg: 'Bosswechsel', open: 'Erschließen', bountyset: 'Kopfgeld gesetzt', gift: 'Geschenk', pay: 'Bezahlt', loss: 'Verlust', back: 'Rückbuchung' };
+const kname = (k) => KIND[k] || k;
+const WHY = { art: 'unbekannte Art', bezug: 'Bezug fehlt', geld: 'nicht gedeckt', oft: 'zu oft', preis: 'Preis zu niedrig', zuviel: 'über dem Deckel' };
+const ERR = { auth: 'Nicht angemeldet.', mfa: 'Zwei-Faktor-Code fehlt.', admin: 'Dieses Konto ist kein Admin.', gang: 'Bande nicht gefunden.', why: 'Bitte einen Grund angeben.', amt: 'Betrag fehlt.', name: 'Name: 2 bis 18 Zeichen.', confirm: 'Name stimmt nicht.', txt: 'Text fehlt.', busy: 'Gerade viel los, bitte nochmal.', notinbackup: 'Die Bande steht nicht in dieser Sicherung.', server: 'Serverfehler, bitte später nochmal.' };
+
+function toast(t, bad) { const e = document.createElement('div'); e.className = 'toast' + (bad ? ' bad' : ''); e.textContent = t; document.body.appendChild(e); setTimeout(() => e.remove(), 2600); }
+
+// Abmelden nach 30 Minuten ohne Tippen
+let idleT = null;
+function poke() { clearTimeout(idleT); idleT = setTimeout(() => logout('Nach 30 Minuten ohne Tippen abgemeldet.'), IDLE_MS); }
+['pointerdown', 'keydown'].forEach((e) => addEventListener(e, () => { if (S.step === 'app') poke(); }, { passive: true }));
+
+async function api(act, body) {
+  const { data } = await sb.auth.getSession();
+  const s = data && data.session;
+  if (!s) { logout(); throw new Error('auth'); }
+  const r = await fetch(`${CFG.url}/functions/v1/admin`, { method: 'POST', headers: { Authorization: `Bearer ${s.access_token}`, apikey: CFG.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ act, world: WORLD, ...(body || {}) }) });
+  const j = await r.json().catch(() => ({ error: 'server' }));
+  if (j.error) { if (['auth', 'mfa', 'admin'].includes(j.error)) logout(ERR[j.error]); throw Object.assign(new Error(j.error), { code: j.error }); }
+  return j;
+}
+async function run(fn) {
+  if (S.busy) return; S.busy = true;
+  try { await fn(); } catch (e) { toast(ERR[e.code] || ERR[e.message] || 'Das hat nicht geklappt.', true); console.warn(e); } finally { S.busy = false; }
+}
+
+async function logout(msg) {
+  clearTimeout(idleT);
+  try { await sb.auth.signOut({ scope: 'local' }); } catch (_) {}
+  Object.keys(mem).forEach((k) => delete mem[k]);
+  Object.assign(S, { step: 'login', tab: 'gangs', gang: null, data: {}, mfa: null, sure: null });
+  closeSheet(); render();
+  if (msg) toast(msg, true);
+}
+
+// ---------- Anmeldung ----------
+async function login() {
+  const email = $('#em').value.trim(), password = $('#pw').value;
+  if (!email || !password) return toast('E-Mail und Passwort eingeben.', true);
+  if (S.busy) return; S.busy = true;
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error || !data.session) return toast('E-Mail oder Passwort falsch.', true);
+    await mfaStep();
+  } catch (e) { console.warn(e); toast('Anmeldung klappt gerade nicht.', true); } finally { S.busy = false; }
+}
+async function mfaStep() {
+  const { data } = await sb.auth.mfa.listFactors();
+  const ok = ((data && data.totp) || []).find((f) => f.status === 'verified');
+  if (ok) { S.mfa = { id: ok.id }; S.step = 'code'; render(); return; }
+  // Erstes Mal: alte, nicht bestätigte Versuche entfernen und neu einrichten
+  for (const f of ((data && data.all) || []).filter((f) => f.status !== 'verified')) await sb.auth.mfa.unenroll({ factorId: f.id });
+  const r = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Imperium Admin', issuer: 'Imperium Admin' });
+  if (r.error) throw r.error;
+  S.mfa = { id: r.data.id, qr: qrSrc(r.data.totp.qr_code), secret: r.data.totp.secret, uri: r.data.totp.uri, fresh: true };
+  S.step = 'enroll'; render();
+}
+// QR-Code als Bild: supabase-js liefert „data:image/svg+xml;utf-8,<svg …>“ unkodiert (ein # im SVG würde das Bild abschneiden)
+function qrSrc(q) {
+  let svg = String(q || '').replace(/^data:image\/svg\+xml[^,]*,/, '');
+  if (/^%3C/i.test(svg)) { try { svg = decodeURIComponent(svg); } catch (_) {} }
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+async function verify() {
+  const code = $('#otp').value.replace(/\D/g, '');
+  if (code.length !== 6) return toast('Den 6-stelligen Code eingeben.', true);
+  if (S.busy) return; S.busy = true;
+  try {
+    const { error } = await sb.auth.mfa.challengeAndVerify({ factorId: S.mfa.id, code });
+    if (error) return toast('Code falsch oder abgelaufen.', true);
+    await api('hello');
+  } catch (e) { console.warn(e); if (S.step !== 'login') toast(ERR[e.code] || 'Das hat nicht geklappt.', true); return; } finally { S.busy = false; }
+  S.step = 'app'; S.mfa = null; poke(); show('gangs');
+}
+
+// ---------- Laden der Reiter ----------
+async function show(tab, extra) {
+  S.tab = tab; if (tab !== 'gang') S.gang = null; Object.assign(S, extra || {});
+  render();
+  await run(async () => {
+    if (tab === 'gangs') S.data.gangs = await api('gangs');
+    if (tab === 'gang') S.data.gang = await api('gang', { id: S.gang });
+    if (tab === 'flags') S.data.flags = await api(S.seg === 'big' ? 'big' : S.seg === 'admin' ? 'log' : 'flags');
+    if (tab === 'city') S.data.chat = await api('chat');
+    if (tab === 'log') S.data.log = await api('log');
+    if (tab === 'srv') { const [s, n] = await Promise.all([api('status'), api('stats')]); S.data.srv = s.s; S.data.stats = n; }
+  });
+  render();
+}
+
+// ---------- Ansichten ----------
+function render() {
+  const app = S.step === 'app';
+  $('#who').innerHTML = app ? `${esc(WORLD)}<br><button data-a="logout">Abmelden</button>` : '';
+  $('#tabs').classList.toggle('hide', !app);
+  if (app) $('#tabs').innerHTML = [['gangs', '👥', 'Banden'], ['flags', '⚠️', 'Auffällig'], ['city', '📣', 'Stadt'], ['log', '📜', 'Protokoll'], ['srv', '🩺', 'Server']]
+    .map(([k, i, t]) => `<button class="tab${S.tab === k || (k === 'gangs' && S.tab === 'gang') ? ' on' : ''}" data-a="tab" data-v="${k}"><i>${i}</i>${t}</button>`).join('');
+  $('#main').innerHTML = S.step === 'login' ? vLogin() : S.step === 'enroll' ? vEnroll() : S.step === 'code' ? vCode() : vApp();
+}
+function vLogin() {
+  return `<div class="lock" style="margin-top:40px">🔐</div>
+  <div class="card"><h2>Anmelden</h2>
+    <div><label for="em">E-Mail</label><input id="em" class="inp" type="email" autocomplete="username" inputmode="email"></div>
+    <div><label for="pw">Passwort</label><input id="pw" class="inp" type="password" autocomplete="current-password"></div>
+    <button class="btn" data-a="login">WEITER</button></div>
+  <div class="mut">Nur für den Betreiber. Danach kommt der Code aus dem Microsoft Authenticator.</div>`;
+}
+function vCode() {
+  return `<div class="lock" style="margin-top:40px">📱</div>
+  <div class="card"><h2>Code aus der App</h2>
+    <div class="sm">Microsoft Authenticator öffnen, Eintrag „Imperium Admin“.</div>
+    <input id="otp" class="inp code6" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="000000">
+    <button class="btn" data-a="verify">REIN</button></div>
+  <div class="mut">Nach 30 Minuten ohne Tippen wieder abgemeldet.</div>`;
+}
+function vEnroll() {
+  const m = S.mfa;
+  return `<div class="card"><h2>Einmal einrichten</h2>
+    <ol class="steps">
+      <li>Microsoft Authenticator öffnen, oben <b>+</b> tippen.</li>
+      <li><b>Anderes Konto (Google, Facebook usw.)</b> wählen.</li>
+      <li>Ist diese Seite auf einem anderen Gerät offen: QR-Code scannen. Auf demselben iPhone: <b>Code manuell eingeben</b>, Kontoname „Imperium Admin“, Schlüssel unten.</li>
+      <li>Den 6-stelligen Code hier eingeben.</li>
+    </ol>
+    <div class="qr"><img alt="QR-Code für den Authenticator" src="${esc(m.qr)}"></div>
+    <div class="secret" id="sec">${esc(m.secret)}</div>
+    <button class="btn ghost sm" data-a="copy">📋 SCHLÜSSEL KOPIEREN</button>
+    <input id="otp" class="inp code6" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="000000">
+    <button class="btn" data-a="verify">BESTÄTIGEN</button></div>`;
+}
+function vApp() {
+  if (S.tab === 'gangs') return vGangs();
+  if (S.tab === 'gang') return vGang();
+  if (S.tab === 'flags') return vFlags();
+  if (S.tab === 'city') return vCity();
+  if (S.tab === 'log') return vLog();
+  if (S.tab === 'srv') return vSrv();
+  return '';
+}
+const loading = () => '<div class="mut">Lädt …</div>';
+
+function vGangs() {
+  const g = S.data.gangs; if (!g) return loading();
+  const q = (S.q || '').toLowerCase();
+  const rows = g.list.filter((p) => !q || p.name.toLowerCase().includes(q)).map((p) => `
+    <button class="row${p.flags ? ' warn' : ''}" data-a="gang" data-v="${esc(p.id)}"><span class="dot" style="background:${esc(p.color)}"></span>
+      <div><div class="nm">${esc(p.name)}${p.flags ? ` <span class="chip red">⚠️ ${p.flags}</span>` : ''}</div><div class="sm">Ruf ${fmt(p.ruf)} · ${p.on ? '🟢 online' : esc(when(p.seen))}</div></div>
+      <div class="r"><span class="d">💵 ${fmt(p.bar)}</span><br><span class="c">🧼 ${fmt(p.clean)}</span></div></button>`).join('');
+  return `<input id="q" class="inp" placeholder="🔎 Bande suchen …" value="${esc(S.q || '')}" autocomplete="off">
+    ${g.armed ? '' : '<div class="chip red" style="justify-self:start">Geld rechnet gerade das Spiel, nicht der Server</div>'}
+    ${rows || '<div class="mut">Keine Bande gefunden.</div>'}`;
+}
+function vGang() {
+  const g = S.data.gang; if (!g || g.p.id !== S.gang) return loading();
+  const p = g.p;
+  const log = g.log.slice(0, 12).map((r) => {
+    const v = (+r.d.bar || 0) + (+r.d.clean || 0), c = +r.d.coins || 0;
+    const val = !r.ok ? '<span class="h">abgelehnt</span>' : v ? `<span class="${v > 0 ? 'd' : ''}">${v > 0 ? '+' : '−'}${fmt(Math.abs(v))}</span>` : c ? `<span class="k">${c > 0 ? '+' : '−'}${coin(Math.abs(c))} 🪙</span>` : '';
+    return `<div><span class="t">${dayhm(r.ts)}</span>${r.ok ? '' : '⚠️ '}${esc(kname(r.k))}${r.k === 'admin' && r.ref ? ` <span class="sm">„${esc(r.ref)}“</span>` : ''}<span class="v">${val}</span></div>`;
+  }).join('');
+  return `<button class="btn ghost sm" style="justify-self:start" data-a="tab" data-v="gangs">‹ BANDEN</button>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:${esc(p.color)};width:16px;height:16px"></span><h2>${esc(p.name)}</h2>${g.flags ? `<span class="chip red" style="margin-left:auto">⚠️ ${g.flags}</span>` : ''}</div>
+    <div class="pills"><div class="m"><small>Bar</small><b class="d">${fmt(p.bar)}</b></div><div class="m"><small>Sauber</small><b class="c">${fmt(p.clean)}</b></div><div class="m"><small>Coins</small><b class="k">${coin(p.coins)}</b></div></div>
+    <div class="sm">Ruf ${fmt(p.ruf)} · ${g.dev.n} ${g.dev.n === 1 ? 'Gerät' : 'Geräte'} · Hitze <span class="h">${Math.round(p.heat)} %</span> · ${p.on ? '🟢 online' : esc(when(p.seen))}</div>
+  </div>
+  <div class="two"><button class="btn mint" data-a="s-book">💸 GELD<span class="sub">gutschreiben / abziehen</span></button><button class="btn teal" data-a="s-code">🔑 NEUER CODE<span class="sub">alle Geräte fliegen raus</span></button></div>
+  <div class="two"><button class="btn violet" data-a="s-rename">✏️ NAME<span class="sub">umbenennen</span></button><button class="btn ghost" data-a="s-restore">⏪ BACKUP<span class="sub">Stand einer Nacht</span></button></div>
+  <div class="card" style="gap:6px"><h3>Letzte Buchungen</h3><div class="log">${log || '<div class="sm">Noch keine.</div>'}</div></div>
+  <button class="btn red" data-a="s-delete">🗑️ BANDE LÖSCHEN<span class="sub">mit Namen bestätigen</span></button>`;
+}
+function vFlags() {
+  const seg = `<div class="seg">${[['bad', '⚠️ Auffällig'], ['big', '💰 Große'], ['admin', '🛠️ Admin']].map(([k, t]) => `<button class="${S.seg === k ? 'on' : ''}" data-a="seg" data-v="${k}">${t}</button>`).join('')}</div>`;
+  const f = S.data.flags; if (!f) return seg + loading();
+  let rows = '';
+  if (S.seg === 'bad') rows = f.list.map((x) => {
+    const [ico, head, sub] = x.kind === 'bad' ? ['🚫', `${x.name} · ${x.n}× abgelehnt`, `${kname(x.k)}: ${WHY[x.why] || x.why} · ${hm(x.ts)}`]
+      : x.kind === 'fast' ? ['📈', `${x.name} · +${fmt(x.v)} in 1 Std.`, `${hm(x.from)}–${hm(x.ts)}`]
+      : ['📱', `${x.name} · ${x.n === 1 ? 'neues Gerät' : x.n + ' neue Geräte'}`, `per Bandencode · ${hm(x.ts)}`];
+    return `<button class="row" data-a="gang" data-v="${esc(x.id)}" style="align-items:flex-start"><span style="font-size:20px">${ico}</span><div><div class="nm">${esc(head)}</div><div class="sm">${esc(sub)}</div></div><div class="r">›</div></button>`;
+  }).join('');
+  if (S.seg === 'big') rows = f.list.map((x) => `<button class="row" data-a="gang" data-v="${esc(x.id)}"><div><div class="nm">${esc(x.name)}</div><div class="sm">${esc(kname(x.k))} · ${dayhm(x.ts)}</div></div><div class="r ${x.v > 0 ? 'd' : 'h'}">${x.v > 0 ? '+' : '−'}${fmt(Math.abs(x.v))}</div></button>`).join('');
+  if (S.seg === 'admin') rows = `<div class="card" style="gap:6px"><div class="log">${f.list.map(logRow).join('') || '<div class="sm">Noch nichts.</div>'}</div></div>`;
+  return seg + (rows || '<div class="mut">Heute nichts Auffälliges. 👍</div>') + (S.seg === 'bad' ? '<div class="mut">Letzte 24 Stunden. Antippen öffnet die Bande.</div>' : '');
+}
+function logRow(x) {
+  const n = (x.d && x.d.name) || '';
+  const t = x.act === 'book' ? `${CURI[x.d.cur] || ''} ${x.d.amt > 0 ? '+' : '−'}${x.d.cur === 'coins' ? coin(Math.abs(x.d.amt)) : fmt(Math.abs(x.d.amt))}`
+    : x.act === 'code' ? 'neuer Bandencode' : x.act === 'rename' ? `„${x.d.from}“ → „${x.d.to}“` : x.act === 'delete' ? `Bande „${n}“ gelöscht`
+    : x.act === 'say' ? `📣 „${x.d.txt}“${x.d.push ? ' + Push' : ''}` : x.act === 'hide' ? `Chat ausgeblendet: „${x.d.txt}“` : x.act === 'restore' ? `aus Backup ${x.d.file || ''} zurückgeholt`
+    : x.act === 'arm' ? `Geld-Schalter ${x.d.on ? 'AN' : 'AUS'}` : x.act;
+  const who = gname(x.target);
+  return `<div><span class="t">${dayhm(x.ts)}</span><span>${who ? `<b>${esc(who)}</b>: ` : ''}${esc(t)}${x.why ? ` <span class="sm">„${esc(x.why)}“</span>` : ''}</span></div>`;
+}
+const CURI = { bar: '💵', clean: '🧼', coins: '🪙' };
+function gname(id) { if (!id) return ''; const g = S.data.gangs && S.data.gangs.list.find((p) => p.id === id); return g ? g.name : 'Bande'; }
+function vCity() {
+  const ch = S.data.chat;
+  return `<div class="card"><h2>📣 Durchsage</h2>
+    <textarea id="say" class="inp" maxlength="200" placeholder="z. B. Heute 22 Uhr kurz Pause für ein Update."></textarea>
+    <label class="check"><input type="checkbox" id="sayp" checked> Auch als Push an alle</label>
+    <button class="btn" data-a="say">SENDEN</button>
+    <div class="sm">Erscheint im Kurier mit 📣.</div></div>
+  <div class="card" style="gap:8px"><h2>🧹 Stadt-Chat</h2>
+    ${!ch ? loading() : ch.list.map((m) => `<div class="row" style="cursor:default;align-items:flex-start"><div style="min-width:0"><div class="sm">${esc(m.name)} · ${dayhm(m.ts)}</div><div style="word-break:break-word">${esc(m.txt)}</div></div><button class="btn red sm" style="margin-left:auto" data-a="hide" data-v="${m.id}">${S.sure === 'hide' + m.id ? 'SICHER?' : 'WEG'}</button></div>`).join('') || '<div class="sm">Leer.</div>'}
+    <div class="sm">Direktnachrichten bleiben privat.</div></div>`;
+}
+function vLog() {
+  const l = S.data.log; if (!l) return loading();
+  return `<div class="card" style="gap:6px"><h2>Was du gemacht hast</h2><div class="log">${l.list.map(logRow).join('') || '<div class="sm">Noch nichts.</div>'}</div></div>
+  <div class="mut">Jede Admin-Aktion steht hier. Nichts lässt sich still ändern.</div>`;
+}
+function vSrv() {
+  const s = S.data.srv, n = S.data.stats; if (!s || !n) return loading();
+  const now = Date.now(), cc = s.cashcheck || {}, bk = s.backup || {}, ks = s.kasse || {}, cfg = s.cfg || {};
+  const ccOk = cc.at && cc.ok && now - cc.at < 20 * 60e3, bkOk = bk.at && now - bk.at < 26 * 3600e3, ksOk = (+ks.bad || 0) <= Math.max(3, (+ks.n || 0) * .05);
+  const line = (ok, t, v) => `<div class="stat">${ok ? '✅' : '❌'} ${t}<b>${esc(v)}</b></div>`;
+  return `<div class="card"><h2>🩺 Läuft alles?</h2>
+    ${line(ccOk, 'cashcheck', cc.at ? when(cc.at) : 'nie')}
+    ${line(bkOk, 'Backup', bk.at ? `${when(bk.at)} (${(bk.name || '').split('/').pop()})` : 'keins')}
+    ${line(ksOk, 'Kasse (1 Std.)', `${fmt(ks.n)} Buchungen, ${fmt(ks.bad)} abgelehnt`)}
+  </div>
+  <div class="card"><h2>💰 Geld-Schalter</h2>
+    <div class="sm">${cfg.armed ? 'AN: Der Server rechnet das Geld (normal).' : 'AUS: Das Spiel rechnet das Geld selbst (wie vor 5.0.4).'}</div>
+    <button class="btn ${cfg.armed ? 'red' : 'mint'}" data-a="arm">${S.sure === 'arm' ? 'WIRKLICH?' : cfg.armed ? 'AUSSCHALTEN (NOTFALL)' : 'EINSCHALTEN'}</button></div>
+  <div class="card"><h2>📊 Zahlen</h2>
+    <div class="nums"><div class="m"><small>Online</small><b>${n.on}</b></div><div class="m"><small>Heute aktiv</small><b>${n.today}</b></div>
+    <div class="m"><small>7 Tage aktiv</small><b>${n.week}</b></div><div class="m"><small>Neu heute</small><b>${n.fresh}</b></div>
+    <div class="m"><small>Banden</small><b>${n.n}</b></div><div class="m"><small>Buchungen heute</small><b>${fmt(n.books)}</b></div></div>
+    <div class="sm">Geld aller Banden: ${fmt(n.money)} (bar + sauber)</div></div>`;
+}
+
+// ---------- Blätter (Aktionen an einer Bande) ----------
+function sheet(html) { $('#layer').innerHTML = `<div class="dim" data-a="close"></div><div class="sheet">${html}</div>`; }
+function closeSheet() { $('#layer').innerHTML = ''; S.sure = null; }
+const G = () => S.data.gang && S.data.gang.p;
+function sBook() {
+  S.book = S.book || { cur: 'bar', sign: 1 };
+  const b = S.book;
+  sheet(`<h2>💸 Geld buchen</h2>
+    <div class="seg">${[['bar', '💵 Bar'], ['clean', '🧼 Sauber'], ['coins', '🪙 Coins']].map(([k, t]) => `<button class="${b.cur === k ? 'on' : ''}" data-a="bcur" data-v="${k}">${t}</button>`).join('')}</div>
+    <div class="two"><button class="btn ${b.sign < 0 ? 'pink' : 'ghost'}" data-a="bsign" data-v="-1">− ABZIEHEN</button><button class="btn ${b.sign > 0 ? 'mint' : 'ghost'}" data-a="bsign" data-v="1">+ GUTSCHREIBEN</button></div>
+    <input id="bamt" class="inp big" inputmode="decimal" placeholder="0" value="${esc(b.amt || '')}">
+    <div><label for="bwhy">Grund (steht im Protokoll)</label><input id="bwhy" class="inp" maxlength="120" placeholder="z. B. Ausgleich Fehler Razzia" value="${esc(b.why || '')}"></div>
+    <label class="check"><input type="checkbox" id="bkur"${b.kurier ? ' checked' : ''}> Im Kurier melden</label>
+    <button class="btn" data-a="book">BUCHEN</button>`);
+}
+function keepBook() { if (!S.book) return; const a = $('#bamt'), w = $('#bwhy'), k = $('#bkur'); if (a) S.book.amt = a.value; if (w) S.book.why = w.value; if (k) S.book.kurier = k.checked; }
+function sCode(code) {
+  const p = G();
+  sheet(code ? `<h2>🔑 Neuer Bandencode</h2><div class="codebox">${esc(code)}</div><div class="sm">Gib ihn dem Boss von ${esc(p.name)}. Alle Geräte der Bande sind abgemeldet und melden sich mit diesem Code wieder an. Er wird nur jetzt angezeigt.</div><button class="btn" data-a="close">FERTIG</button>`
+    : `<h2>🔑 Neuer Bandencode</h2><div class="sm">Der alte Code von <b>${esc(p.name)}</b> wird ungültig und <b>alle Geräte</b> der Bande werden abgemeldet. Hilft, wenn jemand Fremdes den Code kennt.</div><button class="btn teal" data-a="code">${S.sure === 'code' ? 'WIRKLICH?' : 'NEUEN CODE ERZEUGEN'}</button>`);
+}
+function sRename() {
+  const p = G();
+  sheet(`<h2>✏️ Umbenennen</h2><input id="rn" class="inp" maxlength="18" value="${esc(p.name)}" autocomplete="off"><div class="sm">2 bis 18 Zeichen, wie im Spiel.</div><button class="btn" data-a="rename">SPEICHERN</button>`);
+}
+async function sRestore() {
+  sheet(`<h2>⏪ Aus Backup</h2>${loading()}`);
+  await run(async () => {
+    const r = await api('backups'); const p = G();
+    sheet(`<h2>⏪ Aus Backup</h2><div class="sm">Setzt <b>${esc(p.name)}</b> auf den Stand dieser Nacht: Geld, Crew, Lager und Läden (soweit sie noch frei sind). Am besten, wenn die Bande gerade nicht spielt.</div>
+      ${r.list.map((f) => `<button class="row" data-a="restore" data-v="${esc(f.file)}"><div><div class="nm">${esc(f.file.replace('.json', ''))} · ${new Date(f.at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })}</div><div class="sm">${esc(when(f.at))}</div></div><div class="r">${S.sure === 'restore' + f.file ? '<b class="h">WIRKLICH?</b>' : '›'}</div></button>`).join('') || '<div class="sm">Keine Sicherung gefunden.</div>'}`);
+  });
+}
+function sDelete() {
+  const p = G();
+  sheet(`<h2>🗑️ Bande löschen</h2><div class="sm">Löscht <b>${esc(p.name)}</b> komplett: Geld, Crew, Geräte, Code, Nachrichten. Ihre Läden werden frei. Der Kurier bleibt. Zurück geht es nur über ein Backup.</div>
+    <div><label for="dn">Zum Bestätigen den Namen eintippen</label><input id="dn" class="inp" autocomplete="off" placeholder="${esc(p.name)}"></div>
+    <button class="btn red" data-a="delete">ENDGÜLTIG LÖSCHEN</button>`);
+}
+
+// ---------- Tippen ----------
+document.addEventListener('input', (e) => { if (e.target.id === 'q') { S.q = e.target.value; const pos = e.target.selectionStart; render(); const q = $('#q'); q.focus(); q.setSelectionRange(pos, pos); } });
+document.addEventListener('keydown', (e) => { if (e.key !== 'Enter') return; if (e.target.id === 'pw' || e.target.id === 'em') login(); if (e.target.id === 'otp') verify(); });
+document.addEventListener('click', async (e) => {
+  const el = e.target.closest('[data-a]'); if (!el) return;
+  const a = el.dataset.a, v = el.dataset.v;
+  const twice = (key) => { if (S.sure === key) { S.sure = null; return true; } S.sure = key; return false; };
+  switch (a) {
+    case 'login': return login();
+    case 'verify': return verify();
+    case 'copy': try { await navigator.clipboard.writeText(S.mfa.secret); toast('Schlüssel kopiert.'); } catch (_) { toast('Bitte von Hand abschreiben.', true); } return;
+    case 'logout': return logout();
+    case 'tab': return show(v);
+    case 'seg': S.seg = v; S.data.flags = null; return show('flags');
+    case 'gang': S.gang = v; S.data.gang = null; return show('gang', { gang: v });
+    case 'close': return closeSheet();
+    case 's-book': S.book = null; return sBook();
+    case 's-code': S.sure = null; return sCode();
+    case 's-rename': return sRename();
+    case 's-restore': S.sure = null; return sRestore();
+    case 's-delete': return sDelete();
+    case 'bcur': keepBook(); S.book.cur = v; return sBook();
+    case 'bsign': keepBook(); S.book.sign = +v; return sBook();
+    case 'book': {
+      keepBook(); const b = S.book, amt = parseFloat(String(b.amt || '').replace(/\./g, '').replace(',', '.'));
+      if (!(amt > 0)) return toast('Betrag eingeben.', true);
+      if ((b.why || '').trim().length < 3) return toast('Bitte einen Grund angeben.', true);
+      return run(async () => { const r = await api('book', { id: S.gang, cur: b.cur, amt: b.sign * amt, why: b.why.trim(), kurier: !!b.kurier }); closeSheet(); toast(`Gebucht: ${r.d[b.cur] > 0 ? '+' : '−'}${b.cur === 'coins' ? coin(Math.abs(r.d[b.cur])) : fmt(Math.abs(r.d[b.cur]))} ${CURI[b.cur]}`); S.book = null; await reloadGang(); });
+    }
+    case 'code': if (!twice('code')) return sCode(); return run(async () => { const r = await api('code', { id: S.gang }); sCode(r.code); });
+    case 'rename': { const name = $('#rn').value.trim(); return run(async () => { await api('rename', { id: S.gang, name }); closeSheet(); toast('Umbenannt.'); await reloadGang(); }); }
+    case 'restore': if (!twice('restore' + v)) return sRestore(); return run(async () => { const r = await api('restore', { id: S.gang, file: v }); closeSheet(); toast(`Zurückgeholt: ${r.slots} Läden${r.skipped ? `, ${r.skipped} schon vergeben` : ''}.`); await reloadGang(); });
+    case 'delete': { const c = $('#dn').value.trim(); if (c !== G().name) return toast('Name stimmt nicht.', true); await run(async () => { await api('delete', { id: S.gang, confirm: c }); closeSheet(); toast('Bande gelöscht.'); S.data.gangs = null; }); return show('gangs'); }
+    case 'say': { const txt = $('#say').value.trim(), push = $('#sayp').checked; if (txt.length < 3) return toast('Text fehlt.', true); return run(async () => { const r = await api('say', { txt, push }); $('#say').value = ''; toast(push ? `Gesendet, ${r.sent} Push.` : 'Im Kurier.'); }); }
+    case 'hide': if (!twice('hide' + v)) return render(); return run(async () => { await api('hide', { msg: +v }); toast('Ausgeblendet.'); S.data.chat = await api('chat'); render(); });
+    case 'arm': if (!twice('arm')) return render(); await run(async () => { const on = !(S.data.srv.cfg || {}).armed; await api('arm', { on }); toast(on ? 'Server rechnet wieder.' : 'Spiel rechnet jetzt selbst.'); }); return show('srv');
+  }
+});
+async function reloadGang() { S.data.gang = await api('gang', { id: S.gang }); render(); }
+
+if (!CFG.url || !CFG.key) $('#main').innerHTML = '<div class="card"><h2>Keine Verbindungsdaten</h2><div class="sm">Diese Datei wurde ohne admin_release.py hochgeladen.</div></div>';
+else render();
+</script>
+</body>
+</html>
