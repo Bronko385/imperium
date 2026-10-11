@@ -771,7 +771,11 @@ button.car{cursor:pointer;touch-action:manipulation}
 .actbar .collectbtn .btn{order:3;flex:1}
 .actbar .collectbtn:empty~.coupbtn .btn.violet{flex:1}
 .actbar .btn .n{flex:none}
-@media (max-width:370px){.actbar .collectbtn .lbl{display:none}}
+.actbar .btn.violet .n{display:none}
+/* Kassieren zweizeilig: oben 💵 Kassieren, darunter Betrag und Ware (passt auch mit viel Ware, nichts läuft raus) */
+.actbar .collectbtn .btn{flex-direction:column;gap:1px;overflow:hidden;padding:0 6px}
+.actbar .collectbtn .btn .k1{line-height:17px}
+.actbar .collectbtn .btn .n{background:none;padding:0;font-size:12px;line-height:14px;max-width:100%}
 .actbar .btn .n{font-family:var(--f-body);font-weight:800;font-size:13px;letter-spacing:0;background:rgba(0,0,0,.14);border-radius:999px;padding:2px 7px;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .actbar .coupbtn .cbadge{position:absolute;top:-10px;right:-7px;margin:0;min-width:20px;height:20px;line-height:16px;font-size:11px}
 .actbar .btn:active{transform:translate(1px,2px);box-shadow:1px 1px 0 var(--ink)}
@@ -3710,7 +3714,7 @@ function viewStadt(m){
   let half=wr.half; mySlots().forEach(([x,dd])=>{if(TYPES[x.type].kind==='racket'&&curStock(x,dd)>=cap(x,dd)*.5)half=true});
   const show=st>=1000||half, wi=Object.keys(wr.w).map(k=>`${WARE[k].ico}${wr.w[k]}`).join(' ');
   cb.className='collectbtn'+(show?' full':'');
-  cb.innerHTML=show?`<button class="btn sm" data-act="collectall">💵 <span class="lbl">Kassieren</span>${st>=1||wi?`<span class="n">${st>=1?`+${fmt(st)}`:''}${st>=1&&wi?' ':''}${wi}</span>`:''}</button>`:'';
+  cb.innerHTML=show?`<button class="btn sm" data-act="collectall"><span class="k1">💵 <span class="lbl">Kassieren</span></span>${st>=1||wi?`<span class="n">${[st>=1?`+${fmt(st)}`:'',...Object.keys(wr.w).map(k=>`${WARE[k].ico} ${wr.w[k]}`)].filter(Boolean).join(' · ')}</span>`:''}</button>`:'';
   const cpb=document.getElementById('coupbtn'), cl=coupsLeft();
   if(cpb)cpb.innerHTML=`<button class="btn sm violet" data-act="coups">🎯 Coups${cl?`<span class="cbadge" aria-label="${cl} offen">${cl}</span>`:''}</button>${safeBtn()}`;
   document.getElementById('hint').hidden=show||hintDone;
