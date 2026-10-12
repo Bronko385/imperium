@@ -796,6 +796,25 @@ button.car{cursor:pointer;touch-action:manipulation}
 .safebox .scode i.known{background:var(--yellow);color:var(--ink)}
 .safein{text-align:center;font-size:26px;letter-spacing:12px;font-family:var(--f-display)}
 .mono{font-family:var(--f-display);letter-spacing:2px}
+/* 5.2 Intrigen & Ratte: Darknet-Knopf und -Fenster, Paket, Ratte, Leiste im Kurier */
+.btn.dnbtn{background:var(--night);color:var(--paper);display:grid;gap:2px;margin-top:6px}
+.dnc{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--ink);border-radius:12px;padding:10px 12px;margin:6px 0 10px;font-weight:700}
+.dnc b{color:var(--crypto)}
+.choice.dnlist{gap:8px;margin-bottom:10px}
+.choice.dnlist .btn{font-size:19px;text-align:center}
+.choice .btn.dnrat{background:#3a2a12;color:var(--yellow)}
+.askbox.dnrat{border-color:var(--yellow)}
+.askbox .btn.opt{font:500 14px/1.3 var(--f-body);letter-spacing:0;text-transform:none;text-align:left;white-space:normal;display:block;padding:9px 12px}
+.askbox .btn.opt b{display:block;font-weight:700}
+.askbox .btn.opt .sub{font-size:12.5px;margin-top:2px}
+.bigico{font-size:64px;text-align:center;line-height:1.1;margin:4px 0}
+.dnbar{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;margin:12px 0 0;padding:10px 12px;border:3px solid var(--yellow);border-radius:12px;background:#3a2a12;color:var(--paper);font:inherit;box-shadow:2px 3px 0 var(--ink)}
+.dnbar b{display:block;color:var(--yellow);font-size:15px}
+.dnbar small{display:block;color:var(--paper);font-size:12.5px;margin-top:3px;overflow-wrap:anywhere}
+.dnbar>span{font-size:12.5px;font-weight:700;text-align:right;flex:none;max-width:42%}
+.dnbar.pk{border-color:var(--clean);background:var(--night2);cursor:pointer}
+.dnbar.pk b{color:var(--clean)}
+.dnbar .btn{flex:none}
 
 </style>
 </head>
@@ -991,7 +1010,7 @@ function syncOpen(){
 async function refreshPlayers(){
   const shop=srvShop(), [pl,gp]=await Promise.all([shop&&me?q(sb.from('players').select('*').eq('id',me.id)):q(sb.from('players').select('*').eq('world',WORLD)),shop?q(sb.from('gang_pub').select('*').eq('world',WORLD)):null]);
   (gp||[]).forEach(r=>{if(!me||r.id!==me.id)players[r.id]=pubNorm(r)});
-  pl.forEach(p=>{if(!me||p.id!==me.id)players[p.id]=norm(p);else{const n=norm(p);me.push_ok=p.push_ok;me.radio=p.radio===true||me.radio===true;me.badges=n.badges;me.born=+p.born||0;mergeMine(n)}})}
+  pl.forEach(p=>{if(!me||p.id!==me.id)players[p.id]=norm(p);else{const n=norm(p);me.push_ok=p.push_ok;me.radio=p.radio===true||me.radio===true;me.badges=n.badges;me.born=+p.born||0;me.rat_fx=p.rat_fx||null;mergeMine(n)}})}
 async function refreshSlots(){
   const shop=srvShop(), [sl,sp]=await Promise.all([shop&&me?q(sb.from('slots').select('*').eq('world',WORLD).eq('owner',me.id)):q(sb.from('slots').select('*').eq('world',WORLD)),shop?q(sb.from('slot_pub').select('*').eq('world',WORLD)):null]);
   slots={}; (sp||[]).forEach(s=>{slots[key(s.district,s.idx)]={...s,_pub:true}}); sl.forEach(s=>{slots[key(s.district,s.idx)]=s}); syncOpen()}
@@ -1256,7 +1275,7 @@ async function kampf(body,hits,mult){
   let r;
   try{r=await kampfCall(body);setNet(true)}catch(e){console.warn(e);setNet(false);return {error:'netz'}}
   if(r.error==='gang'){deviceOut();return r}
-  if(r.off){if(r.shops===false)moneyCfg={...moneyCfg,shops:false};else moneyCfg={...moneyCfg,fights:false};return r}
+  if(r.off){if(r.dn===false)moneyCfg={...moneyCfg,dn:false};else if(r.shops===false)moneyCfg={...moneyCfg,shops:false};else moneyCfg={...moneyCfg,fights:false};return r}
   lastRes=r.res||null;
   if(r.p)fightApply(r.p);
   (r.hints||[]).forEach(safeHintGot); // ab 5.1: Safe-Hinweis aus Coups und Überfällen
@@ -1287,6 +1306,7 @@ function fightTake(P){
   if(P.ware&&typeof P.ware==='object'&&!srvShop()){me.ware=wareMerge(P.ware);if(lastSaved)lastSaved.ware=JSON.stringify(P.ware)}
   FIGHT_NO.forEach(k=>{if(k in P)me[k]=P[k]});
   if('kstate' in P)me.kstate=P.kstate;
+  if('rat_fx' in P)me.rat_fx=P.rat_fx; // ab 5.2: Sabotage der Ratte
   if(lastSaved){const pt=patchOf(me,true);FIGHT_NO.forEach(k=>{if(k in P)lastSaved[k]=JSON.stringify(pt[k])});if(P.crew)lastSaved.crew=JSON.stringify(P.crew)}
   normGuards(); levelUp(lv);
 }
@@ -1433,7 +1453,7 @@ function coupSrv(c,D){
     }else{
       daily('coups',1); step('coup');
       const hx=c.fest?heartsTxt(addHearts(D.miss),D.miss):'';
-      showResult(false,'GEPLATZT!',pick(['Zu viele Zeugen. Abbruch!','Der Hausmeister hat euch gesehen. Rennt!','Falscher Tag, falscher Ort, falsche Jungs.']),`+${Math.ceil(D.heat/2)} Hitze · ⭐ +3 Ruf${hx}`,'',true);
+      showResult(false,'GEPLATZT!',x.ratte?'🐀 Die Ratte hat euch verpfiffen. Die Polizei stand schon da.':pick(['Zu viele Zeugen. Abbruch!','Der Hausmeister hat euch gesehen. Rennt!','Falscher Tag, falscher Ort, falsche Jungs.']),`+${Math.ceil(D.heat/2)} Hitze · ⭐ +3 Ruf${hx}`,'',true);
     }
     await savePlayer();
   }),{title:c.name.toUpperCase(),sub:`${c.place} · ${D.label}`,btn:'ZUSCHLAGEN',widths:D.widths,lv:c.fest?4:c.diff+2,quick:!c.fest&&c.diff===1,fk:'coup',fref:'coup:'+c.id});
@@ -1525,7 +1545,7 @@ async function craftSrv(k){
 /* Kopfgeld */
 async function bountySetSrv(o,amt){
   const r=await kampf({act:'kg_setzen',o,v:amt}); if(fightWhy(r))return;
-  await loadBounties(); bountyOk={o,v:amt};
+  await loadBounties(); bountyOk={o,v:amt}; if(srvDn()&&dnI)dnI.used=[...(dnI.used||[]),'kg'];
   toast(`💰 ${fmt(amt)} Kopfgeld auf ${ownerInfo(o).name} ausgesetzt. Insgesamt jetzt ${fmt(r.res.total)}.`,'good');
 }
 async function bountyBackSrv(){
@@ -1609,7 +1629,7 @@ function defParts(s,d,nosec,atk){
   const o=s.owner, ctrl=controller(d)===o?3:0, lvl=s.lvl*1.5, door=!nosec&&(+s.sec||0)>=1?3:0;
   if(isNpc(o))return {base:npcPower(),guards:npcGuards(o,d),free:0,lvl,ctrl,door,home:0};
   const p=o===(me&&me.id)?me:players[o]; if(!p)return {base:1,guards:0,free:0,lvl,ctrl,door,home:0};
-  return {base:1,guards:guardN(p,d.id)*2.5*bossGuardMul(o),free:0,lvl,ctrl,door,home:homeDef(o,d.id,atk===undefined?(me&&me.id):atk)};
+  return {base:1,guards:Math.max(0,guardN(p,d.id)-ratTuer(p,d.id))*2.5*bossGuardMul(o),free:0,lvl,ctrl,door,home:homeDef(o,d.id,atk===undefined?(me&&me.id):atk)};
 }
 function defOf(s,d,nosec,atk){const x=defParts(s,d,nosec,atk);const v=x.base+x.guards+x.free+x.lvl+x.ctrl+x.door+x.home;return isAway(s.owner)?v*.5:v}
 /* ---------- Heimatviertel (ab Beta 4.7): Check-in per GPS +2 für 24 Std., Wahlheimat +1 dauerhaft, im Lokalderby nichts ---------- */
@@ -2181,6 +2201,158 @@ async function applyTips(){
     }catch(err){console.warn(err)}
   }
 }
+/* ---------- Ab Beta 5.2 „Intrigen & Ratte“ ----------
+   In Welten mit money_cfg.dn rechnet die Edge Function kampf das Darknet (Tipp, Gerücht, Paket, Kopfgeld; Tipp, Gerücht und
+   Paket kosten BratCoin im Gegenwert) und die Ratte der Woche. Das Spiel fragt mit act dn nur, was die eigene Bande wissen
+   darf: Preise, heute schon benutzt, eigene Pakete, Spuren und ob man selbst die Ratte ist. */
+function srvDn(){return srvShop()&&!!moneyCfg.dn}
+const DN_WHY={heute:'Heute schon benutzt. Morgen wieder.',coins:'Zu wenig BratCoin. Kaufen kannst du unter Geld › BratCoin.',heiss:'Die Polizei ist schon voll auf sie angesetzt.',neuling:'🍼 Neulingsschutz: Diese Bande ist noch zu klein.',jung:'Lebkuchen gehen erst, wenn beide Banden mindestens 7 Tage dabei sind.',laden:'Diese Bande hat keinen passenden Laden.',voll:'Bei dieser Bande liegen schon 3 Pakete.',tuer:'Diese Bande hat gerade keine Türsteher.',schon:'Ihr nächster Coup platzt schon.',alle:'Alle Sabotagen verbraucht.',keine:'Diese Woche gibt es keine Ratte.',tage:'Abstimmen dürfen Banden, die an mindestens 3 Tagen gespielt haben.',zeit:'Das geht gerade nicht (Uhrzeit).',vorbei:'Das Paket ist schon weg.'};
+const RAT_DARF={jung:'Abstimmen dürfen Banden ab 7 Tagen.',tage:'Abstimmen dürfen Banden, die an mindestens 3 Tagen gespielt haben.',ziel:''};
+const SAB_TXT={tuer:['🚪','Türsteher bestechen','2 Std. ein Türsteher weniger in ihrem stärksten Viertel'],coup:['🎯','Coup platzen lassen','Ihr nächster Coup platzt'],stink:['💩','Stinkbombe','Einer ihrer Läden verliert die Einnahmen einer Stunde']};
+const PAKET_OPTS=[1000,2500,5000];
+let dnI=null, dnPick=null, dnBusy=false, dnOk=null;
+const dnSeen=new Set();
+async function dnLoad(){
+  if(!me||!srvDn())return;
+  const r=await kampf({act:'dn'}); if(!r||!r.res)return;
+  dnI=r.res; dirty=true; dnNotify(); dnRefresh();
+}
+function dnUsedK(k){return !!(dnI&&dnI.used&&dnI.used.includes(k))}
+function coinTxt(c){return c==null?'…':de(c,c<10?2:1)}
+function dnBlock(k,o){
+  if(!unlocked('dn'))return lockTxt('dn');
+  const kb=knastBlock(); if(kb)return '🚔 Aus dem Knast heraus geht das nicht';
+  if(dnUsedK(k))return 'Heute schon benutzt · wieder morgen';
+  if(k==='tipp'){if(isAlly(o))return '🤝 Nicht gegen deine Spezln';if(newbieProt(o))return '🍼 Neulingsschutz: Diese Bande ist noch zu klein'}
+  const c=dnI&&dnI.coins&&dnI.coins[k]; if(c!=null&&me.coins<c-1e-6)return `Zu wenig Coins: Du hast ${coinTxt(me.coins)}`;
+  return null;
+}
+function dnRat(){const R=dnI&&dnI.ratte;return R&&R.ich&&R.phase==='spiel'&&R.sab>0?R:null}
+function dnHTML(o){
+  const oi=ownerInfo(o), I=dnI, nm=esc(oi.name);
+  const cost=k=>I&&I.coins?` · 🪙 ${coinTxt(I.coins[k])}`:'';
+  const row=(k,ico,name,sub,pick)=>{const b=I?dnBlock(k,o):'Verbindung wird aufgebaut …';return `<button class="btn dark" data-act="dnpick" data-k="${pick}" data-o="${o}" ${b||dnBusy?'disabled':''}>${ico} ${name}${cost(k)}<span class="sub">${b||sub}</span></button>`};
+  let g='', p='', k='';
+  if(dnPick==='g'&&I)g=`<div class="askbox"><b>Welches Gerücht über ${nm}?</b>${I.gerue.map((t,i)=>`<button class="btn ghost opt" data-act="dngo" data-k="g" data-o="${o}" data-v="${i}" ${dnBusy?'disabled':''}>„${esc(t.replace('{n}',oi.name))}“</button>`).join('')}<button class="btn ghost sm" data-act="dnpick" data-k="" data-o="${o}">Abbrechen</button></div>`;
+  else g=row('geruecht','🗞️','Gerücht streuen',`Ein Satz über ${nm} im Kurier, wahr oder erfunden. 20 % Risiko, dass dein Name drinsteht.`,'g');
+  if(dnPick==='p'&&I){
+    const stinkB=isAlly(o)?'🤝 Nicht an deine Spezln':newbieProt(o)?'🍼 Neulingsschutz':'';
+    p=`<div class="askbox"><b>Was kommt ins Paket für ${nm}?</b><div class="acts">${PAKET_OPTS.map(v=>`<button class="btn ghost sm" data-act="dngo" data-k="pl" data-o="${o}" data-v="${v}" ${me.clean<v||dnBusy?'disabled':''}>🍪 ${fmt(v)} ✦</button>`).join('')}</div><button class="btn ghost sm" data-act="dngo" data-k="ps" data-o="${o}" ${stinkB||dnBusy?'disabled':''}>💩 Stinkbombe${stinkB?' · '+stinkB:''}</button><p class="small muted">Lebkuchen: Dein sauberes Geld steckt drin, nur zwischen Banden ab 7 Tagen. Stinkbombe: Einer ihrer Läden verliert die Einnahmen einer Stunde. Gibt ${nm} das Paket bei der Polizei ab, sind die Lebkuchen weg, bei der Stinkbombe fliegst du auf (+15 Hitze).</p><button class="btn ghost sm" data-act="dnpick" data-k="" data-o="${o}">Abbrechen</button></div>`;
+  }else p=row('paket','📦','Paket schicken','Lebkuchen (Geld drin) oder Stinkbombe (1 Laden 1 Std. still)','p');
+  if(dnPick==='k'&&I)k=`<div class="askbox">${bountyHTML(o)}<button class="btn ghost sm" data-act="dnpick" data-k="" data-o="${o}">Zurück</button></div>`;
+  else{const b=!I?'Verbindung wird aufgebaut …':!unlocked('dn')?lockTxt('dn'):dnUsedK('kg')?'Heute schon benutzt · wieder morgen':bountyBlock(o);const t=bountyOn(o);k=`<button class="btn dark" data-act="dnpick" data-k="k" data-o="${o}" ${b?'disabled':''}>💰 Kopfgeld aussetzen<span class="sub">${b||`Sauberes Geld, anonym${t?` · jetzt ${fmt(t)}`:''}`}</span></button>`}
+  const R=dnRat();
+  const rat=R?(dnPick==='s'?`<div class="askbox dnrat"><b>🐀 Sabotage gegen ${nm}</b>${Object.keys(SAB_TXT).map(x=>`<button class="btn ghost opt" data-act="dngo" data-k="s" data-v="${x}" data-o="${o}" ${dnBusy?'disabled':''}><b>${SAB_TXT[x][0]} ${SAB_TXT[x][1]}</b><span class="sub">${SAB_TXT[x][2]}</span></button>`).join('')}<p class="small muted">Gratis. Der Kurier meldet es 2 bis 6 Std. später, nur mit Viertel und Wochentag.</p><button class="btn ghost sm" data-act="dnpick" data-k="" data-o="${o}">Abbrechen</button></div>`
+    :`<button class="btn dnrat" data-act="dnpick" data-k="s" data-o="${o}" ${dnBusy?'disabled':''}>🐀 Sabotage<span class="sub">Du bist die Ratte · noch ${R.sab} ${R.sab===1?'Sabotage':'Sabotagen'} diese Woche</span></button>`):'';
+  const ok=dnOk&&dnOk.o===o?`<p class="okbox">${dnOk.t}</p>`:'';
+  return `<div class="mbox" role="dialog" aria-label="Darknet"><div class="mtop"><span></span><h3>💻 Darknet</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
+    <p class="subt">Ziel: <b>${nm}</b> · anonym · jeder Dienst 1× am Tag</p>
+    <div class="dnc"><span>🪙 Deine Coins: <b>${de(me.coins,2)}</b></span><button class="btn violet sm" data-act="dncoin">+ Coins kaufen</button></div>
+    ${ok}<div class="choice dnlist">${rat}
+    ${row('tipp','📞','Anonymer Tipp',`Ihre Hitze +15. Mit 20 % Risiko fliegst du auf (+10 Hitze, Name im Kurier).`,'t')}
+    ${g}${p}${k}</div>
+    <button class="btn wide" data-act="gang" data-o="${o}">Fertig</button></div>`;
+}
+/* Im Bandenfenster: ein Knopf statt Tipp und Kopfgeld */
+function dnBtn(o){
+  const R=dnRat(), b=unlocked('dn')?'':lockTxt('dn');
+  return `<button class="btn dark wide dnbtn" data-act="dnopen" data-o="${o}" ${b?'disabled':''}>💻 Darknet<span class="sub">${b||`Tipp, Gerücht, Paket, Kopfgeld${R?' · 🐀 Sabotage':''}`}</span></button>`;
+}
+let dnFor=null;
+function dnOpen(o){if(!srvDn()||!ownerInfo(o))return;if(dnFor!==o){dnPick=null;dnOk=null;bountyAsk=null;bountyOk=null}dnFor=o;showModal(dnHTML(o),true);dnLoad()}
+function dnRefresh(){const m=document.getElementById('modal');if(dnFor&&m&&!m.hidden&&String(m.innerHTML).indexOf('aria-label="Darknet"')>=0)showModal(dnHTML(dnFor),true)}
+async function dnAct(act,body){
+  dnBusy=true; dnRefresh();
+  try{
+    const r=await kampf({act,...(body||{})});
+    if(r&&r.res&&!r.why&&!r.error&&!r.off)return r.res;
+    const w=r&&(r.why||r.error), t=!(r&&r.off)&&(DN_WHY[w]||SHOP_WHY[w]);
+    if(t)toast(t,'bad');else fightWhy(r);
+    return null;
+  }finally{dnBusy=false;renderHUD()}
+}
+async function dnGo(k,o,v){
+  if(dnBusy)return;
+  const name=ownerInfo(o).name;
+  if(k==='t'){
+    const x=await dnAct('dn_tipp',{o}); if(!x)return dnLoad();
+    dnPick=null; closeModal();
+    if(x.caught)showResult(false,'AUFGEFLOGEN!','Die Polizei hat zurückgerufen. Jetzt kennt die ganze Stadt deinen Namen.','+10 Hitze für dich','',true);
+    else showResult(true,'ANRUF ERLEDIGT','Anonym, mit verstellter Stimme. Die Polizei schaut jetzt genauer hin.',`${esc(name)}: +15 Hitze`,'c-heat',true);
+  }else if(k==='g'){
+    const x=await dnAct('dn_geruecht',{o,v:+v}); if(!x)return dnLoad();
+    dnPick=null; closeModal();
+    if(x.caught)showResult(false,'AUFGEFLOGEN!','Jemand hat dich erkannt. Der Kurier druckt das Gerücht mit deinem Namen.','','',true);
+    else showResult(true,'GERÜCHT GESTREUT','Steht jetzt im Kurier. Ob es stimmt, weiß keiner.','','',true);
+  }else if(k==='pl'||k==='ps'){
+    const x=await dnAct('dn_paket',{o,art:k==='pl'?'leb':'stink',v:k==='pl'?+v:0}); if(!x)return dnLoad();
+    dnPick=null; closeModal();
+    showResult(true,'PAKET UNTERWEGS',`Ohne Absender an ${esc(name)}. Mal sehen, ob sie es aufmachen.`,x.art==='leb'?`🍪 Lebkuchen mit ${fmt(x.v)} ✦`:'💩 Stinkbombe','',true);
+  }else if(k==='s'){
+    const x=await dnAct('r_sab',{o,k:v}); if(!x)return dnLoad();
+    dnPick=null; closeModal();
+    showResult(true,'ERLEDIGT. PSST.',`${SAB_TXT[v][0]} ${SAB_TXT[v][1]} bei ${esc(name)}. Der Kurier meldet es erst in ein paar Stunden.`,`Noch ${x.left} ${x.left===1?'Sabotage':'Sabotagen'}`,'',true);
+  }
+  dnLoad();
+}
+/* Paket bekommen: aufmachen oder bei der Polizei abgeben */
+function paketHTML(id){
+  return `<div class="mbox" role="dialog" aria-label="Paket"><h3 class="gt">EIN PAKET FÜR DICH</h3><div class="bigico">📦</div>
+    <p>Absender unbekannt. Es raschelt. Oder tickt es?</p>
+    <p class="small muted">Drin sind Lebkuchen mit Geld oder eine Stinkbombe. Gibst du es bei der Polizei ab und es war eine Stinkbombe, fliegt der Absender auf. Waren es Lebkuchen, ist das Geld weg.</p>
+    <div class="choice"><button class="btn" data-act="pkauf" data-id="${id}" ${dnBusy?'disabled':''}>📦 Aufmachen</button><button class="btn dark" data-act="pkpol" data-id="${id}" ${dnBusy?'disabled':''}>🚓 Bei der Polizei abgeben</button></div>
+    <button class="btn ghost wide sm" data-act="close">Später</button></div>`;
+}
+async function paketGo(id,pol){
+  if(dnBusy)return; dnSeen.add(+id);
+  const x=await dnAct(pol?'paket_polizei':'paket_auf',{id:+id}); closeModal(); if(!x)return dnLoad();
+  if(!pol&&x.art==='leb')showResult(true,'LEBKUCHEN!','Feinste Elisen, und ganz unten liegt Geld.',`+${fmt(x.v)} sauber`,'c-clean',true);
+  else if(!pol)showResult(false,'STINKBOMBE!',x.d&&DM[x.d]?`Dein Laden in ${DM[x.d].name} stinkt zum Himmel. Eine Stunde Einnahmen sind weg.`:'Zum Glück stand nichts drin.',x.loss?`−${fmt(x.loss)} aus der Kasse`:'','',true);
+  else if(x.art==='stink')showResult(true,'GUTE NASE','Es war eine Stinkbombe. Die Polizei kennt jetzt den Absender.',x.sender?`Absender: ${esc(x.sender)} (+15 Hitze)`:'','c-clean',true);
+  else showResult(false,'SCHADE','Es waren Lebkuchen mit Geld drin. Die essen jetzt die Beamten.',`${fmt(x.v)} ✦ entgangen`,'',true);
+  dnLoad();
+}
+/* Ratte: Rolle einmal pro Woche zeigen, Abstimmung Sonntag 18 bis 20 Uhr */
+function ratRoleHTML(R){
+  return `<div class="mbox" role="dialog" aria-label="Ratte"><h3 class="gt">DU BIST DIE RATTE</h3><div class="bigico">🐀</div>
+    <p>Diese Woche arbeitest du heimlich gegen alle. Niemand weiß es.</p>
+    <ul class="list"><li><span>🐀 ${R.sab} Sabotagen gratis: Bande antippen › 💻 Darknet</span></li><li><span>🗞️ Der Kurier meldet jede Sabotage 2 bis 6 Std. später, nur mit Viertel und Wochentag</span></li><li><span>🗳️ Sonntag 18 bis 20 Uhr wird abgestimmt. Stimm zur Tarnung mit ab.</span></li><li><span>💰 Unentdeckt: +25.000 sauber und eine Woche 🐀 am Namen</span></li></ul>
+    <button class="btn wide" data-act="close">Psst.</button></div>`;
+}
+function voteHTML(){
+  const R=dnI&&dnI.ratte; if(!R)return '';
+  return `<div class="mbox" role="dialog" aria-label="Abstimmung"><div class="mtop"><span></span><h3>🐀 Wer ist die Ratte?</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
+    <p class="small muted">Richtig getippt: 10.000 sauber. Erwischt ist die Ratte nur, wenn sie die meisten Stimmen hat. Bis 20 Uhr kannst du umstimmen.</p>
+    <div class="choice">${R.cand.map(c=>`<button class="btn ${R.my===c.id?'':'dark'}" data-act="rvote" data-o="${c.id}" ${dnBusy?'disabled':''}>${esc(c.name)}${R.my===c.id?'<span class="sub">Deine Stimme</span>':''}</button>`).join('')}</div>
+    <button class="btn ghost wide" data-act="close">Fertig</button></div>`;
+}
+async function ratVote(o){
+  if(dnBusy)return;
+  const x=await dnAct('r_stimme',{o}); if(!x)return;
+  if(dnI&&dnI.ratte)dnI.ratte.my=o;
+  toast(`🗳️ Deine Stimme: ${ownerInfo(o).name}`,'good'); showModal(voteHTML(),true); dirty=true;
+}
+function dnNotify(){
+  const m=document.getElementById('modal'); if(!dnI||!m||!m.hidden||pendingRes)return;
+  const R=dnI.ratte, key='imperium-ratte-'+(R&&R.week);
+  if(R&&R.ich&&R.phase==='spiel'&&!lsGet(key)){lsSet(key,'1');showModal(ratRoleHTML(R));return}
+  const pk=(dnI.pakete||[]).find(x=>!dnSeen.has(+x.id)); if(pk){dnSeen.add(+pk.id);showModal(paketHTML(pk.id))}
+}
+/* Kurier: Pakete, die warten, und die Ratten-Woche mit Spuren und Abstimmung */
+function ratBanner(){
+  if(!srvDn()||!dnI)return '';
+  let h='';
+  const pk=dnI.pakete||[];
+  if(pk.length)h+=`<button class="dnbar pk" data-act="pkopen" data-id="${pk[0].id}"><b>📦 ${pk.length===1?'Ein Paket wartet auf dich':pk.length+' Pakete warten auf dich'}</b><span>Aufmachen ›</span></button>`;
+  const R=dnI.ratte;
+  if(R){
+    const sp=R.spuren.length?R.spuren.map(x=>`${SAB_TXT[x.k]?SAB_TXT[x.k][0]:'🐀'} ${DM[x.d]?DM[x.d].name:esc(x.d)} (${x.day})`).join(' · '):'Noch keine Spuren.';
+    const v=R.phase==='wahl'?(R.darf?`<span>${RAT_DARF[R.darf]||''}</span>`:`<button class="btn sm" data-act="rvoteopen">${R.my?'🗳️ Umstimmen':'🗳️ Abstimmen'}</button>`):`<span>${R.phase==='spiel'?'Abstimmung So 18–20 Uhr':'Auflösung ab 20 Uhr'}</span>`;
+    h+=`<div class="dnbar rat"><div><b>🐀 Eine Ratte ist unterwegs</b><small>Spuren: ${sp}</small></div>${v}</div>`;
+  }else if(dnI.last)h+=`<div class="dnbar rat"><div><b>🐀 Letzte Ratte: ${esc(dnI.last.name)}</b><small>${dnI.last.caught?'Erwischt!':'Ist durchgekommen.'}</small></div></div>`;
+  return h;
+}
+function ratTuer(p,did){let x=p&&p.rat_fx;if(typeof x==='string'){try{x=JSON.parse(x)}catch(e){x=null}}return x&&x.tuer&&x.tuer.d===did&&+x.tuer.until>now()?1:0}
 /* Umbenennen: einmal pro Bande (Banden werden zum Saisonstart gelöscht, also einmal pro Saison) */
 function nameTaken(n){const l=n.toLowerCase();return Object.values(players).some(p=>p.id!==me.id&&p.name.toLowerCase()===l)||Object.values(NPC).some(x=>x.name.toLowerCase()===l)}
 async function renameGang(){
@@ -2504,8 +2676,8 @@ const RUF_AT=[0,150,500,1200,2500,5000,10000];
 const RUF_TITLE=['Straßenhaufen','Eckbande','Kiezbande','Viertel-Clan','Syndikat','Kartell','Imperium'];
 const RUF_ART=['ein','eine','eine','ein','ein','ein','ein']; // für „ist jetzt ein …“
 // Ab welcher Stufe etwas freigeschaltet ist (fehlt ein Eintrag: ab Stufe 1)
-const UNLOCK={shisha:2,brenn:2,schrott:2,hehler:2,club:3,gear:3,immo:4,f:2,a:2,h:3,guards:2,uebernahme:3,hack:3,coin:4,sec1:3,sec2:4,sec3:5,tip:4,ally:3,heist:3,open:3,lm:3};
-const UNLOCK_TXT={shisha:'Shisha-Bar',brenn:'Brennerei',schrott:'Schrottplatz',gear:'Ausrüstung',hehler:'Hehlerlager',club:'Club',immo:'Immobilie',f:'Fahrer',a:'Anwalt',h:'Hacker',guards:'Türsteher',uebernahme:'Übernahme',hack:'Hack',coin:'BratCoin',sec1:'Stahltür',sec2:'Kamera',sec3:'Tresor',tip:'Anonymer Tipp',ally:'Bündnis & Angebote',heist:'Großcoups',open:'Stadtteile erschließen',lm:'Wahrzeichen stürmen'};
+const UNLOCK={shisha:2,brenn:2,schrott:2,hehler:2,club:3,gear:3,immo:4,f:2,a:2,h:3,guards:2,uebernahme:3,hack:3,coin:3,sec1:3,sec2:4,sec3:5,tip:3,ally:3,heist:3,open:3,lm:3,dn:3};
+const UNLOCK_TXT={shisha:'Shisha-Bar',brenn:'Brennerei',schrott:'Schrottplatz',gear:'Ausrüstung',hehler:'Hehlerlager',club:'Club',immo:'Immobilie',f:'Fahrer',a:'Anwalt',h:'Hacker',guards:'Türsteher',uebernahme:'Übernahme',hack:'Hack',coin:'BratCoin',sec1:'Stahltür',sec2:'Kamera',sec3:'Tresor',tip:'Anonymer Tipp',ally:'Bündnis & Angebote',heist:'Großcoups',open:'Stadtteile erschließen',lm:'Wahrzeichen stürmen',dn:'Darknet'};
 function rufOf(p){return p&&p.ruf!=null?(+p.ruf||0):null}
 function levelOfRuf(r){let l=1;for(let k=0;k<RUF_AT.length;k++)if(r>=RUF_AT[k])l=k+1;return l}
 function levelOf(o){if(isNpc(o))return null;const p=o===(me&&me.id)?me:players[o];const r=rufOf(p);return r==null?null:levelOfRuf(r)}
@@ -3262,6 +3434,7 @@ function bountyOn(o){return bounties.filter(b=>b.target===o).reduce((a,b)=>a+(+b
 function bountyBlock(o){
   if(isNpc(o)||o===me.id)return 'Nur auf andere echte Banden.';
   if(isAlly(o))return '🤝 Nicht auf deine Spezln.';
+  if(srvDn()&&dnUsedK('kg'))return 'Heute schon ein Kopfgeld ausgesetzt. Morgen wieder.';
   const l=levelOf(o); if(l==null||l<BOUNTY_LVL)return `Erst ab Stufe ${BOUNTY_LVL} (${titleOf(BOUNTY_LVL)}), damit neue Banden in Ruhe wachsen.`;
   return null;
 }
@@ -4429,8 +4602,8 @@ function gangHTML(o,st){
       :(()=>{const by={};shops.forEach(([s,d])=>{(by[d.id]=by[d.id]||{d,a:[]}).a.push(s)});return `<div class="vgrp">${Object.values(by).sort((x,y)=>y.a.length-x.a.length).map(g=>`<span class="tap" data-act="goto" data-d="${g.d.id}"><b>${controller(g.d)===o?'👑 ':''}${g.d.name}</b> ${g.a.map(s=>TYPES[s.type].ico+(s.lvl>1?`<i class="lst">${'★'.repeat(s.lvl)}</i>`:'')).join(' ')}</span>`).join('')}</div>`})()}
     ${ctrl.length?`<h4>Kontrolliert</h4><p>${ctrl.map(d=>`<span class="chip" style="background:${oi.color}">♛ ${d.name}</span>`).join(' ')}</p>`:''}
     ${own?`<h4>Crew</h4><p>${Object.keys(CREW).map(k=>`${CREW[k].ico} ${me.crew[k]||0}`).join(' · ')}</p>`:''}
-    ${npc?'':(()=>{const h=heatGuess(o);return own?`<h4>Polizei</h4><p>🚨 Hitze ${Math.round(h)} / 100 · ${heatWord(h)}</p>`:`<h4>Polizei</h4>${p&&p._pub?'':`<p>${flames(h)||'·'} ${heatWord(h)}</p>`}${(()=>{const bl=tipBlock(o);return `<button class="btn ghost wide" data-act="tip" data-o="${o}" ${bl?'disabled':''}>📞 Anonymer Tipp · ${fmt(TIP_COST)} ✦<span class="sub">${bl||`Ihre Hitze +${TIP_HEAT}, mit 20 % Risiko fliegst du selbst auf (+10 Hitze, Name im Kurier)`}</span></button>`})()}`})()}
-    ${bountyHTML(o)}
+    ${npc?'':(()=>{const h=heatGuess(o);return own?`<h4>Polizei</h4><p>🚨 Hitze ${Math.round(h)} / 100 · ${heatWord(h)}</p>`:`<h4>Polizei</h4>${p&&p._pub?'':`<p>${flames(h)||'·'} ${heatWord(h)}</p>`}${srvDn()?dnBtn(o):(()=>{const bl=tipBlock(o);return `<button class="btn ghost wide" data-act="tip" data-o="${o}" ${bl?'disabled':''}>📞 Anonymer Tipp · ${fmt(TIP_COST)} ✦<span class="sub">${bl||`Ihre Hitze +${TIP_HEAT}, mit 20 % Risiko fliegst du selbst auf (+10 Hitze, Name im Kurier)`}</span></button>`})()}`})()}
+    ${srvDn()&&!own?(bountyOn(o)?`<p class="bty">💰 Kopfgeld: <b>${fmt(bountyOn(o))}</b></p>`:''):bountyHTML(o)}
     <h4>Bilanz</h4>
     <div class="kv" id="gstats"><div><span>👊 Angriffe gelungen</span><b>${n('aw')}</b></div><div><span>🙈 Angriffe gescheitert</span><b>${n('al')}</b></div><div><span>💪 Angriffe abgewehrt</span><b>${n('dw')}</b></div><div><span>😤 Erfolgreich angegriffen worden</span><b>${n('dl')}</b></div><div><span>💰 Erbeutet</span><b class="c-clean">${S?fmt(n('gain')):'…'}</b></div><div><span>💸 Verloren</span><b class="c-heat">${S?fmt(n('loss')):'…'}</b></div>${npc?'':`<div><span>🚨 Razzien</span><b>${n('raids')}</b></div>`}</div>
     ${own?'':'<p class="small muted">Geld und Crew anderer Banden bleiben geheim.</p>'}
@@ -4650,7 +4823,7 @@ function viewGeld(){
   return seg+fc+pol;
 }
 function viewFeed(){
-  const kindOf=e=>e.kind==='hack'?'atk':e.kind==='def'?(e.target===me.id?'win':'info'):e.kind==='join'||e.kind==='tip'||e.kind==='ally'||e.kind==='deal'||e.kind==='heistk'?'info':e.kind==='betray'?'atk':e.kind==='smugx'?(e.target===me.id?'atk':'info'):e.kind==='taunt'?'taunt':e.kind;
+  const kindOf=e=>e.kind==='hack'?'atk':e.kind==='def'?(e.target===me.id?'win':'info'):e.kind==='join'||e.kind==='tip'||e.kind==='paket'||e.kind==='ratte'||e.kind==='ally'||e.kind==='deal'||e.kind==='heistk'?'info':e.kind==='betray'?'atk':e.kind==='smugx'?(e.target===me.id?'atk':'info'):e.kind==='taunt'?'taunt':e.kind;
   const today=(()=>{try{return new Intl.DateTimeFormat('de-DE',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'Europe/Berlin'}).format(now())}catch(e){return ''}})();
   const top=events.find(e=>['atk','win','cop','hack'].includes(e.kind));
   const ftabs=`<div class="seg ftabs"><button data-act="ftab" data-k="news" class="${ui.feedTab!=='funk'?'on':''}">📰 Zeitung</button><button data-act="ftab" data-k="funk" class="${ui.feedTab==='funk'?'on':''}">📻 Funk${(()=>{const n=dmUnread()+unreadOf('city');return n?` <b class="nb">${n>9?'9+':n}</b>`:''})()}</button></div>`;
@@ -4659,6 +4832,7 @@ function viewFeed(){
     return `<li class="fe ${mine?'atk':kindOf(e)} ${e.actor&&ownerInfo(e.actor)?'hasav':''}">${e.actor&&ownerInfo(e.actor)?`<span class="fav tap" data-act="gang" data-o="${e.actor}">${portrait(e.actor,34)}</span>`:''}<time>${ago(+e.ts)}</time><p>${esc(e.txt)}</p>${mine&&e.actor&&!revDone.has(e.id)?`<div><button class="btn pink sm" data-act="rev" data-id="${e.id}">🔥 Rache an ${esc(ownerInfo(e.actor).name)}</button></div>`:''}${reactBar(e)}</li>`};
   return ftabs+`<section class="paper"><div class="mast">NÜRNBERGER<br>UNTERGRUND-KURIER</div><div class="dateline"><span>${today}</span><span>Preis: 1 Bratwurst</span></div>
     ${top?`<div class="headline"><small>Schlagzeile</small><h3>${esc(top.txt)}</h3><span>${ago(+top.ts)}</span>${reactBar(top)}</div>`:'<div class="headline"><h3>Ruhige Nacht in Nürnberg. Verdächtig ruhig.</h3></div>'}</section>
+  ${ratBanner()}
   ${events.length?`<ul class="feed">${events.filter(e=>e!==top&&!HIDE_EV.has(e.kind)).map(item).join('')}</ul>`:`<p class="muted" style="text-align:center">Noch ruhig in der Stadt. Das bleibt nicht lange so.</p>`}`;
 }
 const revDone=new Set();
@@ -4732,7 +4906,7 @@ document.addEventListener('click',e=>{
   if(act==='color'){pickedColor=a.dataset.c;document.querySelectorAll('.swatch').forEach(x=>x.classList.toggle('on',x.dataset.c===pickedColor));return}
   if(!me)return;
   switch(act){
-    case 'tab':ui.tab=a.dataset.tab;if(ui.tab==='feed'){unread=0;step('feed');loadReacts().then(()=>{if(ui.tab==='feed')renderMain()})}checkVersion();break;
+    case 'tab':ui.tab=a.dataset.tab;if(ui.tab==='feed'){unread=0;step('feed');dnLoad();loadReacts().then(()=>{if(ui.tab==='feed')renderMain()})}checkVersion();break;
     case 'steps':showModal(stepsModal());return;
     case 'bossedit':bossDraft=null;bossTab='face';showModal(bossEditor(false));return;
     case 'lk':bossDraft.look[a.dataset.k]=+a.dataset.v;bossRefresh();return;
@@ -4802,6 +4976,15 @@ document.addEventListener('click',e=>{
     case 'gminus':setGuard(did,-1);if(a.closest('#modal'))showModal(guardModal(did),true);break;
     case 'sec':buySec(did,i);return;
     case 'tip':giveTip(a.dataset.o);return;
+    case 'dnopen':dnOpen(a.dataset.o);return;
+    case 'dnpick':dnPick=a.dataset.k||null;dnOk=null;if(dnPick==='t'){dnPick=null;dnGo('t',a.dataset.o);return}if(dnPick==='k'){bountyAsk=null;bountyOk=null}dnRefresh();return;
+    case 'dngo':dnGo(a.dataset.k,a.dataset.o,a.dataset.v);return;
+    case 'dncoin':closeModal();ui.tab='geld';ui.gtab='coin';render();return;
+    case 'pkopen':showModal(paketHTML(a.dataset.id));return;
+    case 'pkauf':paketGo(a.dataset.id,false);return;
+    case 'pkpol':paketGo(a.dataset.id,true);return;
+    case 'rvoteopen':showModal(voteHTML());return;
+    case 'rvote':ratVote(a.dataset.o);return;
     case 'coups':showModal(coupModal());return;
     case 'knast':showModal(knastModal());return;
     case 'kbreak':knastBreak();return;
@@ -4974,7 +5157,7 @@ function doReload(){
 }
 
 /* ---------- Menü, Anleitung, FAQ, Versionsverlauf ---------- */
-const CURRENT_VERSION='Beta 5.1.2', SEEN_KEY='imperium-seen-version';
+const CURRENT_VERSION='Beta 5.2', SEEN_KEY='imperium-seen-version';
 /* ---------- Ab Beta 5.0 „Wahrzeichen“: drei gleichzeitig, Kaiserburg und Plärrer fest, das dritte wechselt sonntags um 20 Uhr ----------
    Erobert wird nur über die Datenbank-Funktion landmark_attack (der Server würfelt, feste Verteidigung 10, Türsteher zählen nicht).
    Tabelle landmarks: {id, district, pos, active, owner, since, shield_until}, owner null = Stadtwache. */
@@ -5112,6 +5295,14 @@ function dayPhase(t){t=t||now();const s=sunTimes(t),D=40*60000;if(t>s.rise+D&&t<
 function applyPhase(){const svg=document.getElementById('mapsvg'),box=document.getElementById('mapbox');if(!svg)return;const p=dayPhase();['day','dusk','night'].forEach(k=>{svg.classList.toggle(k,k===p);if(box)box.classList.toggle(k,k===p)})}
 
 const VERSIONS=[
+  {v:'Beta 5.2',date:'12.10.2026',title:'Intrigen & Ratte',items:[
+    '💻 Darknet: Im Fenster einer anderen Bande ein Knopf für Tipp, Gerücht, Paket und Kopfgeld, jeder Dienst einmal am Tag',
+    '🪙 Tipp, Gerücht und Paket bezahlst du mit BratCoin, „+ Coins kaufen“ steht gleich daneben. Kopfgeld bleibt sauberes Geld',
+    '🗞️ Gerücht: Ein Satz über eine Bande im Kurier, wahr oder erfunden',
+    '📦 Paket: Lebkuchen mit Geld drin oder eine Stinkbombe. Aufmachen oder bei der Polizei abgeben?',
+    '🐀 Die Ratte: Jeden Montag wird heimlich eine Bande ausgelost, die die Stadt sabotiert. Der Kurier meldet ihre Spuren, Sonntag 18 bis 20 Uhr wird abgestimmt',
+    '⭐ BratCoin, Tipp und Darknet schon ab Stufe 3 (Kiezbande)',
+    '🛡️ Darknet und Ratte rechnet der Server']},
   {v:'Beta 5.1.2',date:'11.10.2026',title:'Sicherheit komplett',items:[
     '🛡️ Mehr Schutz für deine Bande: Läden, Ware, Handel und Bündnisse laufen jetzt über den Server',
     '📱 Eine Bande, ein Gerät: Holst du sie mit dem Bandencode auf ein anderes Handy, wird das alte abgemeldet',
@@ -5401,10 +5592,12 @@ const GUIDE=[
   ['🏰 Wahrzeichen','Drei Wahrzeichen sind jede Woche umkämpft: die 🏰 Kaiserburg, der 🚇 U-Bahnhof Plärrer und ein drittes, das jeden Sonntag wechselt. Ab Stufe 3 findest du sie im Coups-Fenster (🎯 Coups) und in der Viertel-Leiste und stürmst sie mit deinen Schlägern. Verteidigt wird immer mit 10, Türsteher zählen dort nicht, mit 9 Schlägern hast du also 50 % Chance. Jede Bande kann nur eins halten, nach einer Eroberung gibt es 1 Std. Schonzeit. Solange du es hältst, bekommst du seinen Bonus. Beim Plärrer zeigt das Fenster die U-Bahn-Viertel, dort steht dann unten „🚇 +1 Angriff“. Sonntag um 20 Uhr bekommt jeder Halter 10.000 sauber, danach gehört alles wieder der Stadtwache.','stadt'],
   ['🏆 Boss der Woche','Jede Woche zählt dein Ruf seit Sonntag 20 Uhr plus deine Beute geteilt durch 100 (Überfälle, Hacks, Transporter). Den Zwischenstand siehst du im Reiter 🏆 Woche der Rangliste. Sonntag um 20 Uhr bekommt die beste Bande 20.000 sauberes Geld und eine Woche lang den 🏆 neben dem Namen, alle anderen bekommen eine Mitteilung, wer gewonnen hat.','stadt'],
   ['📻 Funkgerät & Mitteilungen','Unter ☰ → Mitteilungen schaltest du sie ein. Beim ersten Mal gibt es einmal 5.000 Bargeld. Banden ohne Mitteilungen haben in der Rangliste ein 📵. Neu ist eine Mitteilung, wenn dich eine Bande überholt (höchstens alle 3 Stunden), und eine bei neuen Versionen. Mitteilungen kommen nur, wenn das Spiel nicht offen ist.','stadt'],
-  ['💰 Kopfgeld','In der Übersicht einer anderen Bande kannst du 5.000, 10.000 oder 25.000 sauberes Geld als Kopfgeld aussetzen, anonym und nur auf Banden ab Stufe 3 (Kiezbande). Mehrere Kopfgelder werden zusammengezählt. Der erste gelungene Überfall oder die erste Übernahme kassiert alles, dein eigenes Kopfgeld kannst du nicht selbst kassieren. Nach 7 Tagen ohne Treffer bekommst du dein Geld zurück. Banden mit Kopfgeld hängen auf den WANTED-Plakaten in der Rangliste, auf der Karte haben ihre Läden einen roten Rand und in der Viertel-Leiste ein 💰.','kampf'],
+  ['💰 Kopfgeld','Im 💻 Darknet einer anderen Bande kannst du einmal am Tag 5.000, 10.000 oder 25.000 sauberes Geld als Kopfgeld aussetzen, anonym und nur auf Banden ab Stufe 3 (Kiezbande). Mehrere Kopfgelder werden zusammengezählt. Der erste gelungene Überfall oder die erste Übernahme kassiert alles, dein eigenes Kopfgeld kannst du nicht selbst kassieren. Nach 7 Tagen ohne Treffer bekommst du dein Geld zurück. Banden mit Kopfgeld hängen auf den WANTED-Plakaten in der Rangliste, auf der Karte haben ihre Läden einen roten Rand und in der Viertel-Leiste ein 💰.','kampf'],
   ['📰 Kurier','Im Kurier steht alles, was in der Stadt passiert, ganz oben die Schlagzeile. Unter jeder Meldung kannst du mit 😂 💀 🔥 reagieren. Nach einem gelungenen Angriff auf einen Mitspieler kannst du ihm einen Spruch hinterlassen. Wehrst du einen Überfall ab, darfst du dem Angreifer einen Spruch zurückschicken. Bewegt sich BratCoin um 5 % oder mehr, meldet der Börsenticker 📈📉 die Gründe, höchstens einmal pro Stunde.','stadt'],
   ['🚔 Knast','Erreicht deine Hitze 100, kommt sofort die große Razzia (40 % Bargeld, alle Kassen) und dein Boss sitzt 2 Stunden. Wirtschaften geht weiter: bauen, kassieren, waschen, Crew. Angriffe, Coups, Tipps und der Safe warten. Im Knast verlierst du höchstens einen Laden. Raus kommst du so: 🪚 Ausbruch (ein Versuch, Minispiel mit drei Gitterstäben; klappt er, bist du sofort frei, sonst 30 Minuten länger), 💸 Kaution (10 % von Bargeld und sauberem Geld, mindestens 1.000) oder dein 🤝 Spezl zahlt sie und bekommt ⭐ 40 Ruf. Ein Rivale kann einmal den Richter schmieren (BratCoin im Wert von 3.000): 1 Stunde länger, der Kurier nennt keinen Namen. Kaution und Schmiergeld wandern in den Sparkassen-Safe. Dein Zellennachbar verrät dir pro Aufenthalt eine Ziffer des Safes.','pol'],
-  ['📞 Anonymer Tipp','In der Übersicht einer anderen Bande kannst du für 2.500 sauberes Geld die Polizei auf sie hetzen: ihre Hitze +15. Mit 20 % Chance fliegst du selbst auf: +10 Hitze für dich, und der Kurier nennt deinen Namen. Höchstens 3 Tipps am Tag und einer pro Bande alle 12 Stunden.','pol'],
+  ['📞 Anonymer Tipp','Im 💻 Darknet einer anderen Bande hetzt du ihr die Polizei auf den Hals: ihre Hitze +15, höchstens bis 99. Kostet BratCoin im Wert von 2.500, einmal am Tag. Mit 20 % Chance fliegst du selbst auf: +10 Hitze für dich, und der Kurier nennt deinen Namen. Nicht gegen Spezln und Banden mit Neulingsschutz.','pol'],
+  ['💻 Darknet','Ab Stufe 3 (Kiezbande). Tipp auf eine andere Bande, dann auf 💻 Darknet. Dort gibt es 📞 Anonymer Tipp (BratCoin im Wert von 2.500), 🗞️ Gerücht (Wert 1.500), 📦 Paket (Wert 2.000) und 💰 Kopfgeld (sauberes Geld). Jeder Dienst geht einmal am Tag, ausgegebene Coins sind weg. Keine Coins? „+ Coins kaufen“ bringt dich direkt zum BratCoin. 🗞️ Gerücht: Du wählst einen von sechs Sätzen über die Bande, er steht im Kurier, wahr oder erfunden. Mit 20 % Chance steht dein Name dabei. 📦 Paket: Lebkuchen mit 1.000, 2.500 oder 5.000 deines sauberen Gelds (nur zwischen Banden ab 7 Tagen) oder eine Stinkbombe (einer ihrer Läden verliert die Einnahmen einer Stunde). Die Bande sieht nicht, was drin ist und von wem es kommt. Gibt sie es bei der Polizei ab, sind die Lebkuchen weg, und bei einer Stinkbombe fliegt der Absender auf (+15 Hitze).','pol'],
+  ['🐀 Die Ratte','Jeden Montag ab 8 Uhr wird heimlich eine aktive Bande ab Stufe 3 zur Ratte, nie zweimal hintereinander und nur, wenn mindestens 3 Banden mitspielen. Nur sie selbst erfährt es. Sie hat 3 Sabotagen: 🚪 Türsteher bestechen (2 Std. einer weniger), 🎯 Coup platzen lassen (der nächste Coup einer Bande platzt) und 💩 Stinkbombe. Der Kurier meldet jede Sabotage 2 bis 6 Stunden später, nur mit Viertel und Wochentag. Sonntag von 18 bis 20 Uhr stimmen alle Banden ab, die mindestens 7 Tage dabei sind und an 3 Tagen gespielt haben (Leiste im Kurier). Hat die Ratte allein die meisten Stimmen, ist sie erwischt. Wer richtig getippt hat, bekommt 10.000 sauber. Kommt sie durch, bekommt sie 25.000 sauber und eine Woche 🐀 am Namen.','stadt'],
   ['🪙 BratCoin','BratCoin kaufst du mit Bargeld und verkaufst ihn gegen sauberes Geld (12 % Gebühr beim Kauf, 2 % beim Verkauf). Der Kurs ist für alle gleich und wird von den Spielern gemacht: Jede 10.000 Kauf treibt ihn um 1 % hoch, Verkäufe drücken ihn, höchstens 5 % pro Geschäft. Du zahlst immer den Kurs vor deinem eigenen Geschäft. Nachrichten im Kurier bewegen ihn um 8 bis 20 %, eine große Razzia drückt ihn um 3 %, ruhige Stunden ohne Überfälle heben ihn ein wenig. Alles zusammen wirkt höchstens ±20 % und klingt alle 6 Stunden zur Hälfte ab, dazu schwankt er leicht von selbst. Vorsicht: Hacker klauen 12 % deiner Coins, Razzien 20 bis 40 %. Geschäfte ab 20.000 meldet der Kurier mit Namen.','geld'],
   ['🥃 Ware & Lager','Brennerei (🥃 Fusel, etwas Hitze) und Schrottplatz (🔩 Teile) baust du ab Stufe 2 (Eckbande). Sie füllen sich wie eine Kasse: 4 pro Stunde, mit jeder Stufe mehr, nach 3 Stunden voll. Abholen geht mit „Kassieren“ auf der Karte. Die Ware liegt dann im Lager (Crew-Tab → 📦 Lager). Dort verkaufst du sie jederzeit an den Hehler (600 pro Fusel, 500 pro Teil) oder baust Ausrüstung daraus. Ein gelungener Überfall auf dich raubt 20 % vom Lager, die Polizei lässt es in Ruhe.','geld'],
   ['🧰 Ausrüstung','Ab Stufe 3 (Kiezbande) baust du im Lager Ausrüstung aus Ware. 🗝️ Dietrich (3 Teile): Beim nächsten Überfall auf einen Laden mit Sicherung zählen Stahltür, Kamera und Tresor nicht. 🦺 Schutzweste (2 Teile, 1 Fusel): Der nächste Überfall auf dich trifft auf 20 % mehr Verteidigung. 🚀 Nitro (2 Teile, 3 Fusel): Schaltest du es im Angriffsfenster an, macht dieser Überfall oder diese Übernahme keine Hitze, und dein Trupp ist sofort zurück. Ohne Schalter bleibt es im Lager. Dietrich und Schutzweste wirken von selbst. Von jeder Sorte hast du höchstens 3. Wie viele du hast, steht im Lager und im Angriffsfenster; nach jedem Angriff siehst du, was verbraucht wurde und was übrig ist. Bei Übernahme und Hack hilft der Dietrich nicht. Bricht ein Angriff ab, bekommst du die Ausrüstung zurück. Etwa jeder 5. gelungene Coup bringt welche mit.','kampf'],
@@ -5449,7 +5642,7 @@ const FAQ=[
   ['Was ist der Unterschied zwischen Bargeld und sauberem Geld?','Bargeld kommt aus Wettbüros, Hehlerlagern und Clubs. Damit baust du die meisten Läden und bezahlst die Crew. Sauberes Geld entsteht durch Geldwäsche, Mieten und BratCoin-Verkäufe. Es ist für Immobilien, Bestechung und manche Upgrades nötig und zählt voll für die Rangliste.','geld'],
   ['Warum kann ich gerade nicht angreifen?','Der Grund steht am Knopf: Alle Autos sind unterwegs, auf diese Bande läuft schon ein Trupp von dir, dir fehlt 🥃 Fusel für die Fahrer, deine Hacker machen Pause, oder es sind zu wenig Schläger daheim (Überfall braucht 1, Übernahme 3, Hack 1 Hacker). Verletzte sind nach 1 Std. wieder fit.','kampf'],
   ['Wie schütze ich meine Läden?','Mit Türstehern und Sicherung. Türsteher stellst du im Crew-Tab unter 🚪 Türsteher oder über 🚪 in der Viertel-Leiste in ein Viertel, jeder macht dort alle deine Läden um 2,5 stärker, höchstens 3 pro Viertel. Im Pop-up eines Ladens baust du nacheinander Stahltür (2.000), Kamera (3.000) und Tresor (6.000) ein, bezahlt mit sauberem Geld. Bei einer Übernahme oder einem Abriss ist die Sicherung weg.','kampf'],
-  ['Was ist ein anonymer Tipp, und was kann ich dagegen tun?','Andere Banden können dich für 2.500 sauberes Geld bei der Polizei verpfeifen: deine Hitze steigt um 15, höchstens bis 99. Du bekommst eine Mitteilung, sobald du das Spiel öffnest. Dagegen helfen Anwälte, Bestechung und ein Auge auf deine Hitze. Wer verpfeift, fliegt mit 20 % Chance selbst auf.','pol'],
+  ['Was ist ein anonymer Tipp, und was kann ich dagegen tun?','Andere Banden können dich im Darknet für BratCoin im Wert von 2.500 bei der Polizei verpfeifen, jede höchstens einmal am Tag: deine Hitze steigt um 15, höchstens bis 99. Du bekommst sofort eine Mitteilung. Dagegen helfen Anwälte, Bestechung und ein Auge auf deine Hitze. Wer verpfeift, fliegt mit 20 % Chance selbst auf.','pol'],
   ['Warum kostet Bestechen mal 3.000 und mal mehr?','Der erste Umschlag am Tag kostet 3.000, jeder weitere 1.000 mehr, höchstens 9.000. Um Mitternacht fängt es wieder bei 3.000 an. Dauerhaft weniger Hitze bringen Anwälte.','pol'],
   ['Kann ich alles verlieren?','Nein. Dein letztes Geschäft kann dir niemand per Übernahme abnehmen, und du kannst es auch nicht abreißen, nur umbauen. Geld und Läden kannst du aber durch Überfälle, Übernahmen und Razzien verlieren.','start'],
   ['Ich sitze im Knast. Was jetzt?','Tipp oben auf der Karte auf 🚔 KNAST. Du kannst einmal ausbrechen (Minispiel, klappt es, bist du sofort frei, sonst 30 Minuten länger) oder Kaution zahlen: 10 % deines Geldes, mindestens 1.000. Hast du einen Spezl, bekommt er eine Mitteilung und kann für dich zahlen. Oder du sitzt die 2 Stunden ab und wirtschaftest so lange weiter. Mehr als einen Laden kann dir in der Zeit niemand abnehmen.','pol'],
@@ -5489,6 +5682,10 @@ const FAQ=[
   ['Wer kann meine Nachrichten lesen?','Im Kanal „Stadt“ alle Banden. Direktnachrichten nur ihr beide. Alles wird nach 7 Tagen gelöscht.','stadt'],
   ['Kann ich eine Nachricht wieder löschen?','Ja, deine eigenen. Tipp im Stadtfunk auf deine Nachricht, dann erscheint „🗑️ Löschen“. Sie verschwindet dann auch bei allen anderen.','stadt'],
   ['Wann kommt der Geldtransporter?','Einmal tagsüber zu einer zufälligen Zeit, dazu fest um 22 Uhr der 🍺 Feierabend-Coup, jeweils für 30 Minuten. Du bekommst eine Mitteilung, wenn der Schalter „Coups, Großcoups & Transporter“ an ist.','akt'],
+  ['Ich habe keine BratCoin. Wie nutze ich das Darknet?','Im Darknet auf „+ Coins kaufen“ tippen, das bringt dich zu Geld › BratCoin. Dort kaufst du Coins mit Bargeld (ab Stufe 3). Was ein Dienst kostet, steht am Knopf und richtet sich nach dem Kurs: Tipp im Wert von 2.500, Gerücht 1.500, Paket 2.000.','pol'],
+  ['Ich habe ein Paket bekommen. Aufmachen?','Drin sind Lebkuchen mit sauberem Geld oder eine Stinkbombe, von außen sieht man es nicht. Aufmachen: Lebkuchen bringen das Geld, eine Stinkbombe kostet einen deiner Läden die Einnahmen einer Stunde. Bei der Polizei abgeben: Lebkuchen sind weg, bei einer Stinkbombe kennt die ganze Stadt den Absender. Wartende Pakete stehen oben im Kurier.','pol'],
+  ['Wie finde ich die Ratte?','Lies den Kurier: Jede Sabotage steht dort mit Viertel und Wochentag, aber erst 2 bis 6 Stunden später. Wer hat dort Läden, wer war da unterwegs, wer hat einen Grund? Sonntag 18 bis 20 Uhr tippst du im Kurier auf 🗳️ Abstimmen. Liegst du richtig, bekommst du 10.000 sauber, auch wenn die anderen falsch liegen.','stadt'],
+  ['Bin ich diese Woche die Ratte?','Das erfährt nur deine Bande: Sobald du das Spiel öffnest, zeigt es dir ein Fenster, und im 💻 Darknet jeder anderen Bande steht der Knopf 🐀 Sabotage. Sonst bist du es nicht.','stadt'],
   ['Wie bekomme ich ein Kopfgeld?','Raub eine Bande mit Kopfgeld erfolgreich aus oder übernimm einen ihrer Läden. Das ganze Kopfgeld landet sofort als sauberes Geld bei dir. Ein Hack zählt nicht.','kampf'],
   ['Kann mich mein Spezl angreifen?','Nein, solange das Bündnis läuft, auch nicht in den 24 Stunden nach dem Auflösen. Nur wer verrät, darf sofort wieder angreifen und trägt dafür 7 Tage die 🐍 Schlange.','stadt'],
   ['Warum kann ich meinem Spezl noch kein Geld schicken?','Geld schicken geht erst, wenn das Bündnis einen Tag alt ist und beide Banden mindestens 7 Tage dabei sind. Dann höchstens 20.000 am Tag, 20 % davon behält der Geldbote. Angebote mit Ware gehen auch ohne Bündnis, aber ebenfalls erst ab 7 Tagen.','geld'],
@@ -5535,8 +5732,8 @@ const CHAPTERS=[
   {id:'geld',ico:'💵',name:'Geld',sub:'Verdienen, waschen, Ware, BratCoin',order:['💵 Bargeld verdienen','🧼 Geld waschen','💸 Geldfluss','🥃 Ware & Lager','📦 Angebote','🪙 BratCoin','🔁 Umbauen & 🧨 Abreißen']},
   {id:'akt',ico:'🎯',name:'Aktionen',sub:'Coups, Safe, Großcoups, Tagesziele, Transporter, Schmuggel',order:['🎯 Coups','🔢 Sparkassen-Safe','💰 Großcoups','🛷 Lebkuchen-Schmuggel','✅ Tagesziele & ⭐ Ruf','🚚 Geldtransporter','🍺 Feierabend-Coup','📦 Bestellungen']},
   {id:'kampf',ico:'👊',name:'Kampf',sub:'Angreifen, Duell, Ausrüstung, Kopfgeld',order:['👊 Angreifen','🚨 Überfall als Duell','🥊 Hilfe im Duell','🚪 Türsteher & Sicherung','🚗 Autos & Trupp','🧰 Ausrüstung','💰 Kopfgeld','🎯 Spitzenreiter-Prämie','🏴 Zielscheibe','⚔️ Revanche','👑 Viertel kontrollieren']},
-  {id:'pol',ico:'🚨',name:'Polizei',sub:'Hitze, Razzien, Knast, anonymer Tipp',order:['🚨 Polizei-Hitze','🚔 Knast','📞 Anonymer Tipp']},
-  {id:'stadt',ico:'🏴',name:'Banden & Stadt',sub:'Live-Stadt, Spieltag, Wetter, Bündnis, Boss, Feste, Kurier',order:['🟢 Live-Stadt','⚽ Club-Spieltag','🌧️ Wetter','🤝 Bündnis','🎩 Boss','🏆 Boss der Woche','🎄 Feste','🏴 Banden','📰 Kurier','📻 Stadtfunk','📻 Funkgerät & Mitteilungen']}];
+  {id:'pol',ico:'🚨',name:'Polizei',sub:'Hitze, Razzien, Knast, Darknet',order:['🚨 Polizei-Hitze','🚔 Knast','💻 Darknet','📞 Anonymer Tipp']},
+  {id:'stadt',ico:'🏴',name:'Banden & Stadt',sub:'Live-Stadt, Spieltag, Wetter, Bündnis, Boss, Ratte, Kurier',order:['🟢 Live-Stadt','⚽ Club-Spieltag','🌧️ Wetter','🤝 Bündnis','🎩 Boss','🏆 Boss der Woche','🐀 Die Ratte','🎄 Feste','🏴 Banden','📰 Kurier','📻 Stadtfunk','📻 Funkgerät & Mitteilungen']}];
 function chTiles(act,list){return `<div class="chtiles">${CHAPTERS.map(c=>{const n=list.filter(x=>x[2]===c.id).length;return `<button class="cht" data-act="${act}" data-k="${c.id}"><span>${c.ico}</span><b>${c.name}</b><small>${act==='fch'?n+' Fragen':c.sub}</small></button>`}).join('')}</div>`}
 function chHead(title,back){return `<div class="mtop"><button class="back" data-act="${back}" aria-label="Zurück zur Übersicht">‹</button><h3>${title}</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>`}
 function showGuide(ch){
@@ -5700,6 +5897,7 @@ function startGame(){
   syncUnterwelt(true).then(()=>{dirty=true;if(!pendingNews&&!pendingBoss)maybeOpenDuel();else duelBar()});
   document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='fmsg'){e.preventDefault();sendMsg()}});
   setInterval(sync,20000); setInterval(appHere,15000);
+  dnLoad(); setInterval(()=>{if(!document.hidden)dnLoad()},5*60000); // ab 5.2: Darknet, Pakete, Ratte
   setInterval(()=>{if(dirty&&now()-lastTouch>1500)renderMain();else if(ui.tab==='stadt'&&now()-lastTouch>1500&&document.getElementById('modal').hidden)renderMain();renderHUD()},5000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){appHere();resubscribe();checkVersion(true);sync(true).then(()=>setTimeout(checkRevenge,600))}else appAway()});
   window.addEventListener('pagehide',appAway);
@@ -5776,6 +5974,11 @@ function onNewEvent(e){
   if(e.kind==='ally'||e.kind==='betray'||e.kind==='heistk')loadFam().then(()=>{dirty=true});
   if(e.kind==='betray'&&e.target===me.id)toast(e.txt,'bad');
   if(ui.tab!=='feed')unread++;
+  if(srvDn()){ // ab 5.2: Darknet und Ratte rechnet der Server
+    if(e.kind==='tip'&&e.target===me.id)toast('📞 Jemand hat dich bei der Polizei verpfiffen: Hitze +'+(+e.amount||TIP_HEAT),'bad');
+    if(e.kind==='paket'&&e.target===me.id){toast('📦 Ein Paket für dich! Absender unbekannt.','ev');dnLoad()}
+    if(e.kind==='ratte'||(e.kind==='info'&&/^🐀/.test(e.txt||'')))dnLoad();
+  }
   if(e.kind==='tip'&&e.target===me.id){applyTips().then(()=>{savePlayer();renderHUD()})}
   if(e.target===me.id&&(e.kind==='hack'||lootOf(e)))applyHacks().then(()=>{savePlayer();dirty=true});
   if(e.target===me.id&&e.actor!==me.id){
