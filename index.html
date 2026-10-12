@@ -654,10 +654,15 @@ main.split{padding:0;gap:0}
 .dbar .top{cursor:pointer;padding-right:34px}
 .dbar .dtog{position:absolute;right:12px;top:8px;width:28px;height:28px;border-radius:50%;background:var(--night2);border:2px solid var(--ink);display:grid;place-items:center;font-size:11px;color:var(--yellow);pointer-events:none}
 .dbar .slotrow{display:none}
-.dbar.open .slotrow{display:grid;position:absolute;left:0;right:0;bottom:calc(100% + 43px);height:136px;padding:10px 8px;background:var(--panel);border-top:3px solid var(--ink);border-bottom:3px solid var(--ink)}
+.dbar.open .slotrow{display:grid;position:absolute;left:0;right:0;bottom:calc(100% + var(--abh));height:136px;padding:10px 8px;background:var(--panel);border-top:3px solid var(--ink);border-bottom:3px solid var(--ink)}
 .dbar.open .top{padding-right:0}
-.dbar .dclose{display:flex;align-items:center;gap:5px;position:absolute;right:10px;bottom:calc(100% + 43px + 136px - 15px);z-index:2;height:30px;padding:0 12px;border:2.5px solid var(--ink);border-radius:999px;background:var(--yellow);color:var(--ink);font-family:var(--f-display);font-size:14px;letter-spacing:.05em;box-shadow:2px 2px 0 var(--ink);cursor:pointer}
+.dbar .dclose{display:flex;align-items:center;gap:5px;position:absolute;right:10px;bottom:calc(100% + var(--abh) + 136px - 15px);z-index:2;height:30px;padding:0 12px;border:2.5px solid var(--ink);border-radius:999px;background:var(--yellow);color:var(--ink);font-family:var(--f-display);font-size:14px;letter-spacing:.05em;box-shadow:2px 2px 0 var(--ink);cursor:pointer}
 .dbar.open .slotrow{padding-top:18px}
+/* Das offene Blatt endet genau auf der Leiste Coups | Safe | Kassieren (feste Höhe, Abstand zur Viertel-Leiste 3px), die Leiste bleibt ganz sichtbar. Prüfung: leisten.js */
+:root{--abh:68px}
+.actbar{height:65px;box-sizing:border-box}
+.sc.mine .secb{top:auto;bottom:5px;left:0;right:0;text-align:center;font-size:10px;line-height:11px;letter-spacing:0}
+@media (max-width:340px){.hud .m{padding-left:4px;padding-right:4px;gap:2px}}
 /* 4.7 Stadterweiterung: Viertel-Auswahl für Heimat und Wahlheimat */
 .hgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0 10px}
 .hgrid .btn{margin:0;padding:7px 6px;font-size:13px}
