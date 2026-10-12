@@ -966,17 +966,20 @@ function isNpc(o){return !!NPC[o]}
 
 async function q(p){const r=await p;if(r.error)throw r.error;return r.data}
 async function loadAll(){
-  const [pl,sl,ev,wo]=await Promise.all([
+  await loadMoneyCfg(); // ab 5.0.4 (ab 5.1.2 vorher: fremde Banden und Läden kommen dann aus gang_pub und slot_pub)
+  const shop=srvShop();
+  const [pl,sl,ev,wo,gp,sp]=await Promise.all([
     q(sb.from('players').select('*').eq('world',WORLD)),
     q(sb.from('slots').select('*').eq('world',WORLD)),
     q(sb.from('events').select('*').eq('world',WORLD).order('id',{ascending:false}).limit(60)),
-    q(sb.from('world').select('*').eq('id',WORLD))
+    q(sb.from('world').select('*').eq('id',WORLD)),
+    shop?q(sb.from('gang_pub').select('*').eq('world',WORLD)):null,
+    shop?q(sb.from('slot_pub').select('*').eq('world',WORLD)):null
   ]);
-  players={}; pl.forEach(p=>{players[p.id]=norm(p)});
-  slots={}; sl.forEach(s=>{slots[key(s.district,s.idx)]=s});
+  players={}; (gp||[]).forEach(r=>{players[r.id]=pubNorm(r)}); pl.forEach(p=>{players[p.id]=norm(p)});
+  slots={}; (sp||[]).forEach(s=>{slots[key(s.district,s.idx)]={...s,_pub:true}}); sl.forEach(s=>{slots[key(s.district,s.idx)]=s});
   events=ev; world=wo[0]||null; syncOpen();
   await loadLm(); // ab 5.0
-  await loadMoneyCfg(); // ab 5.0.4
 }
 /* Ab Beta 4.7: Ein Stadtteil ist erschlossen, sobald seine Plätze in der Datenbank stehen */
 function syncOpen(){
@@ -985,8 +988,20 @@ function syncOpen(){
   if(ch&&typeof document!=='undefined'&&document.getElementById('mapsvg')){const m=document.getElementById('main');if(m)m.innerHTML=''}
   return ch;
 }
-async function refreshPlayers(){const pl=await q(sb.from('players').select('*').eq('world',WORLD));pl.forEach(p=>{if(!me||p.id!==me.id)players[p.id]=norm(p);else{const n=norm(p);me.push_ok=p.push_ok;me.radio=p.radio===true||me.radio===true;me.badges=n.badges;mergeMine(n)}})}
-async function refreshSlots(){const sl=await q(sb.from('slots').select('*').eq('world',WORLD));slots={};sl.forEach(s=>{slots[key(s.district,s.idx)]=s});syncOpen()}
+async function refreshPlayers(){
+  const shop=srvShop(), [pl,gp]=await Promise.all([shop&&me?q(sb.from('players').select('*').eq('id',me.id)):q(sb.from('players').select('*').eq('world',WORLD)),shop?q(sb.from('gang_pub').select('*').eq('world',WORLD)):null]);
+  (gp||[]).forEach(r=>{if(!me||r.id!==me.id)players[r.id]=pubNorm(r)});
+  pl.forEach(p=>{if(!me||p.id!==me.id)players[p.id]=norm(p);else{const n=norm(p);me.push_ok=p.push_ok;me.radio=p.radio===true||me.radio===true;me.badges=n.badges;me.born=+p.born||0;mergeMine(n)}})}
+async function refreshSlots(){
+  const shop=srvShop(), [sl,sp]=await Promise.all([shop&&me?q(sb.from('slots').select('*').eq('world',WORLD).eq('owner',me.id)):q(sb.from('slots').select('*').eq('world',WORLD)),shop?q(sb.from('slot_pub').select('*').eq('world',WORLD)):null]);
+  slots={}; (sp||[]).forEach(s=>{slots[key(s.district,s.idx)]={...s,_pub:true}}); sl.forEach(s=>{slots[key(s.district,s.idx)]=s}); syncOpen()}
+/* Ab 5.1.2: öffentliche Sicht auf fremde Banden (Name, Farbe, Boss, Ruf-Stufe, online, Punkte) */
+function pubNorm(r){const l=+r.lvl||0,p=norm({id:r.id,world:r.world,name:r.name,color:r.color,boss:r.boss,ruf:l?RUF_AT[l-1]:null,last_seen:r.last_seen,renamed:r.renamed,badges:r.badges,fest:r.fest,week_key:r.week_key,push_ok:r.push_ok,rank_pos:r.rank_pos,jail:r.jail});
+  p._pub=true;p.week_pts=+r.week_pts||0;p.pts=+r.pts||0;p.born=+r.born||0;return p}
+function pubSlot(s){const k=key(s.district,s.idx),c=slots[k];
+  if(me&&s.owner===me.id&&c&&c.owner===me.id&&!c._pub){c.type=s.type;c.lvl=s.lvl}
+  else{slots[k]={...s,_pub:true};if(me&&s.owner===me.id)fetchSlot(s.district,s.idx).catch(()=>{})}
+  syncOpen();dirty=true}
 function norm(p){p.push_rank=p.push_rank!==false;p.push_upd=p.push_upd!==false;p.week_last=typeof p.week_last==='string'?JSON.parse(p.week_last):(p.week_last||null);p.push_attack=p.push_attack!==false;p.push_dm=p.push_dm!==false;p.push_cash=p.push_cash!==false;p.push_new=p.push_new!==false;p.push_heat=p.push_heat!==false;p.push_coup=p.push_coup!==false;p.onboard=typeof p.onboard==='string'?JSON.parse(p.onboard):(p.onboard||null);p.boss=typeof p.boss==='string'?JSON.parse(p.boss):(p.boss||null);p.renamed=p.renamed===true;p.wash_pool=p.wash_pool==null?null:(+p.wash_pool||0);p.guards=typeof p.guards==='string'?JSON.parse(p.guards):(p.guards||{});p.tips=typeof p.tips==='string'?JSON.parse(p.tips):(p.tips||{});p.bribe_n=+p.bribe_n||0;p.coups=typeof p.coups==='string'?JSON.parse(p.coups):(p.coups||{});p.daily=typeof p.daily==='string'?JSON.parse(p.daily):(p.daily||{});p.ruf=p.ruf==null?null:(+p.ruf||0);p.energy=p.energy==null?null:+p.energy;p.energy_at=+p.energy_at||0;p.crew=typeof p.crew==='string'?JSON.parse(p.crew):(p.crew||{s:2,f:0,h:0,a:0});p.ware=typeof p.ware==='string'?JSON.parse(p.ware):(p.ware||{});p.gear=typeof p.gear==='string'?JSON.parse(p.gear):(p.gear||{});p.helping=typeof p.helping==='string'?JSON.parse(p.helping):(p.helping||null);p.fest=typeof p.fest==='string'?JSON.parse(p.fest):(p.fest||null);p.badges=typeof p.badges==='string'?JSON.parse(p.badges):(Array.isArray(p.badges)?p.badges:[]);['bar','clean','coins','basis','heat','reserve','eco_at','busy_until','hack_until','last_seen','home_at'].forEach(k=>p[k]=+p[k]||0);p.home_far=p.home_far===true;crewMig(p);return p}
 /* Ab Beta 4.8: Wachen werden 1:1 zu Türstehern, die Schläger-Zahl sinkt entsprechend. Läuft einmal, solange crew.t fehlt */
 function crewMig(p){
@@ -1004,7 +1019,9 @@ async function casSlot(d,i,expect,patch){
   if(data&&data[0]){slots[key(d,i)]=data[0];return data[0]}
   return null;
 }
-async function fetchSlot(d,i){const data=await q(sb.from('slots').select('*').eq('world',WORLD).eq('district',d).eq('idx',i));if(data[0])slots[key(d,i)]=data[0];return data[0]||null}
+async function fetchSlot(d,i){let data=await q(sb.from('slots').select('*').eq('world',WORLD).eq('district',d).eq('idx',i));
+  if(!data[0]&&srvShop()){data=await q(sb.from('slot_pub').select('*').eq('world',WORLD).eq('district',d).eq('idx',i));if(data[0])data[0]._pub=true}
+  if(data[0])slots[key(d,i)]=data[0];return data[0]||null}
 async function addEvent(ev){
   const row=Object.assign({world:WORLD,ts:now(),applied:false},ev);
   try{const data=await q(sb.from('events').insert(row).select());if(data&&data[0])pushEvent(data[0])}catch(e){console.warn(e)}
@@ -1069,6 +1086,7 @@ async function savePlayer(){
     if(me.wash_pool!=null){clampPool();patch.wash_pool=me.wash_pool}
     if(srvMoney())MONEY_F.forEach(k=>delete patch[k]); // ab 5.0.4: Geld schreibt nur der Server
     if(srvFight())FIGHT_NO.forEach(k=>delete patch[k]); // ab 5.1.1: Kampfwerte auch
+    if(srvShop())SHOP_NO.forEach(k=>delete patch[k]); // ab 5.1.2: Ware, Boss, Heimat usw. auch
     const send=patchDiff(patch);
     await q(sb.from('players').update(send).eq('id',me.id));
     markSaved(send);
@@ -1125,7 +1143,7 @@ function heatNet(){return heatGainOf(me.id)-heatDecay()}
 /* Hitze einer anderen Bande hochrechnen (gespeichert wird sie nur, wenn sie online ist) */
 function heatGuess(o){
   if(me&&o===me.id)return me.heat;
-  const p=players[o]; if(!p)return 0;
+  const p=players[o]; if(!p||p._pub)return 0;
   const net=heatGainOf(o)-heatDecay(p.crew||{},o), since=Math.max(0,now()-(+p.eco_at||now()))/HOUR;
   return heatStep(clamp(+p.heat||0,0,100),net,since);
 }
@@ -1185,6 +1203,7 @@ async function kasse(extra){
     const res=await sb.functions.invoke('kasse',{body:{player:me.id,entries:sent.map(({id,k,d,r})=>({id,k,d,r})),...(extra||{})}});
     if(res.error)throw res.error;
     r=res.data; if(typeof r==='string')r=JSON.parse(r);
+    if(r&&r.error==='gang')deviceOut();
     if(!r||r.error)throw new Error((r&&r.error)||'kasse');
     if(r.off){moneyCfg={armed:false};r=null} // Server rechnet in dieser Welt nicht: weiter wie bis 5.0.3
     else kasseApply(r);
@@ -1204,6 +1223,7 @@ function kasseApply(r){
   const fx=r.fx||{};
   (r.hints||[]).forEach(h=>safeHintGot(h));
   if(fx.washed>0&&me.ruf!=null)daily('wash',fx.washed);
+  if(fx.lmf>0)toast(`🍺 Aus den Felsengängen: +${fx.lmf} 🥃 Fusel`,'good'); // ab 5.1.2 zählt der Server
   (fx.quit||[]).forEach(k=>{if((me.crew[k]||0)>0){me.crew={...me.crew,[k]:me.crew[k]-1};normGuards();addEvent({kind:'info',actor:me.id,target:me.id,txt:`${me.name}: Ein ${CREW[k].name} hat gekündigt. Kein Lohn.`})}});
   (fx.raids||[]).forEach(x=>raidNews(x.kind,x.did,x.lost,x.lc,x.jail));
   if(pendingKnast&&document.getElementById('modal').hidden){pendingKnast=false;showModal(knastModal())}
@@ -1235,7 +1255,9 @@ async function kampf(body,hits,mult){
   }
   let r;
   try{r=await kampfCall(body);setNet(true)}catch(e){console.warn(e);setNet(false);return {error:'netz'}}
-  if(r.off){moneyCfg={...moneyCfg,fights:false};return r}
+  if(r.error==='gang'){deviceOut();return r}
+  if(r.off){if(r.shops===false)moneyCfg={...moneyCfg,shops:false};else moneyCfg={...moneyCfg,fights:false};return r}
+  lastRes=r.res||null;
   if(r.p)fightApply(r.p);
   (r.hints||[]).forEach(safeHintGot); // ab 5.1: Safe-Hinweis aus Coups und Überfällen
   return r;
@@ -1257,8 +1279,12 @@ function wareMerge(srv){
 }
 function fightTake(P){
   const lv=myLevel();
+  if(srvShop()){ // ab 5.1.2: Ware, Boss, Heimat, Erschließen, Funkgerät, Fest und Bestechung kommen nur vom Server
+    SHOP_NO.forEach(k=>{if(k in P)me[k]=k==='ware'?jparse(P.ware,{}):k==='boss'||k==='fest'?jparse(P[k],null):P[k]});
+    if(lastSaved){const pt=patchOf(me,true);SHOP_NO.forEach(k=>{if(k in P)lastSaved[k]=JSON.stringify(pt[k])})}
+  }
   if(P.crew&&typeof P.crew==='object'){const lmf=me.crew&&me.crew.lmf;me.crew={...P.crew};if(lmf&&!(+P.crew.lmf>=+lmf))me.crew.lmf=lmf}
-  if(P.ware&&typeof P.ware==='object'){me.ware=wareMerge(P.ware);if(lastSaved)lastSaved.ware=JSON.stringify(P.ware)}
+  if(P.ware&&typeof P.ware==='object'&&!srvShop()){me.ware=wareMerge(P.ware);if(lastSaved)lastSaved.ware=JSON.stringify(P.ware)}
   FIGHT_NO.forEach(k=>{if(k in P)me[k]=P[k]});
   if('kstate' in P)me.kstate=P.kstate;
   if(lastSaved){const pt=patchOf(me,true);FIGHT_NO.forEach(k=>{if(k in P)lastSaved[k]=JSON.stringify(pt[k])});if(P.crew)lastSaved.crew=JSON.stringify(P.crew)}
@@ -1269,6 +1295,57 @@ function fightApply(P){
   if('wash_pool' in P)me.wash_pool=P.wash_pool==null?null:+P.wash_pool;
   bkQ.forEach(e=>bkLocal(e.k,e.d,1));
   fightTake(P); renderHUD();
+}
+/* ---------- Ab Beta 5.1.2 „Sicherheit komplett“ ----------
+   In Welten mit money_cfg.shops rechnet die Edge Function kampf auch Läden (bauen, ausbauen, umbauen, Sicherung, abreißen),
+   Ware, Bestellungen, Crew anheuern, Boss, Heimatviertel, Erschließen, Angebote, Geschenke, Bündnisse und Preise.
+   Fremde Banden und Läden sieht das Spiel nur noch öffentlich; das Angriffsfenster fragt den Server (vorschau). */
+const SHOP_NO=['ware','boss','home','home_at','home_set','home_far','open_week','radio','fest','bribe_day','bribe_n'];
+const TRADE_AGE=7*864e5, OPEN_RUN=30*60000;
+function srvShop(){return srvFight()&&!!moneyCfg.shops}
+let lastRes=null;
+const SHOP_WHY={runde:'Eröffnungsrunde: In einem frisch erschlossenen Stadtteil darf jede Bande in der ersten halben Stunde nur einen Laden haben.',woche:'Das geht erst wieder ab Sonntag 20 Uhr.',jung:'Handel und Geld schicken gehen erst, wenn beide Banden mindestens 7 Tage dabei sind.',letzter:'Dein letzter Laden kann nur umgebaut werden.',viele:'Höchstens 3 offene Angebote gleichzeitig.',bar:'Zu viel Bargeld für diese Ware.',leer:'Auf beiden Seiten muss etwas stehen.',stufe2:'Diese Bande ist dafür noch zu klein.',schon:'Einer von euch hat schon ein Bündnis.',laeuft:'Anfrage läuft schon.',wenig:'Zu wenig.',limit:'Heute schon 20k geschickt.',warten:'Das geht gerade noch nicht.',voll:'Mehr als 6 Fahrer bringen nichts.',ware:'Dafür fehlt dir Ware.',spaet:'Zu spät: Jemand anderes war schneller.',geld:'Dafür reicht dein Geld nicht.',vorbei:'Das gilt nicht mehr.',nichts:''};
+/* Eine Laden-Aktion beim Server; null = abgelehnt (und gemeldet) */
+async function shopAct(act,body,modal){
+  const r=await kampf({act,...(body||{})});
+  if(r&&r.res&&!r.why&&!r.error&&!r.off)return r.res;
+  const w=r&&(r.why||r.error);
+  if(w==='nichts')return null;
+  if(SHOP_WHY[w]&&!(r&&r.off)){if(modal)showResult(false,'GEHT NICHT',SHOP_WHY[w],'',null,true);else toast(SHOP_WHY[w],'bad');dirty=true;return null}
+  fightWhy(r,modal); return null;
+}
+/* Die Bande wurde mit dem Bandencode auf ein anderes Gerät geholt: neu starten, dort steht der Hinweis */
+let devGone=false;
+function deviceOut(){if(devGone)return;devGone=true;try{sessionStorage.setItem('imperium-out','1')}catch(e){}setTimeout(()=>location.reload(),300)}
+/* Bau-Regeln: Bauzuschlag ab dem 15. eigenen Laden (+4 % je Laden, höchstens doppelt), Eröffnungsrunde 30 Min. */
+function ownN(){let n=0;eachS(x=>{if(me&&x.owner===me.id)n++});return n}
+function surch(){if(!srvShop())return 1;const k=ownN()+1-14;return k>0?Math.min(2,1+.04*k):1}
+function buildPrice(t){return Math.round(costOf(t)*surch())}
+function openRunLeft(did){if(!srvShop()||!me)return 0;const o=openedMap()[did];if(!o||!(now()-(+o.at||0)<OPEN_RUN))return 0;return slotsOfD(DM[did]).some(x=>x&&x.owner===me.id)?(+o.at+OPEN_RUN-now()):0}
+function tooYoung(o){if(!srvShop())return false;const a=+me.born||0,b=+((players[o]||{}).born)||0;return !a||!b||now()-a<TRADE_AGE||now()-b<TRADE_AGE}
+/* Angriffsfenster: Chancen und Verteidigung vom Server (20 Sek. gemerkt, je Ziel, Trupp und Rache) */
+let pvC={};
+function pvGet(did,i){
+  if(!srvShop())return null;
+  const s=slotOf(did,i); if(!s||!s.owner)return null;
+  const n=crewPick().n, rev=!!revBonus(s.owner), k=did+':'+i+':'+n+':'+(rev?1:0), c=pvC[k];
+  if(c&&c.res&&now()-c.at<20000)return c.res;
+  if(!c||!c.busy){pvC[k]={res:c&&c.res||null,at:c?c.at:0,busy:true};
+    kampfCall({act:'vorschau',d:did,i,n,rev}).then(r=>{pvC[k]={res:r&&r.res||null,at:now(),busy:false};
+      if(openSlot&&openSlot.d===did&&openSlot.i===i&&!document.getElementById('modal').hidden)showModal(slotModal(did,i),true)}).catch(e=>{console.warn(e);pvC[k].busy=false})}
+  return c&&c.res||null;
+}
+/* Preise (Boss der Woche, Wahrzeichen, Fest): erst schauen, ob einer offen ist, dann der Server */
+let prizeBusy=false;
+async function claimPrizes(){
+  if(!me||prizeBusy)return; prizeBusy=true;
+  try{const rows=await q(sb.from('events').select('id').eq('world',WORLD).in('kind',['boss','lmwin','fest']).eq('target',me.id).eq('applied',false).limit(1));
+    if(rows&&rows.length){const g=await shopAct('preise');
+      if(g){if(g.boss>0){toast(`🏆 Du bist Boss der Woche! +${fmt(g.boss)} sauber`,'good');floatGain('🏆')}
+        if(g.lmwin>0){toast(`🏰 Wahrzeichen bis zum Schluss gehalten: +${fmt(g.lmwin)} sauber`,'good');floatGain('🏰')}
+        if(g.fest>0){toast(`🎄 Fest-Preis: +${fmt(g.fest)} sauber`,'good');floatGain('🎄')}renderHUD()}}}
+  catch(e){console.warn(e)}
+  prizeBusy=false;
 }
 function hurtTxt(h){return h>0?`🤕 ${h} Schläger ${h>1?'sind':'ist'} verletzt und ${h>1?'fallen':'fällt'} 1 Std. aus.`:''}
 
@@ -1425,7 +1502,7 @@ async function smugSettleSrv(){
   if(!smuggles.some(r=>r.smuggler===me.id&&!r.catcher&&!r.paid&&now()>=+r.until))return;
   const r=await kampf({act:'s_ende'}); if(!r||!r.res)return;
   for(const x of r.res.done||[]){
-    const add=addHearts(SMUG_H,+x.until-1);
+    const add=addHearts(SMUG_H,+x.until-1,x.hearts);
     toast(`🛷 Ladung angekommen! +${fmt(x.loot)}${heartsTxt(add,SMUG_H)}`,'good'); floatGain('🛷');
   }
   await loadSmug(); renderHUD();
@@ -1522,7 +1599,7 @@ const SEC=[null,{ico:'🚪',name:'Stahltür',cost:2000,txt:'+3 Verteidigung'},{i
 function secIcons(s){let t='';for(let k=1;k<=(+s.sec||0);k++)t+=SEC[k].ico;return t}
 const MAX_FH=6, HACK_MIN=10;
 /* Ab Beta 4.8.1: Wer noch mehr als 6 Fahrer hat (von vor 4.6.4), wird beim Öffnen auf 6 gekürzt und bekommt den Anheuer-Preis zurück */
-function capDrivers(){const k=(+me.crew.f||0)-MAX_FH;if(k<=0)return 0;me.crew={...me.crew,f:MAX_FH};bk('drivers',{bar:k*CREW.f.cost});return k}
+function capDrivers(){if(srvShop())return 0;const k=(+me.crew.f||0)-MAX_FH;if(k<=0)return 0;me.crew={...me.crew,f:MAX_FH};bk('drivers',{bar:k*CREW.f.cost});return k}
 /* Ab Beta 4.8: Angriffskraft = 1 + Schläger im Trupp (höchstens 3 Autos à 3) */
 function atkPow(n){if(n==null)n=crewPick().n;return (1+n)*bossAtkMul()}
 function npcPower(){const days=world?(now()-(+world.started_at||now()))/(24*HOUR):0;return 4+Math.min(6,days)}
@@ -1590,6 +1667,13 @@ async function homeSet(id,far){
   const bl=homeChangeBlock(id); if(bl){toast(bl,'bad');closeModal();return}
   const neu=me.home!==id, renew=!neu&&!far&&homeLeft(me)>0;
   if(!far&&!neu&&homeWait(me)){closeModal();return}
+  if(srvShop()){
+    closeModal(); const x=await shopAct('heimat',{d:id,far:!!far}).catch(()=>null); if(!x){render();return}
+    toast(far?`🏠 ${homeName(id)} ist jetzt deine Wahlheimat: +${HOME_FAR} Verteidigung für deine Läden dort.`:x.renew?`🏠 Heimvorteil in ${homeName(id)} verlängert bis ${homeClock(now()+HOME_MS)}.`:`🏠 Daheim in ${homeName(id)}! Deine Läden dort verteidigen 24 Std. lang mit +${HOME_DEF}.`,'good');
+    if(x.neu){const riv=homesIn(id).filter(o=>o!==me.id);
+      if(riv.length)await addEvent({kind:'info',actor:me.id,...(DM[id]?{district:id}:{}),txt:`⚔️ Lokalderby in ${homeName(id)}: ${me.name} ist jetzt auch hier daheim, genau wie ${riv.map(o=>ownerInfo(o).name).join(' und ')}.`})}
+    render(); return;
+  }
   if(neu)me.home_set=weekKey(now());
   me.home=id; me.home_far=!!far; me.home_at=far?0:now();
   savePlayer(); closeModal();
@@ -1816,7 +1900,7 @@ function knastGangHTML(o){
   let h=`<div class="kline"><b>🚔 Sitzt im Knast</b><span>frei in ${dur(jailLeft(o))}${j.judge?' · ⚖️ Richter geschmiert':''}</span></div>`;
   if(own)return h+`<button class="btn ghost wide sm" data-act="knast">🚔 Zum Knast</button>`;
   if(isNpc(o))return h;
-  if(isAlly(o)){const c=bailOf(p),can=me.bar+me.clean>=c;return h+`<button class="btn mint wide" data-act="kbailfor" data-o="${o}" ${can?'':'disabled'}>💸 Kaution für deinen Spezl · ${fmt(c)}<span class="sub">${can?'Er ist sofort frei, du bekommst ⭐ +40 Ruf.':'Dafür reicht dein Geld gerade nicht.'}</span></button>`}
+  if(isAlly(o)){const ke=p._pub&&events.find(e=>e.kind==='knast'&&e.actor===o&&e.target===me.id),c=p._pub?(ke?+ke.amount||0:0):bailOf(p),can=me.bar+me.clean>=c;return h+`<button class="btn mint wide" data-act="kbailfor" data-o="${o}" ${can?'':'disabled'}>💸 Kaution für deinen Spezl · ${fmt(c)}<span class="sub">${can?'Er ist sofort frei, du bekommst ⭐ +40 Ruf.':'Dafür reicht dein Geld gerade nicht.'}</span></button>`}
   const c=judgeCoins(), bl=knastBlock()||(j.judge?'Der Richter wurde schon geschmiert':(me.coins<c?`Du brauchst 🪙 ${de(c,2)} BratCoin`:''));
   return h+`<button class="btn ghost wide" data-act="kjudge" data-o="${o}" ${bl?'disabled':''}>⚖️ Richter schmieren · 🪙 ${de(c,2)}<span class="sub">${bl||'Gegenwert 3.000. Sie sitzt 1 Std. länger, der Kurier nennt keinen Namen.'}</span></button>`;
 }
@@ -1965,6 +2049,14 @@ function refund(T,c){bk('shop',{[T.cur==='bar'?'bar':'clean']:c})}
 
 function build(did,i,t){return guard(async()=>{
   const T=TYPES[t], s=slotOf(did,i); if(!s||s.owner||!unlocked(t))return;
+  if(srvShop()){
+    if(!canPay(T.cur,buildPrice(t))||openRunLeft(did))return;
+    closeModal(); toast(`🔨 ${T.name} wird eröffnet …`,'ev');
+    const x=await shopAct('bau',{d:did,i,t}); await fetchSlot(did,i).catch(()=>{}); if(!x)return;
+    popSlot=did+':'+i; daily('build',1); if(t==='wett')step('wett'); floatGain(T.ico);
+    toast(`${T.ico} ${T.name} in ${dname(did)} eröffnet!`,'good'); if(x.ctrl)toast(`👑 Du kontrollierst jetzt ${dname(did)}!`,'good');
+    return;
+  }
   const cost=costOf(t), pid=pay(T,cost,'build',{t}); if(!pid)return;
   closeModal(); toast(`🔨 ${T.name} wird eröffnet …`,'ev'); renderHUD();
   const ok=await casSlot(did,i,{free:true},{owner:me.id,type:t,lvl:1,stock:0,stock_at:now(),ver:(s.ver||0)+1});
@@ -1977,6 +2069,12 @@ function build(did,i,t){return guard(async()=>{
 function upgrade(did,i){return guard(async()=>{
   const s=slotOf(did,i); if(!s||s.owner!==me.id||s.lvl>=3)return;
   const T=TYPES[s.type], c=upCost(s), d=DM[did];
+  if(srvShop()){
+    if(!canPay(T.cur,c))return;
+    const x=await shopAct('ausbau',{d:did,i}); await fetchSlot(did,i).catch(()=>{}); if(!x)return;
+    daily('build',1); toast(`⬆️ ${T.name} auf Stufe ${x.lvl}!`,'good'); if(ui.tab==='geld'&&document.getElementById('modal').hidden)renderMain();else showModal(slotModal(did,i),true);
+    return;
+  }
   const pid=pay(T,c,'up',{t:s.type,lvl:s.lvl}); if(!pid)return;
   const ok=await casSlot(did,i,{owner:me.id,ver:s.ver},{lvl:s.lvl+1,stock:curStock(s,d),stock_at:now(),ver:s.ver+1});
   if(!ok){unbk(pid);await fetchSlot(did,i);toast('Hat sich gerade etwas geändert. Nochmal versuchen.','bad');return}
@@ -1997,6 +2095,11 @@ function demolish(did,i){return guard(async()=>{
   if(mySlots().length<=1){toast('Dein letzter Laden kann nur umgebaut werden.','bad');return}
   const T=TYPES[s.type], cr=credit(s), cur=Math.floor(curStock(s,d)), wv=Math.floor(wareStock(s,d)), lost=losesControl(did,i);
   closeModal();
+  if(srvShop()){
+    const x=await shopAct('abriss',{d:did,i}); await fetchSlot(did,i).catch(()=>{}); if(!x)return;
+    normGuards(); toast(`🧨 ${T.name} abgerissen · +${fmt(x.cr)}${T.cur==='clean'?' sauber':''} zurück${x.cur>0?` · Kasse +${fmt(x.cur)}`:''}`,'good');
+    return;
+  }
   const ok=await casSlot(did,i,{owner:me.id,ver:s.ver},{owner:null,type:null,lvl:1,stock:0,stock_at:now(),sec:0,ver:s.ver+1});
   if(!ok){await fetchSlot(did,i);toast('Hat sich gerade etwas geändert. Nochmal versuchen.','bad');return}
   normGuards(); bk('shop',{[T.cur==='bar'?'bar':'clean']:cr}); if(cur>0)bk('shop',{bar:cur}); if(wv>0)addWare(T.ware,wv);
@@ -2008,6 +2111,12 @@ function convert(did,i,t){return guard(async()=>{
   const s=slotOf(did,i), d=DM[did]; if(!s||s.owner!==me.id||s.type===t||!TYPES[t]||!unlocked(t))return;
   const O=TYPES[s.type], N=TYPES[t], k=convertCost(s,t), cur=Math.floor(curStock(s,d)), wv=Math.floor(wareStock(s,d));
   if(!canPay(N.cur,k.pay)){toast('Dafür reicht dein Geld nicht.','bad');return}
+  if(srvShop()){
+    closeModal(); toast(`🔁 Umbau zu ${N.name} läuft …`,'ev');
+    const x=await shopAct('umbau',{d:did,i,t}); await fetchSlot(did,i).catch(()=>{}); if(!x)return;
+    floatGain(N.ico); toast(`🔁 Umbau fertig: ${N.ico} ${N.name} statt ${O.name}${x.cur>0?` · Kasse +${fmt(x.cur)}`:''}`,'good');
+    return;
+  }
   const pid=k.pay>0?bk('conv',{[N.cur==='bar'?'bar':'clean']:-k.pay},{t}):null;
   closeModal(); toast(`🔁 Umbau zu ${N.name} läuft …`,'ev'); renderHUD();
   const ok=await casSlot(did,i,{owner:me.id,ver:s.ver},{type:t,lvl:1,stock:0,stock_at:now(),ver:s.ver+1});
@@ -2021,6 +2130,11 @@ function buySec(did,i){return guard(async()=>{
   const s=slotOf(did,i); if(!s||s.owner!==me.id)return;
   const lv=(+s.sec||0)+1, S=SEC[lv]; if(!S||!unlocked('sec'+lv))return;
   if(me.clean<S.cost){toast('Dafür reicht dein sauberes Geld nicht.','bad');return}
+  if(srvShop()){
+    const x=await shopAct('sicherung',{d:did,i}); await fetchSlot(did,i).catch(()=>{}); if(!x)return;
+    floatGain(S.ico); toast(`${S.ico} ${S.name} eingebaut: ${S.txt}.`,'good'); showModal(slotModal(did,i),true);
+    return;
+  }
   const pid=bk('sec',{clean:-S.cost},{lv}); renderHUD();
   const ok=await casSlot(did,i,{owner:me.id,ver:s.ver},{sec:lv,stock:curStock(s,DM[did]),stock_at:now(),ver:s.ver+1});
   if(!ok){unbk(pid);await fetchSlot(did,i);toast('Hat sich gerade etwas geändert. Geld zurück.','bad');return}
@@ -2123,7 +2237,8 @@ async function collectMany(list,label){
     const r=await kasse({collect:items.map(({d,i,v})=>({d,i,v}))});
     if(r&&r.col){
       got=+r.col.got||0; done=r.col.done||[];
-      Object.keys(wexp).forEach(k=>addWare(k,(+(r.col.ware||{})[k]||0)-wexp[k]));
+      if(srvShop()){if(r.p&&r.p.ware)me.ware=jparse(r.p.ware,{})}
+      else Object.keys(wexp).forEach(k=>addWare(k,(+(r.col.ware||{})[k]||0)-wexp[k]));
       done.forEach(x=>{const s=slotOf(x.d,x.i);if(s)s.ver=x.v});
       if(got<expect-1||items.some(it=>!done.some(x=>x.d===it.d&&+x.i===+it.i))){if(got<expect-1)toast(`Ein Teil (${fmt(expect-got)}) war schon weg, jemand war schneller.`,'bad');try{await refreshSlots()}catch(e){}}
     }else{
@@ -2172,6 +2287,7 @@ function fire(k){const C=CREW[k];if(!C||!fireOk(k))return;me.crew={...me.crew,[k
 function unlockKey(k){return k==='t'?'guards':k}
 function hire(k){const C=CREW[k];if(me.bar<C.cost||!unlocked(unlockKey(k)))return;if(k==='f'&&(me.crew.f||0)>=MAX_FH){toast(`Mehr als ${MAX_FH} Fahrer bringen nichts.`,'bad');return}
   if(k==='f'&&hasW(me,'t')<FAHRER_TEILE){toast(`Ein Fahrer braucht ein Auto: ${FAHRER_TEILE} 🔩 Teile. Du hast ${hasW(me,'t')}.`,'bad');return}
+  if(srvShop())return guard(async()=>{const x=await shopAct('anheuern',{k});if(x)toast(k==='f'?`🏎️ Neuer Fahrer mit Auto an Bord! −${FAHRER_TEILE} 🔩 Teile.`:`${C.ico} Neuer ${C.name} an Bord!`,'good')});
   bk('crew',{bar:-C.cost},{k});if(k==='f')addWare('t',-FAHRER_TEILE);me.crew={...me.crew,[k]:(me.crew[k]||0)+1};savePlayer();toast(k==='f'?`🏎️ Neuer Fahrer mit Auto an Bord! −${FAHRER_TEILE} 🔩 Teile.`:`${C.ico} Neuer ${C.name} an Bord!`,'good')}
 /* Bestechung: 3.000, jedes weitere Mal am selben Tag (Nürnberger Zeit) +1.000, höchstens 9.000 */
 function berlinDay(){try{return new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Berlin'}).format(now())}catch(e){return 'd'+Math.floor((now()+2*HOUR)/864e5)}}
@@ -2202,7 +2318,7 @@ async function coinTrade(delta,kind){
   const m=data&&(Array.isArray(data)?data[0]:data); if(!m)throw new Error('kein Kurs');
   addMove(m); return m;
 }
-function coinPush(f,kind){return coinTrade(Math.log(1+f),kind).then(()=>{dirty=true}).catch(e=>console.warn(e))}
+function coinPush(f,kind){if(srvShop())return Promise.resolve();return coinTrade(Math.log(1+f),kind).then(()=>{dirty=true}).catch(e=>console.warn(e))}
 function loseCoins(f){if(!(me.coins>0.005))return 0;const c=me.coins*f;me.basis-=me.basis*f;me.coins-=c;return c}
 function coinPrice(m){return 100*Math.exp(COIN_WAVE*waveLog(+m.ts)+(+m.s0))}
 async function buyCoin(f){
@@ -2805,6 +2921,13 @@ function saveBoss(){
   const quote=(D.quote||'').trim().replace(/\s+/g,' ').slice(0,40);
   if(isBad(quote)){toast('Bitte ohne Beleidigungen oder Schimpfwörter.','bad');return}
   const old=bossOf(me.id)||{}; let type_at=old.type_at||null;
+  if(srvShop()){
+    if(D.type&&old.type&&D.type!==old.type){
+      if(old.type_at&&now()-old.type_at<24*HOUR){toast('Die Boss-Art kannst du nur einmal am Tag wechseln.','bad');return}
+      if(me.clean<BOSS_CHANGE){toast(`Ein Wechsel der Boss-Art kostet ${fmt(BOSS_CHANGE)} sauberes Geld.`,'bad');return}}
+    const look=D.look, type=D.type||null; bossDraft=null; closeModal();
+    return guard(async()=>{const x=await shopAct('boss',{look,quote,type});if(x)toast(`${type?BOSS_TYPES[type].ico+' ':'🎩 '}Dein Boss übernimmt das Kommando.`,'good')});
+  }
   if(D.type&&old.type&&D.type!==old.type){
     if(old.type_at&&now()-old.type_at<24*HOUR){toast('Die Boss-Art kannst du nur einmal am Tag wechseln.','bad');return}
     if(me.clean<BOSS_CHANGE){toast(`Ein Wechsel der Boss-Art kostet ${fmt(BOSS_CHANGE)} sauberes Geld.`,'bad');return}
@@ -2817,7 +2940,8 @@ function saveBoss(){
   if(isNew||(D.type&&D.type!==old.type))addEvent({kind:'info',actor:me.id,txt:`🎩 ${me.name} hat einen neuen Boss${D.type?': '+BOSS_TYPES[D.type].name:''}.`});
 }
 function skipBoss(){
-  if(!bossOf(me.id)){me.boss={look:rndLook(),quote:'',type:null,type_at:null};savePlayer();toast('Du kannst deinen Boss jederzeit in deiner Bandenübersicht ändern.','ev')}
+  if(!bossOf(me.id)&&srvShop()){const look=rndLook();me.boss={look,quote:'',type:null,type_at:null};shopAct('boss',{look,quote:'',type:null}).catch(()=>{});toast('Du kannst deinen Boss jederzeit in deiner Bandenübersicht ändern.','ev')}
+  else if(!bossOf(me.id)){me.boss={look:rndLook(),quote:'',type:null,type_at:null};savePlayer();toast('Du kannst deinen Boss jederzeit in deiner Bandenübersicht ändern.','ev')}
   bossDraft=null; closeModal(); render();
 }
 
@@ -3208,6 +3332,7 @@ function cap1(t){return t.charAt(0).toUpperCase()+t.slice(1)}
 function sellWare(k){
   if(!unlocked('brenn'))return;
   const n=hasW(me,k); if(n<1)return;
+  if(srvShop())return guard(async()=>{const x=await shopAct('verkauf',{k});if(x){floatGain('+'+fmt(x.v));toast(`📦 ${x.n} ${WARE[k].name} an den Hehler: +${fmt(x.v)} Bargeld`,'good')}});
   const v=n*WARE[k].price; addWare(k,-n); bk('sell',{bar:v}); savePlayer();
   floatGain('+'+fmt(v)); toast(`📦 ${n} ${WARE[k].name} an den Hehler: +${fmt(v)} Bargeld`,'good');
 }
@@ -3253,6 +3378,11 @@ function orderBlock(o){
 }
 function deliverOrder(){return guard(async()=>{
   const o=orderOpen(); if(!o||orderBlock(o))return;
+  if(srvShop()){
+    const x=await shopAct('liefern',{},true); await loadOrder(); if(!x)return;
+    showResult(true,'GELIEFERT!',`${cap1(o.who)} ist zufrieden. Bar auf die Hand.`,`+${fmt(x.pay)} Bargeld · ⭐ +${x.ruf||ORDER_RUF}`,'c-dirty',true);
+    return;
+  }
   await ensureOrder(o);
   const w=await q(sb.from('orders').update({winner:me.id,won_at:now()}).eq('world',WORLD).eq('id',o.id).is('winner',null).select());
   if(!w||!w[0]){await loadOrder();showResult(false,'ZU SPÄT','Eine andere Bande hat schon geliefert.','',null,true);return}
@@ -3334,6 +3464,7 @@ function famRun(fn){
 }
 function askAlly(o){return famRun(async()=>{
   if(allyBlock(o))return;
+  if(srvShop()){if(await shopAct('spezl',{op:'ask',o}))toast(`🤝 Anfrage an ${players[o].name} ist raus.`,'good');return}
   await q(sb.from('alliances').insert({world:WORLD,ts:now(),a:me.id,b:o,status:'ask'}));
   await addEvent({kind:'allyask',actor:me.id,target:o,txt:`🤝 ${me.name} will ein Bündnis mit dir. Antworte in der Übersicht der Bande.`});
   toast(`🤝 Anfrage an ${players[o].name} ist raus.`,'good');
@@ -3341,6 +3472,8 @@ function askAlly(o){return famRun(async()=>{
 function acceptAlly(id){return famRun(async()=>{
   const x=alliances.find(y=>y.id===id); if(!x)return;
   if(allyRow(me.id)){toast('Du hast schon ein Bündnis.','bad');return}
+  if(srvShop()){const y=await shopAct('spezl',{op:'ja',id});if(!y)return;
+    showResult(true,'SPEZLN!',`${esc(ownerInfo(x.a).name)} und deine Bande halten jetzt zusammen.`,'Kein Angriff mehr gegeneinander · Hilfe im Überfall · Geld schicken ab morgen','c-clean',true);return}
   let r=null;
   try{const {data,error}=await sb.rpc('ally_accept',{p_id:id,p_player:me.id});if(error)throw error;r=data}catch(e){toast('Geht nicht: Diese Bande hat inzwischen ein anderes Bündnis.','bad');return}
   if(!r){toast('Die Anfrage gilt nicht mehr.','bad');return}
@@ -3349,11 +3482,13 @@ function acceptAlly(id){return famRun(async()=>{
   showResult(true,'SPEZLN!',`${esc(a)} und deine Bande halten jetzt zusammen.`,'Kein Angriff mehr gegeneinander · Hilfe im Überfall · Geld schicken ab morgen','c-clean',true);
 })}
 function declineAlly(id){return famRun(async()=>{
+  if(srvShop()){if(await shopAct('spezl',{op:'nein',id}))toast('Anfrage abgelehnt.','ev');return}
   await q(sb.from('alliances').update({status:'no'}).eq('id',id).eq('status','ask'));
   toast('Anfrage abgelehnt.','ev');
 })}
 function endAlly(){return famRun(async()=>{
   const x=allyRow(me.id); if(!x||x.status!=='on')return; const o=allyOf(me.id);
+  if(srvShop()){if(await shopAct('spezl',{op:'ende'}))toast('👋 Das Bündnis endet in 24 Stunden.','ev');return}
   const r=await q(sb.from('alliances').update({status:'ending',ends_at:now()+ALLY_END}).eq('id',x.id).eq('status','on').select());
   if(!r||!r[0])return;
   await addEvent({kind:'ally',actor:me.id,txt:`👋 ${me.name} und ${ownerInfo(o).name} gehen in 24 Stunden getrennte Wege. Ganz in Ruhe.`});
@@ -3361,6 +3496,8 @@ function endAlly(){return famRun(async()=>{
 })}
 function betray(){return famRun(async()=>{
   const x=allyRow(me.id); if(!x)return; const o=allyOf(me.id); betrayAsk=null;
+  if(srvShop()){if(!await shopAct('spezl',{op:'bruch'}))return;
+    showResult(false,'VERRAT!',`Das Bündnis mit ${esc(ownerInfo(o).name)} ist sofort vorbei. Du darfst wieder angreifen.`,`🐍 7 Tage Verräter · ${esc(ownerInfo(o).name)} bekommt den Rache-Bonus gegen dich`,'c-heat',true);return}
   const r=await q(sb.from('alliances').update({status:'off',broken_by:me.id,off_at:now()}).eq('id',x.id).in('status',['on','ending']).select());
   if(!r||!r[0])return;
   await addEvent({kind:'betray',actor:me.id,target:o,txt:`🐍 VERRAT! ${me.name} hat das Bündnis mit ${ownerInfo(o).name} gebrochen. Eine Woche lang trägt ${me.name} die Schlange.`});
@@ -3382,6 +3519,7 @@ function offerBlock(o){
   if(!players[o]||o===me.id)return 'Nur mit anderen Mitspielern';
   if(!unlocked('ally'))return lockTxt('ally');
   if(myOffersOut().length>=OFFER_MAX)return `Höchstens ${OFFER_MAX} offene Angebote gleichzeitig`;
+  if(tooYoung(o))return 'Handel geht erst, wenn beide Banden mindestens 7 Tage dabei sind';
   return null;
 }
 function offerCheck(give,want){
@@ -3408,6 +3546,8 @@ function sendOffer(o){
   const bl=offerBlock(o)||offerCheck(give,want);
   if(bl){showModal(offerNewModal(o,bl));return}
   return famRun(async()=>{
+    if(srvShop()){if(!await shopAct('angebot',{o,give,want},true))return;
+      showResult(true,'ANGEBOT RAUS!',`${esc(ownerInfo(o).name)} hat 24 Stunden Zeit.`,`Du gibst ${pkTxt(give)} · du willst ${pkTxt(want)}`,'c-clean',true);return}
     pkBook(give,-1); await savePlayer();
     try{await q(sb.from('offers').insert({world:WORLD,ts:now(),from_p:me.id,to_p:o,give,want,expires_at:now()+OFFER_MS}))}
     catch(e){pkBook(give,1);await savePlayer();throw e}
@@ -3431,6 +3571,8 @@ function offersModal(){
 function acceptOffer(id){return famRun(async()=>{
   const o=offers.find(x=>x.id===id); if(!o||!offerOpen(o)||o.to_p!==me.id)return;
   if(!pkHave(o.want)){toast('Dir fehlt etwas für dieses Angebot.','bad');return}
+  if(srvShop()){if(!await shopAct('annehmen',{id},true))return;
+    showResult(true,'HANDEL!',`Mit ${esc(ownerInfo(o.from_p).name)} ist alles abgemacht.`,`+${pkTxt(o.give)} · −${pkTxt(o.want)}`,'c-clean',true);return}
   let r=null;
   try{const {data,error}=await sb.rpc('offer_accept',{p_id:id,p_player:me.id});if(error)throw error;r=data}catch(e){toast('Dieses Angebot geht so nicht.','bad');return}
   if(!r){toast('Zu spät: Das Angebot gilt nicht mehr.','bad');return}
@@ -3440,12 +3582,17 @@ function acceptOffer(id){return famRun(async()=>{
   if(pkVal(o.give)+pkVal(o.want)+(o.give.b||0)+(o.want.b||0)>=DEAL_BIG)await addEvent({kind:'deal',actor:me.id,txt:`📦 Großes Geschäft: ${fn} und ${me.name} tauschen ${pkTxt(o.give)} gegen ${pkTxt(o.want)}.`});
   showResult(true,'HANDEL!',`Mit ${esc(fn)} ist alles abgemacht.`,`+${pkTxt(o.give)} · −${pkTxt(o.want)}`,'c-clean',true);
 })}
-function declineOffer(id){return famRun(async()=>{await q(sb.from('offers').update({status:'dec',done_at:now()}).eq('id',id).eq('to_p',me.id).eq('status','open'));toast('Angebot abgelehnt.','ev')})}
-function cancelOffer(id){return famRun(async()=>{await q(sb.from('offers').update({status:'cxl',done_at:now()}).eq('id',id).eq('from_p',me.id).eq('status','open'));await applyOffers();toast('Angebot zurückgezogen, alles ist wieder bei dir.','ev')})}
+function declineOffer(id){return famRun(async()=>{if(srvShop()){if(await shopAct('ablehnen',{id}))toast('Angebot abgelehnt.','ev');return}await q(sb.from('offers').update({status:'dec',done_at:now()}).eq('id',id).eq('to_p',me.id).eq('status','open'));toast('Angebot abgelehnt.','ev')})}
+function cancelOffer(id){return famRun(async()=>{if(srvShop()){if(await shopAct('zurueck',{id}))toast('Angebot zurückgezogen, alles ist wieder bei dir.','ev');return}await q(sb.from('offers').update({status:'cxl',done_at:now()}).eq('id',id).eq('from_p',me.id).eq('status','open'));await applyOffers();toast('Angebot zurückgezogen, alles ist wieder bei dir.','ev')})}
 /* Verbuchen genau einmal: Geschenke beim Empfänger, Gegenleistung oder Rückgabe beim Absender */
 let applyingOffers=false;
 async function applyOffers(){
   if(!me||applyingOffers)return; applyingOffers=true; let ch=false;
+  if(srvShop()){ // ab 5.1.2 bucht der Server; abgelaufene Angebote gibt er auf Anfrage zurück
+    try{if(offers.some(o=>!o.gift&&o.status==='open'&&now()>+o.expires_at&&(o.from_p===me.id||o.to_p===me.id))){const x=await shopAct('angebote');if(x){toast('📦 Abgelaufene Angebote: alles ist wieder bei euch.','ev');await loadFam()}}}
+    catch(e){console.warn(e)}
+    applyingOffers=false; return;
+  }
   try{
     for(const o of offers){
       try{
@@ -3469,6 +3616,7 @@ function giftUsed(){const d=berlinDay();return offers.filter(o=>o.gift&&o.from_p
 function giftLeft(){return Math.max(0,GIFT_MAX-giftUsed())}
 function giftBlock(o){
   if(!isAlly(o))return 'Geld schicken geht nur im Bündnis';
+  if(tooYoung(o))return 'Geld schicken geht erst, wenn beide Banden mindestens 7 Tage dabei sind';
   const x=allyRow(me.id), t=+x.since+ALLY_GIFT;
   if(now()<t)return `Erst ab 1 Tag Bündnis, also in ${dur(Math.ceil((t-now())/1000))}`;
   if(giftLeft()<GIFT_OPTS[0])return `Heute schon ${fmt(GIFT_MAX)} geschickt`;
@@ -3481,6 +3629,7 @@ function giftHTML(o){
 }
 function sendGift(o,v){return famRun(async()=>{
   if(giftBlock(o)||v>giftLeft()||me.bar<v)return;
+  if(srvShop()){const x=await shopAct('geschenk',{o,v});if(x)toast(`💸 ${fmt(x.net)} sind unterwegs zu ${ownerInfo(o).name} (${fmt(x.fee)} Gebühr).`,'good');return}
   let r=null;
   try{const {data,error}=await sb.rpc('gift_send',{p_world:WORLD,p_from:me.id,p_to:o,p_amount:v});if(error)throw error;r=data}catch(e){toast('Geht gerade nicht: Bündnis zu jung oder Tageslimit erreicht.','bad');return}
   if(!r)return;
@@ -3952,7 +4101,7 @@ function slotCard(d,b,i){
     else if(T.kind==='ware'){const n=wareStock(b,d),f=n/wareCap(b);st=`${WARE[T.ware].ico} ${Math.floor(n)} / ${wareCap(b)}`;extra=`<span class="mini"><i style="width:${Math.min(100,f*100)}%"></i></span>`;if(f>=.5)cls='ready'}
     else if(T.kind==='front')st=`🫧 ${fmt(washOf(b,d))}/h`;
     else st=`+${fmt(rentOf(b,d))}/h`;
-  }else{oico=(isAway(b.owner)?'💤':'')+(bountyOn(b.owner)>0?'💰':'');st=esc(oi.name);cls='other';if(T.kind==='racket'){const cs=curStock(b,d);extra=`<span class="loot ${cs>=1000?'hot':''}">🎯 ${fmt(cs)}</span>`}}
+  }else{oico=(isAway(b.owner)?'💤':'')+(bountyOn(b.owner)>0?'💰':'');st=esc(oi.name);cls='other';if(T.kind==='racket'&&!b._pub){const cs=curStock(b,d);extra=`<span class="loot ${cs>=1000?'hot':''}">🎯 ${fmt(cs)}</span>`}}
   if(mine)cls+=' mine';
   if(popSlot===d.id+':'+i){cls+=' pop';popSlot=null}
   return `<button class="sc ${cls}" data-act="slot" data-i="${i}" ${mine?`style="--own:${oi.color}"`:''} aria-label="${T.name}, ${mine?'deins':esc(oi.name)}"><span class="stripe" style="background:${oi.color}">${mine?'DEINS':''}</span>${(+b.sec||0)>0?`<span class="secb" aria-label="Sicherung">${secIcons(b)}</span>`:''}${oico?`<span class="oico">${oico}</span>`:''}<span class="ic">${T.ico}${b.lvl>1?`<b class="lv" aria-label="Stufe ${b.lvl}">${b.lvl}</b>`:''}</span><span class="nm">${SHORT[b.type]||T.name}</span><span class="st">${st}</span>${extra}</button>`;
@@ -4053,6 +4202,14 @@ let opening=false;
 async function openDistrict(did){
   const x=DXM[did]; if(!x||DM[did]||!me||opening||openBlock())return;
   const c=openCost(); opening=true; let ok=false;
+  if(srvShop()){
+    const x=await shopAct('erschliessen',{d:did}).catch(()=>null); opening=false;
+    await refreshSlots().catch(()=>{});
+    try{const wo=await q(sb.from('world').select('*').eq('id',WORLD));world=wo[0]||world}catch(e){}
+    closeModal(); if(!x){render();return}
+    toast(`🔑 ${x.name||DXM[did].name} ist erschlossen! Dein Späti steht schon.`,'good');
+    ui.tab='stadt'; ui.sel=did; ui.dopen=true; render(); centerOn(did); return;
+  }
   try{ok=await q(sb.rpc('open_district',{p_world:WORLD,p_district:did,p_player:me.id}))}catch(e){console.warn(e)}
   opening=false;
   if(ok!==true){toast('Zu spät: Den Stadtteil hat gerade schon jemand erschlossen.','bad');await refreshSlots().catch(()=>{});closeModal();render();return}
@@ -4080,9 +4237,10 @@ function slotModal(did,i){
   const d=DM[did], b=slotOf(did,i);
   if(!b||!b.owner){
     return `<div class="mbox" role="dialog" aria-label="Bauen in ${d.name}"><div class="shead"><div class="ico">🔨</div><div><h3>Bauen</h3><p>${d.name} · Platz ${i+1} · ${d.txt}${pioneerOf(did)?` · 🔑 erschlossen von ${esc(ownerInfo(pioneerOf(did)).name)}`:''}</p></div></div>
-      <div class="buildlist">${TORDER.map(t=>{const T=TYPES[t];const have=T.cur==='bar'?me.bar:me.clean;const bon=d.bon[t]?` · Bonus ×${de(d.bon[t],1)}`:'';
+      ${(()=>{const rl=openRunLeft(did),sx=surch();return (rl?`<p class="warn">⏳ Eröffnungsrunde: Hier hast du schon einen Laden. Der nächste geht in ${dur(Math.ceil(rl/1000))}.</p>`:'')+(sx>1?`<p class="small muted">🏗️ Bauzuschlag +${Math.round((sx-1)*100)} %: ab dem 15. Laden wird jeder neue teurer.</p>`:'')})()}
+      <div class="buildlist">${TORDER.map(t=>{const T=TYPES[t];const have=T.cur==='bar'?me.bar:me.clean;const bon=d.bon[t]?` · Bonus ×${de(d.bon[t],1)}`:'';const bp=buildPrice(t),rl=openRunLeft(did);
         if(!unlocked(t))return `<div class="bopt locked"><span class="ico">${T.ico}</span><div><b>${T.name}</b><span>${lockTxt(t)}</span><span>${T.desc}</span></div><button class="btn sm ghost" disabled>🔒</button></div>`;
-        return `<div class="bopt"><span class="ico">${T.ico}</span><div><b>${T.name}</b><span>${effTxt(t,d)}${bon}</span><span>${T.desc}</span></div><button class="btn sm ${T.cur==='clean'?'mint':''}" data-act="build" data-d="${did}" data-i="${i}" data-t="${t}" ${have<costOf(t)?'disabled':''}>${fmt(costOf(t))}${T.cur==='clean'?' ✦':''}</button></div>`}).join('')}</div>
+        return `<div class="bopt"><span class="ico">${T.ico}</span><div><b>${T.name}</b><span>${effTxt(t,d)}${bon}</span><span>${T.desc}</span></div><button class="btn sm ${T.cur==='clean'?'mint':''}" data-act="build" data-d="${did}" data-i="${i}" data-t="${t}" ${have<bp||rl?'disabled':''}>${fmt(bp)}${T.cur==='clean'?' ✦':''}</button></div>`}).join('')}</div>
       <p class="small muted">Preise in Bargeld, ✦ = sauberes Geld.</p>
       <button class="btn ghost wide" data-act="close">Abbrechen</button></div>`;
   }
@@ -4111,7 +4269,8 @@ function slotModal(did,i){
       ${barH}<div class="kv">${kv}</div>${acts}<button class="btn ghost wide" data-act="close">Fertig</button></div>`;
   }
   const mult=1+revBonus(b.owner), oi=ownerInfo(b.owner);
-  const mk=(kind,label,cls,expl)=>{const bz=waitSec(kind),req=isAlly(b.owner)?'🤝 Ihr seid Spezln':attackReq(kind,b.owner);const sub=req?req:bz?`Hacker wieder bereit in ${dur(bz)}`:`Chance ~${pct(chanceOf(kind,b,d,mult))} · ${expl}`;
+  const pv=pvGet(did,i), chTxt=kind=>srvShop()?(pv&&pv.ch?pct(pv.ch[kind]):'…'):pct(chanceOf(kind,b,d,mult));
+  const mk=(kind,label,cls,expl)=>{const bz=waitSec(kind),req=isAlly(b.owner)?'🤝 Ihr seid Spezln':attackReq(kind,b.owner);const sub=req?req:bz?`Hacker wieder bereit in ${dur(bz)}`:`Chance ~${chTxt(kind)} · ${expl}`;
     return `<button class="btn wide ${cls}" data-act="atk" data-k="${kind}" data-d="${did}" data-i="${i}" ${req||bz?'disabled':''}>${label}<span class="sub">${sub}</span></button>`};
   return `<div class="mbox" role="dialog" aria-label="${T.name} von ${esc(oi.name)}"><div class="shead"><div class="ico">${T.ico}</div><div><h3>${T.name} · Stufe ${b.lvl}</h3><p>${d.name} · <span class="chip" style="background:${oi.color}">${esc(oi.name)}</span>${isNpc(b.owner)?'':' · Mitspieler'}</p></div></div>
     ${atkInfoHTML(b,d,did,i,T,oi)}${isAlly(b.owner)?'':carPickHTML(did,i,b.owner)}${mk('ueberfall','👊 Überfall','pink',isNpc(b.owner)?'Kasse ausräumen':'Kasse und 20 % Lager, 5 Min.')}${mk('uebernahme','🔓 Übernahme','','Laden gehört dann dir')}${mk('hack','💻 Hack','teal','sauberes Geld klauen')}
@@ -4270,7 +4429,7 @@ function gangHTML(o,st){
       :(()=>{const by={};shops.forEach(([s,d])=>{(by[d.id]=by[d.id]||{d,a:[]}).a.push(s)});return `<div class="vgrp">${Object.values(by).sort((x,y)=>y.a.length-x.a.length).map(g=>`<span class="tap" data-act="goto" data-d="${g.d.id}"><b>${controller(g.d)===o?'👑 ':''}${g.d.name}</b> ${g.a.map(s=>TYPES[s.type].ico+(s.lvl>1?`<i class="lst">${'★'.repeat(s.lvl)}</i>`:'')).join(' ')}</span>`).join('')}</div>`})()}
     ${ctrl.length?`<h4>Kontrolliert</h4><p>${ctrl.map(d=>`<span class="chip" style="background:${oi.color}">♛ ${d.name}</span>`).join(' ')}</p>`:''}
     ${own?`<h4>Crew</h4><p>${Object.keys(CREW).map(k=>`${CREW[k].ico} ${me.crew[k]||0}`).join(' · ')}</p>`:''}
-    ${npc?'':(()=>{const h=heatGuess(o);return own?`<h4>Polizei</h4><p>🚨 Hitze ${Math.round(h)} / 100 · ${heatWord(h)}</p>`:`<h4>Polizei</h4><p>${flames(h)||'·'} ${heatWord(h)}</p>${(()=>{const bl=tipBlock(o);return `<button class="btn ghost wide" data-act="tip" data-o="${o}" ${bl?'disabled':''}>📞 Anonymer Tipp · ${fmt(TIP_COST)} ✦<span class="sub">${bl||`Ihre Hitze +${TIP_HEAT}, mit 20 % Risiko fliegst du selbst auf (+10 Hitze, Name im Kurier)`}</span></button>`})()}`})()}
+    ${npc?'':(()=>{const h=heatGuess(o);return own?`<h4>Polizei</h4><p>🚨 Hitze ${Math.round(h)} / 100 · ${heatWord(h)}</p>`:`<h4>Polizei</h4>${p&&p._pub?'':`<p>${flames(h)||'·'} ${heatWord(h)}</p>`}${(()=>{const bl=tipBlock(o);return `<button class="btn ghost wide" data-act="tip" data-o="${o}" ${bl?'disabled':''}>📞 Anonymer Tipp · ${fmt(TIP_COST)} ✦<span class="sub">${bl||`Ihre Hitze +${TIP_HEAT}, mit 20 % Risiko fliegst du selbst auf (+10 Hitze, Name im Kurier)`}</span></button>`})()}`})()}
     ${bountyHTML(o)}
     <h4>Bilanz</h4>
     <div class="kv" id="gstats"><div><span>👊 Angriffe gelungen</span><b>${n('aw')}</b></div><div><span>🙈 Angriffe gescheitert</span><b>${n('al')}</b></div><div><span>💪 Angriffe abgewehrt</span><b>${n('dw')}</b></div><div><span>😤 Erfolgreich angegriffen worden</span><b>${n('dl')}</b></div><div><span>💰 Erbeutet</span><b class="c-clean">${S?fmt(n('gain')):'…'}</b></div><div><span>💸 Verloren</span><b class="c-heat">${S?fmt(n('loss')):'…'}</b></div>${npc?'':`<div><span>🚨 Razzien</span><b>${n('raids')}</b></div>`}</div>
@@ -4329,12 +4488,15 @@ function garageHTML(){
 /* Angriffsfenster: mit −/+ wählen, wie viele Schläger mitfahren, die Autos füllen sich */
 /* Ab Beta 4.8.2: Werte als Kacheln, Hinweise als Marken (antippen erklärt) */
 function atkInfoHTML(b,d,did,i,T,oi){
-  const dv=defOf(b,d), np=isNpc(b.owner), sec=+b.sec||0, nd=hasG(me,'d'), nc=hasG(me,'c');
+  const pv=srvShop()?pvGet(did,i):null, wait=srvShop()&&!pv; // ab 5.1.2: Kasse, Sicherung und Verteidigung fremder Läden kennt nur der Server
+  const dv=pv?+pv.def||0:defOf(b,d), np=isNpc(b.owner), sec=pv?+pv.sec||0:+b.sec||0, nd=hasG(me,'d'), nc=hasG(me,'c');
   const tile=(v,l)=>`<div><b>${v}</b><small>${l}</small></div>`;
-  const st=`<div class="astat">${tile(T.kind==='racket'?'~'+fmt(curStock(b,d)):T.kind==='front'?'Fassade':T.kind==='ware'?'Ware':'Immo',T.kind==='racket'?'💰 Beute':'Typ')}${tile(de(dv,1),'🛡️ '+defWord(dv))}${tile(np?(npcGuards(b.owner,d)?'ja':'0'):guardN(players[b.owner],did),'🚪 Türsteher')}${tile(sec?secIcons(b):'–','🔒 Sicherung')}</div>`;
+  const loot=pv?(pv.loot==null?0:+pv.loot):curStock(b,d), gd=pv?(np?(pv.guards?'ja':'0'):pv.guards):np?(npcGuards(b.owner,d)?'ja':'0'):guardN(players[b.owner],did);
+  const st=`<div class="astat">${tile(T.kind==='racket'?(wait?'…':'~'+fmt(loot)):T.kind==='front'?'Fassade':T.kind==='ware'?'Ware':'Immo',T.kind==='racket'?'💰 Beute':'Typ')}${tile(wait?'…':de(dv,1),'🛡️ '+(wait?'Verteidigung':defWord(dv)))}${tile(wait?'…':gd,'🚪 Türsteher')}${tile(wait?'…':sec?secIcons({sec}):'–','🔒 Sicherung')}</div>`;
   const C=[], tag=(t,tip,cls)=>C.push(`<button class="tag ${cls||''}" data-act="atip" data-t="${esc(tip)}">${t}</button>`);
   if(!np&&duelOn(did,i))tag('🚨 Duell läuft','Hier läuft gerade schon ein Überfall.','hot');
-  if(homesIn(did).includes(b.owner)){if(me.home===did)tag('⚔️ Derby','Lokalderby: Ihr seid beide hier daheim, keiner hat Heimvorteil.');else if(homeDef(b.owner,did))tag(`🏠 +${de(homeDef(b.owner,did),0)}`,`${oi.name} ist hier daheim: +${de(homeDef(b.owner,did),0)} Verteidigung.`)}
+  if(pv&&!np){if(pv.derby)tag('⚔️ Derby','Lokalderby: Ihr seid beide hier daheim, keiner hat Heimvorteil.');else if(pv.home)tag(`🏠 +${de(pv.home,0)}`,`${oi.name} ist hier daheim: +${de(pv.home,0)} Verteidigung.`)}
+  else if(homesIn(did).includes(b.owner)){if(me.home===did)tag('⚔️ Derby','Lokalderby: Ihr seid beide hier daheim, keiner hat Heimvorteil.');else if(homeDef(b.owner,did))tag(`🏠 +${de(homeDef(b.owner,did),0)}`,`${oi.name} ist hier daheim: +${de(homeDef(b.owner,did),0)} Verteidigung.`)}
   if(newbieProt(b.owner))tag('🍼 Neuling','Neulingsschutz: Diese Bande ist mindestens 2 Stufen unter dir. Überfall und Hack bringen nur 40 %, Übernahme geht nicht.');
   if(sec>=2)tag('📹 +5 Hitze','Kamera: Jeder Angriff hier bringt dir 5 Hitze extra.');
   if(sec>=3&&T.kind==='racket')tag('🔐 ½ Kasse','Tresor: Ein Überfall holt höchstens die Hälfte der Kasse.');
@@ -4504,7 +4666,7 @@ function worth(o){
   let w=0,nb=0;
   eachS(s=>{if(s.owner===o){w+=TYPES[s.type].cost*s.lvl*.6;nb++}});
   const p=o===me.id?me:players[o];
-  if(p&&!isNpc(o))w+=p.bar*.7+p.clean+p.coins*priceAt(now());
+  if(p&&!isNpc(o))w+=p._pub?p.pts:p.bar*.7+p.clean+p.coins*priceAt(now()); // ab 5.1.2: fremde Banden nur als Punkte
   const pc=protection(o); w+=pc*5000;
   return {o,w,nb,pc};
 }
@@ -4812,7 +4974,7 @@ function doReload(){
 }
 
 /* ---------- Menü, Anleitung, FAQ, Versionsverlauf ---------- */
-const CURRENT_VERSION='Beta 5.1.1', SEEN_KEY='imperium-seen-version';
+const CURRENT_VERSION='Beta 5.1.2', SEEN_KEY='imperium-seen-version';
 /* ---------- Ab Beta 5.0 „Wahrzeichen“: drei gleichzeitig, Kaiserburg und Plärrer fest, das dritte wechselt sonntags um 20 Uhr ----------
    Erobert wird nur über die Datenbank-Funktion landmark_attack (der Server würfelt, feste Verteidigung 10, Türsteher zählen nicht).
    Tabelle landmarks: {id, district, pos, active, owner, since, shield_until}, owner null = Stadtwache. */
@@ -4911,7 +5073,7 @@ async function lmRing(){
 }
 /* Felsengänge: jede volle Stunde 1 Fusel, gemerkt in crew.lmf (höchstens 24 auf einmal) */
 function lmFusel(){
-  if(!me)return;
+  if(!me||srvShop())return; // ab 5.1.2 zählt kasse den Fusel
   const r=landmarks.felsen;
   if(!holds(me.id,'felsen')||!r){if(me.crew&&me.crew.lmf)me.crew={...me.crew,lmf:0};return}
   const base=Math.max(+me.crew.lmf||0,+r.since||0); const k=Math.floor((now()-base)/HOUR);
@@ -4950,6 +5112,14 @@ function dayPhase(t){t=t||now();const s=sunTimes(t),D=40*60000;if(t>s.rise+D&&t<
 function applyPhase(){const svg=document.getElementById('mapsvg'),box=document.getElementById('mapbox');if(!svg)return;const p=dayPhase();['day','dusk','night'].forEach(k=>{svg.classList.toggle(k,k===p);if(box)box.classList.toggle(k,k===p)})}
 
 const VERSIONS=[
+  {v:'Beta 5.1.2',date:'11.10.2026',title:'Sicherheit komplett',items:[
+    '🛡️ Mehr Schutz für deine Bande: Läden, Ware, Handel und Bündnisse laufen jetzt über den Server',
+    '📱 Eine Bande, ein Gerät: Holst du sie mit dem Bandencode auf ein anderes Handy, wird das alte abgemeldet',
+    '🏗️ Neue Bau-Regeln: Eröffnungsrunde in frisch erschlossenen Stadtteilen und Bauzuschlag ab dem 15. Laden',
+    '🤝 Angebote und Geld schicken gehen, wenn beide Banden mindestens 7 Tage dabei sind',
+    '👊 Dieselbe Bande am selben Tag öfter ausrauben bringt weniger Beute',
+    '🎯 Die Kasse fremder Läden siehst du jetzt im Angriffsfenster'
+  ]},
   {v:'Beta 5.1.1',date:'11.10.2026',title:'Server rechnet Angriffe',items:[
     '🎲 Kämpfe laufen jetzt fair über den Server: Überfälle, Duelle, Coups, Geldtransporter, Großcoups, Schmuggel und Wahrzeichen',
     '📶 Angreifen und Coups brauchen Netz. Ohne Verbindung passiert nichts'
@@ -5210,10 +5380,11 @@ const GUIDE=[
   ['🎯 Ziel','Werde Boss der Stadt. Die Rangliste zählt dein Vermögen: Geschäfte, sauberes Geld, Bargeld, BratCoin und jedes Viertel, das du kontrollierst.','start'],
   ['💵 Bargeld verdienen','Wettbüros, Hehlerlager und Clubs füllen laufend ihre Kasse. Nach etwa 3 Stunden ist eine Kasse voll und hört auf zu wachsen. Also regelmäßig abholen, bevor andere sie ausrauben. Dein Geld rechnet der Server, Kassieren braucht deshalb Netz.','geld'],
   ['🧼 Geld waschen','Spätis und Shisha-Bars waschen dein Bargeld automatisch zu sauberem Geld (10 % Gebühr). Gewaschen wird nur Bargeld, das du verdienst (Kassen, Schutzgeld, Beute), dein Startgeld bleibt dir zum Bauen. Eine Reserve bleibt immer als Bargeld liegen, die stellst du unter Geld ein. Sauberes Geld brauchst du für Immobilien, Bestechung und manche Upgrades.','geld'],
-  ['🔑 Stadtteile erschließen','Zehn Nürnberger Stadtteile sind noch schraffiert. Ab Stufe 3 tippst du auf einen mit 🔑 und erschließt ihn für 10 % deines sauberen Geldes, mindestens 5.000. Jede Bande schafft einen pro Woche (neue Woche ab Sonntag 20 Uhr). Danach hat der Stadtteil 4 Plätze für alle und einen eigenen Bonus, den ersten Platz bekommst du mit einem Späti geschenkt. KI-Banden bauen dort nicht.','stadt'],
+  ['🔑 Stadtteile erschließen','Zehn Nürnberger Stadtteile sind noch schraffiert. Ab Stufe 3 tippst du auf einen mit 🔑 und erschließt ihn für 10 % deines sauberen Geldes, mindestens 5.000. Jede Bande schafft einen pro Woche (neue Woche ab Sonntag 20 Uhr). Danach hat der Stadtteil 4 Plätze für alle und einen eigenen Bonus, den ersten Platz bekommst du mit einem Späti geschenkt. KI-Banden bauen dort nicht. In der ersten halben Stunde darf jede Bande dort nur einen Laden haben (Eröffnungsrunde, der geschenkte Späti zählt mit).','stadt'],
+  ['🏗️ Bauzuschlag','Bis zu deinem 14. Laden zahlst du den normalen Preis. Ab dem 15. kostet jeder neue Laden 4 % mehr pro Laden, höchstens das Doppelte. Ausbauen und Umbauen kosten wie immer.','stadt'],
   ['🏠 Heimatviertel','Im Crew-Tab tippst du daheim auf „📍 Daheim einchecken“. Das Spiel schaut einmal, in welchem Viertel du bist, und merkt sich nur das Viertel, nie den Standort. Deine Läden dort verteidigen dann 24 Std. lang mit +2. In den letzten 6 Std. kannst du verlängern, dann gilt es wieder 24 Std. ab da. Wechseln geht einmal pro Woche. Wer nicht in Nürnberg wohnt, wählt eine Wahlheimat und bekommt dauerhaft +1. Sind zwei Banden im selben Viertel daheim, ist das ein ⚔️ Lokalderby: Zwischen ihnen zählt kein Heimvorteil, und wer dort mehr Läden hat, ist 🦌 Platzhirsch.','kampf'],
   ['👑 Viertel kontrollieren','Wer mindestens die Hälfte der Plätze in einem Viertel hält und mehr als jede andere Bande, kontrolliert es. Das bringt 1.000 Schutzgeld pro Stunde, bessere Verteidigung und Punkte für die Rangliste.','kampf'],
-  ['👊 Angreifen','Tipp auf einen fremden Laden: Überfall räumt die Kasse aus, Übernahme schnappt dir den Laden, Hack klaut sauberes Geld. Jede Angriffsart hat ihr Minispiel: Beim Überfall tippst du, wenn der Zeiger im grünen Feld steht, bei der Übernahme knackst du ein Drehrad, beim Hack tippst du nur die grünen Pakete. Gegen KI-Banden kannst du auch „schnell erledigen“, das zählt wie 2 Treffer. Für Überfall und Übernahme wählst du mit − und +, wie viele Schläger mitfahren: In jedes Auto passen 3 Schläger, dein eigenes fährt umsonst, jedes Fahrer-Auto braucht 1 🥃 Fusel. Pro Angriff fahren höchstens 3 Autos, also 9 Schläger. Der Trupp ist ein paar Minuten unterwegs, deine Türsteher bleiben auf Posten. Mit genug Autos laufen mehrere Angriffe gleichzeitig, auf dieselbe Bande aber immer nur einer. Geht ein Angriff schief, fällt jeder 4. Mitfahrer 1 Std. verletzt aus. Nach einem Hack machen nur deine Hacker 10 Minuten Pause. Ein gelungener Überfall auf Mitspieler holt auch 20 % ihres Lagers, ein Hack auch 12 % ihrer BratCoins.','kampf'],
+  ['👊 Angreifen','Tipp auf einen fremden Laden: Überfall räumt die Kasse aus, Übernahme schnappt dir den Laden, Hack klaut sauberes Geld. Jede Angriffsart hat ihr Minispiel: Beim Überfall tippst du, wenn der Zeiger im grünen Feld steht, bei der Übernahme knackst du ein Drehrad, beim Hack tippst du nur die grünen Pakete. Gegen KI-Banden kannst du auch „schnell erledigen“, das zählt wie 2 Treffer. Für Überfall und Übernahme wählst du mit − und +, wie viele Schläger mitfahren: In jedes Auto passen 3 Schläger, dein eigenes fährt umsonst, jedes Fahrer-Auto braucht 1 🥃 Fusel. Pro Angriff fahren höchstens 3 Autos, also 9 Schläger. Der Trupp ist ein paar Minuten unterwegs, deine Türsteher bleiben auf Posten. Mit genug Autos laufen mehrere Angriffe gleichzeitig, auf dieselbe Bande aber immer nur einer. Geht ein Angriff schief, fällt jeder 4. Mitfahrer 1 Std. verletzt aus. Nach einem Hack machen nur deine Hacker 10 Minuten Pause. Ein gelungener Überfall auf Mitspieler holt auch 20 % ihres Lagers, ein Hack auch 12 % ihrer BratCoins. Raubst oder hackst du dieselbe Bande am selben Tag öfter, gibt es beim zweiten Mal die Hälfte der Beute und danach ein Viertel. Wie voll die Kasse eines fremden Ladens ist, siehst du im Angriffsfenster.','kampf'],
   ['🎲 Fair gewürfelt','Ob ein Angriff, Coup oder Großcoup klappt, würfelt der Server. Dein Handy schickt nur, wie gut du im Minispiel warst. Ohne Netz geht deshalb kein Angriff.','kampf'],
   ['🚨 Polizei-Hitze','Wettbüros, Hehlerlager, Clubs und Angriffe erhöhen die Hitze. Pro Stunde sinkt sie um 5, jeder Anwalt senkt sie um 4 mehr. Deine Läden heizen höchstens bis 80, darüber bringen dich nur Angriffe, und dort sinkt die Hitze um mindestens 10 pro Stunde. Ab 60 kommen Kontrollen, ab 80 Razzien im heißesten Viertel, bei 100 sofort die große Razzia und 2 Stunden 🚔 Knast. Bist du weg, gibt es höchstens ein Polizei-Ereignis und nie die große Razzia. Tipp oben auf 🚨: Dort steht alles im Detail. Bestechung senkt die Hitze sofort um 25, jedes weitere Mal am Tag kostet 1.000 mehr.','pol'],
   ['🚪 Türsteher & Sicherung','Türsteher heuerst du ab Stufe 2 im Crew-Tab unter 🚪 Türsteher an und stellst sie dort (oder über 🚪 in der Viertel-Leiste) in ein Viertel: Leere Tür antippen stellt einen hin, volle Tür zieht ihn ab. Jeder verteidigt alle deine Läden im Viertel mit +2,5, höchstens 3 pro Viertel zählen. Türsteher greifen nicht an, Schläger verteidigen nicht. Dazu kann jeder Laden eine Sicherung bekommen: 🚪 Stahltür (+3 Verteidigung), 📹 Kamera (Angreifer bekommen +5 Hitze), 🔐 Tresor (Überfälle holen höchstens die Hälfte der Kasse).','kampf'],
@@ -5241,11 +5412,11 @@ const GUIDE=[
   ['💸 Geldfluss','Oben im Geld-Tab steht Schritt für Schritt, was pro Stunde passiert: wie viel Bargeld reinkommt, wie viel davon gewaschen wird (die Quote zeigt den Anteil), was die Löhne kosten und was unterm Strich als Bargeld und sauberes Geld bleibt. Darunter steht ein Tipp, was sich gerade lohnt. Ein Tipp auf die Karte zeigt jeden Laden einzeln.','geld'],
   ['🔁 Umbauen & 🧨 Abreißen','Im Pop-up deines Ladens. Beim Abriss bekommst du 40 % von Bau und Upgrades zurück, der Platz wird frei. Beim Umbau wird diese Gutschrift mit dem neuen Laden verrechnet, er startet auf Stufe 1. Die Kasse wird vorher automatisch kassiert. Deinen letzten Laden kannst du nur umbauen.','geld'],
   ['🎩 Boss','Jede Bande hat einen Boss. Tipp auf deinen Namen oben und dann auf „🎩 Bearbeiten“: Dort wählst du Gesicht und Hautton für das Abzeichen deiner Bande und einen Spruch mit höchstens 40 Zeichen, das geht jederzeit gratis. Die Boss-Art bringt einen Bonus: 💼 Geschäftsmann wäscht 10 % mehr und baut Immobilien 10 % günstiger, 🥊 Schläger greift 10 % stärker an und seine Wachen verteidigen 20 % besser, 🦊 Schlitzohr hackt 15 % mehr und baut 1 Hitze pro Stunde schneller ab, 🎲 Zocker holt bei Coups 15 % mehr und findet 1,5-mal so oft etwas, 👑 Pate kassiert 25 % mehr Schutzgeld. Die erste Wahl ist gratis, ein Wechsel kostet 25.000 sauberes Geld und geht höchstens einmal am Tag.','stadt'],
-  ['🏴 Banden','Tipp auf deinen Namen oben oder auf eine Bande in der Rangliste. Du siehst Rang, Läden, kontrollierte Viertel und die Bilanz aus Angriffen und Razzien. Geld und Crew anderer Banden bleiben geheim. Deine eigene Bande kannst du dort einmal pro Saison umbenennen, die Farbe bleibt. In der Rangliste hängen die drei stärksten Banden als WANTED-Plakat, das Kopfgeld sind ihre Rang-Punkte.','stadt'],
+  ['🏴 Banden','Tipp auf deinen Namen oben oder auf eine Bande in der Rangliste. Du siehst Rang, Läden, kontrollierte Viertel und die Bilanz aus Angriffen und Razzien. Geld, Crew und Hitze anderer Banden bleiben geheim. Deine eigene Bande kannst du dort einmal pro Saison umbenennen, die Farbe bleibt. In der Rangliste hängen die drei stärksten Banden als WANTED-Plakat, das Kopfgeld sind ihre Rang-Punkte.','stadt'],
   ['🗺️ Karte lesen','Gelber Rand: gewähltes Viertel. Gestrichelter Rand in deiner Farbe: Viertel mit eigenem Laden, aber ohne Kontrolle. Farbige Fläche und ♛: Diese Bande kontrolliert das Viertel. Punkte: die Plätze, farbig gehört einer Bande, dunkel ist frei. 💰: deine Kasse dort ist mindestens halb voll. Rot blinkend: Du wirst gerade angegriffen. Boss-Gesichter: Dort war die Bande zuletzt, grüner Punkt heißt online. Schraffiert mit 🔑: Diesen Nürnberger Stadtteil kann eine Bande ab Stufe 3 erschließen. Schraffiert ohne 🔑: Fürth und Erlangen, die kommen mit einem späteren Update. 🏠: dein Heimatviertel. In der Viertel-Leiste: Deine Läden haben einen Rand in deiner Farbe und das Schild „DEINS“, darunter steht 💰 deine Kasse, ist sie mindestens halb voll, leuchtet der Rand. Bei fremden Läden steht der Bandenname und 🎯 die Beute, die gerade in der Kasse liegt. 🛡️ zeigt deine Wachen, 🚪📹🔐 oben auf einer Laden-Kachel die Sicherung.','start'],
   ['🤝 Bündnis','Ab Stufe 3 (Kiezbande) kannst du in der Übersicht einer anderen Bande ein Bündnis anbieten. Nimmt sie an, seid ihr Spezln: kein Überfall, keine Übernahme, kein Hack, kein Tipp und kein Kopfgeld gegeneinander, und in der Rangliste steht 🤝. Jede Bande hat höchstens ein Bündnis. In Ruhe auflösen dauert 24 Stunden. Verraten geht sofort, dann trägst du 7 Tage die 🐍 Schlange, der Kurier berichtet, und dein Ex-Spezl bekommt +25 % Rache-Bonus gegen dich.','stadt'],
   ['🥊 Hilfe im Duell','Wird dein Spezl von einem Mitspieler überfallen, bekommst du eine Mitteilung und unten auf der Karte zeigt der Live-Ticker den Überfall mit dem Knopf „Helfen“. In den 5 Minuten schickst du alle Schläger, die daheim sind, dazu, jeder bringt +2,5 Verteidigung. Nach dem Überfall kommen sie zurück.','kampf'],
-  ['📦 Angebote','In der Übersicht einer Bande tippst du auf „Angebot machen“: Du gibst Fusel, Teile oder Bargeld und willst dafür etwas anderes. Was du gibst, ist sofort reserviert. Die andere Bande hat 24 Stunden, danach oder bei Absage kommt alles zurück. Bargeld darf höchstens das Doppelte des Hehlerwerts der Ware sein. Im Bündnis kannst du außerdem Geld schicken: ab 1 Tag Bündnis, 20 % Gebühr, höchstens 20.000 am Tag.','geld'],
+  ['📦 Angebote','In der Übersicht einer Bande tippst du auf „Angebot machen“: Du gibst Fusel, Teile oder Bargeld und willst dafür etwas anderes. Was du gibst, ist sofort reserviert. Die andere Bande hat 24 Stunden, danach oder bei Absage kommt alles zurück. Bargeld darf höchstens das Doppelte des Hehlerwerts der Ware sein. Im Bündnis kannst du außerdem Geld schicken: ab 1 Tag Bündnis, 20 % Gebühr, höchstens 20.000 am Tag. Angebote und Geld schicken gehen nur, wenn beide Banden mindestens 7 Tage dabei sind.','geld'],
   ['⚽ Club-Spieltag','Spielt der 1. FC Nürnberg (2. Liga oder DFB-Pokal), bringen die Wettbüros in Nürnberg von 2 Stunden vor bis 2 Stunden nach Anpfiff +50 % Bargeld. Am Spieltag zeigt ein Chip auf der Karte Gegner und Anstoß, zu Beginn bekommen alle eine Mitteilung (Schalter „Coups, Großcoups & Transporter“). Volle Wettbüros lohnen sich auch für Überfälle. Nach dem Spiel: Sieg BratCoin +5 % und Schlagzeile im Kurier, Niederlage −3 %, unentschieden bleibt der Kurs.','stadt'],
   ['🌧️ Wetter','Oben rechts steht das echte Wetter in Nürnberg, es kommt jede Stunde neu. ☀️ Sonne (nur tagsüber): Coups bringen +20 % Beute. 🌧️ Regen, ⛈️ Gewitter und ❄️ Schnee: Clubs bringen +20 % Bargeld, Shisha-Bars waschen +20 %. 🌫️ Nebel: Überfälle machen nur halbe Hitze. Bewölkt oder nachts klar: keine Wirkung. Ein Tipp aufs Wetter erklärt die Wirkung gerade jetzt.','stadt'],
   ['🗺️ Karte und Viertel','Oben stehen in einer Zeile 💵 Bargeld, 🧼 Sauber, 🪙 BratCoin und 🚨 Hitze, darunter die Karte bis an den Rand. Unten steht das gewählte Viertel. Tipp darauf oder auf ein Viertel der Karte, dann klappen seine Plätze hoch. Der gelbe Knopf „▼ Zuklappen“ oben rechts klappt sie wieder ein.','start'],
@@ -5256,7 +5427,8 @@ const GUIDE=[
 const FAQ=[
   ['Wie funktionieren die Minispiele?','Es gibt vier Arten: Zeiger-Balken (Überfall, Verteidigen), Tresor-Drehrad (Übernahme), Pakete (Hack) und Alarm-Lichter (Coups, Großcoups, Geldtransporter, Schmuggel). Überall zählen bis zu 3 Treffer, Perfekt bringt etwas mehr. Bei Angriffen auf KI-Banden und leichten Coups kannst du „schnell erledigen“ wählen, das zählt wie 2 Treffer. Gegen Mitspieler wird immer gespielt.','kampf'],
   ['Wer entscheidet, ob mein Angriff klappt?','Seit Beta 5.1.1 der Server. Dein Handy schickt nur deine Treffer im Minispiel, die Chance am Knopf ist dieselbe wie vorher.','kampf'],
-  ['Wie erschließe ich einen Stadtteil?','Ab Stufe 3 tippst du auf einen schraffierten Stadtteil mit 🔑. Das kostet 10 % deines sauberen Geldes, mindestens 5.000, und geht einmal pro Woche (ab Sonntag 20 Uhr wieder). Danach hat der Stadtteil 4 Plätze für alle, den ersten bekommst du mit einem Späti geschenkt.','stadt'],
+  ['Wie erschließe ich einen Stadtteil?','Ab Stufe 3 tippst du auf einen schraffierten Stadtteil mit 🔑. Das kostet 10 % deines sauberen Geldes, mindestens 5.000, und geht einmal pro Woche (ab Sonntag 20 Uhr wieder). Danach hat der Stadtteil 4 Plätze für alle, den ersten bekommst du mit einem Späti geschenkt. In der ersten halben Stunde darf jede Bande dort nur einen Laden haben.','stadt'],
+  ['Warum kostet mein neuer Laden mehr als angegeben?','Ab deinem 15. Laden gibt es den Bauzuschlag: jeder neue Laden 4 % mehr pro Laden, höchstens das Doppelte. Der Preis im Bau-Fenster ist schon der richtige.','stadt'],
   ['Was bringt mein Heimatviertel?','Checkst du im Crew-Tab daheim ein, verteidigen deine Läden in diesem Viertel 24 Std. lang mit +2, so viel wie fast ein Türsteher. In den letzten 6 Std. kannst du verlängern, dann gilt der Bonus wieder 24 Std. ab dem Verlängern. Wer nicht in Nürnberg wohnt, wählt eine Wahlheimat und bekommt dort dauerhaft +1. Liegt dein Viertel noch brach, gilt der Bonus, sobald es jemand erschließt.','kampf'],
   ['Wird mein Standort gespeichert?','Nein. Das Spiel fragt ihn nur, wenn du auf „Daheim einchecken“ tippst, und merkt sich nur das Viertel. Andere sehen nur, in welchem Viertel du daheim bist.','start'],
   ['Was ist ein Lokalderby?','Sind zwei Banden im selben Viertel daheim, steht das im Kurier und keiner hat dort gegen den anderen Heimvorteil. Wer im Viertel mehr Läden hat, ist 🦌 Platzhirsch.','kampf'],
@@ -5293,7 +5465,7 @@ const FAQ=[
   ['Wie schütze ich mein Lager?','Ein gelungener Überfall auf einen deiner Läden raubt 20 % vom Lager. Verkauf oder verbau Ware, die du nicht brauchst, und halte deine Läden mit Wachen und einer 🦺 Schutzweste stark. Die Polizei lässt das Lager in Ruhe.','kampf'],
   ['Warum kann ich nicht mehr Schläger mitnehmen?','Steht der Zähler auf Maximum, steht direkt darunter der Grund: kein 🥃 Fusel für die Fahrer-Autos, Schläger verletzt oder unterwegs, Autos unterwegs, zu wenig Fahrer oder alle 3 Autos voll (höchstens 9).','kampf'],
   ['Wann wird meine Ausrüstung benutzt?','Der Dietrich von selbst beim nächsten Überfall auf einen Laden mit Sicherung, die Schutzweste von selbst beim nächsten Überfall auf dich. Nitro nur, wenn du es im Angriffsfenster mit dem Schalter anmachst (nicht beim Hack), sonst bleibt es im Lager. Der Dietrich hilft nicht bei Übernahme und Hack. Im Angriffsfenster steht, was gleich benutzt wird und wie viele du noch hast, im Ergebnis, was verbraucht wurde. Eine verbrauchte Schutzweste meldet sich, sobald du wieder im Spiel bist.','kampf'],
-  ['Kann ich auf mehreren Geräten gleichzeitig spielen?','Ja. Seit Beta 5.0.4 rechnet der Server dein Geld, deshalb überschreiben sich zwei Geräte nicht mehr. Hol die Bande mit deinem Bandencode (Menü ☰) aufs zweite Gerät.','geld'],
+  ['Kann ich auf mehreren Geräten gleichzeitig spielen?','Nein. Seit Beta 5.1.2 gehört jede Bande genau einem Gerät. Holst du sie mit deinem Bandencode (Menü ☰) auf ein anderes Gerät, wird das alte abgemeldet und bekommt einen Hinweis. Mit dem Code holst du sie jederzeit zurück.','geld'],
   ['Ich habe ein neues Handy. Wie behalte ich meine Bande?','Im Menü ☰ unter Bandencode steht dein geheimer Code (BRAT-…). Auf dem neuen Gerät das Spiel öffnen, bei „Du hast schon eine Bande?“ den Code eingeben, fertig. Das gilt auch, wenn du vom Safari-Tab in die Home-Bildschirm-App wechselst. Gib den Code nicht weiter: Wer ihn hat, spielt deine Bande.','start'],
   ['Warum bekomme ich keine Mitteilungen?','Auf dem iPhone gehen Mitteilungen nur, wenn du das Spiel über das Icon auf dem Home-Bildschirm öffnest und sie im Menü unter Mitteilungen einschaltest. Prüf auch, ob sie in den iPhone-Einstellungen für Imperium erlaubt sind. Unter Mitteilungen schaltest du Angriffe, volle Kassen, Hitze-Vorwarnung und neue Banden einzeln. Alles außer Angriffen kommt nicht zwischen 23 und 8 Uhr. Solange du das Spiel offen hast, kommen gar keine Mitteilungen, du siehst dann alles direkt im Spiel.','start'],
   ['Kann ich schon in Fürth oder Erlangen spielen?','Noch nicht. Beide Städte sind schon auf der Karte, ihre Stadtteile werden mit einem späteren Update freigeschaltet. Bis dahin wird nur in Nürnberg gespielt.','start'],
@@ -5319,7 +5491,7 @@ const FAQ=[
   ['Wann kommt der Geldtransporter?','Einmal tagsüber zu einer zufälligen Zeit, dazu fest um 22 Uhr der 🍺 Feierabend-Coup, jeweils für 30 Minuten. Du bekommst eine Mitteilung, wenn der Schalter „Coups, Großcoups & Transporter“ an ist.','akt'],
   ['Wie bekomme ich ein Kopfgeld?','Raub eine Bande mit Kopfgeld erfolgreich aus oder übernimm einen ihrer Läden. Das ganze Kopfgeld landet sofort als sauberes Geld bei dir. Ein Hack zählt nicht.','kampf'],
   ['Kann mich mein Spezl angreifen?','Nein, solange das Bündnis läuft, auch nicht in den 24 Stunden nach dem Auflösen. Nur wer verrät, darf sofort wieder angreifen und trägt dafür 7 Tage die 🐍 Schlange.','stadt'],
-  ['Warum kann ich meinem Spezl noch kein Geld schicken?','Geld schicken geht erst, wenn das Bündnis einen Tag alt ist. Dann höchstens 20.000 am Tag, 20 % davon behält der Geldbote. Ware tauschen geht dagegen sofort, auch mit Banden ohne Bündnis.','geld'],
+  ['Warum kann ich meinem Spezl noch kein Geld schicken?','Geld schicken geht erst, wenn das Bündnis einen Tag alt ist und beide Banden mindestens 7 Tage dabei sind. Dann höchstens 20.000 am Tag, 20 % davon behält der Geldbote. Angebote mit Ware gehen auch ohne Bündnis, aber ebenfalls erst ab 7 Tagen.','geld'],
   ['Warum darf ich nicht so viel Bargeld für meine Ware verlangen?','Damit niemand über Fantasiepreise Geld verschiebt: Bargeld in einem Angebot darf höchstens das Doppelte des Hehlerwerts der Ware sein, also 1.200 pro Fusel und 1.000 pro Teil.','geld'],
   ['Was passiert, wenn beim Großcoup keiner einsteigt?','Dann fällt er aus und du bekommst deine ⚡ 3 zurück, sobald du das Spiel öffnest. Du kannst am selben Tag keinen neuen planen.','akt'],
   ['Wie bekomme ich Lebkuchenherzen?','Nur während des Christkindlesmarkts: mit dem 🎄 Markt-Coup (❤️ 3, geplatzt ❤️ 1), mit einem Schmuggel, der durchkommt (❤️ 10), oder indem du einen fremden Schmuggel abfängst (❤️ 6). Höchstens 25 am Tag. Überfälle klauen keine Herzen.','stadt'],
@@ -5432,6 +5604,7 @@ let pickedColor=null;
 function setNoGang(on){try{document.getElementById('app').classList.toggle('nogang',!!on)}catch(e){}}
 function showScreen(html){document.getElementById('main').className='';document.getElementById('main').innerHTML=html}
 function onboarding(taken){
+  try{if(sessionStorage.getItem('imperium-out'))taken=true}catch(e){}
   const used=new Set(Object.values(players).map(p=>p.color));
   const free=COLORS.filter(c=>!used.has(c)); pickedColor=free[0]||COLORS[0];
   showScreen(`${skyline()}<section class="card"><h2>Willkommen in Nürnberg</h2>
@@ -5442,7 +5615,7 @@ function onboarding(taken){
     <div class="swatches">${COLORS.map(c=>`<button class="swatch ${c===pickedColor?'on':''}" data-act="color" data-c="${c}" style="background:${c}" ${used.has(c)?'disabled':''} aria-label="Farbe ${c}"></button>`).join('')}</div>
     <button class="btn big wide" data-act="create">Bande gründen</button>
     <details class="small" ${taken?'open':''}><summary class="muted">Du hast schon eine Bande auf einem anderen Gerät oder in Safari?</summary>
-      <p class="small muted" style="margin-top:6px">${taken?'🔐 Deine Bande ist auf einem anderen Gerät gesichert. ':''}Gib deinen Bandencode ein. Du findest ihn dort im Menü ☰ unter Bandencode.</p>
+      <p class="small muted" style="margin-top:6px">${taken?'📱 Deine Bande ist jetzt auf einem anderen Gerät. Mit deinem Bandencode holst du sie hierher zurück. ':''}Gib deinen Bandencode ein. Du findest ihn dort im Menü ☰ unter Bandencode.</p>
       <input id="gcode" class="inp" placeholder="BRAT-XXXX-XXXX" autocomplete="off" autocapitalize="characters">
       <button class="btn ghost wide" data-act="login" style="margin-top:6px">Bande übernehmen</button></details>
     <p class="small muted">${Object.keys(players).length} Banden sind schon in der Stadt.</p></section>`);
@@ -5455,6 +5628,7 @@ async function createGang(){
   const id=(crypto.randomUUID?crypto.randomUUID():'p'+Math.random().toString(36).slice(2)+now().toString(36));
   if(Object.values(NPC).some(x=>x.name.toLowerCase()===name.toLowerCase())){toast('Den Namen gibt es schon.','bad');return}
   const row={id,world:WORLD,name,color:pickedColor,bar:6000,clean:1000,coins:0,basis:0,heat:0,reserve:3000,crew:{s:2,f:0,h:0,a:0},busy_until:0,eco_at:now(),last_seen:now(),push_attack:true,push_cash:true,wash_pool:0,ruf:0,energy:EMAX,energy_at:now(),onboard:{done:[]}};
+  if(srvShop())return createGangSrv(id,name,row);
   try{
     const data=await q(sb.from('players').insert(row).select());
     me=norm(data&&data[0]||row); players[id]=me;
@@ -5479,6 +5653,36 @@ async function createGang(){
       ${pushState()==='off'?'<button class="btn wide mint" data-act="push">🔔 Mitteilungen bei Angriffen einschalten</button>':pushState()==='needs-home'?'<p class="small muted">🔔 Tipp: Über das Home-Bildschirm-Icon kannst du Mitteilungen bei Angriffen einschalten.</p>':''}
       <button class="btn wide" data-act="close">Los geht's</button></div>`);
   }catch(e){console.warn(e);toast('Konnte die Bande nicht anlegen. Verbindung prüfen.','bad')}
+}
+/* Ab 5.1.2: Gründen ohne Rückgabe (fremde Zeilen sind erst nach dem Sichern lesbar), den ersten Späti vergibt der Server */
+let creating=false;
+async function createGangSrv(id,name,row){
+  if(creating)return; creating=true;
+  try{
+    const ins=await sb.from('players').insert(row);
+    if(ins.error){creating=false;if(/ein_geraet/.test(ins.error.message||''))toast('Auf diesem Gerät gab es schon eine Bande. Hol sie mit deinem Bandencode zurück.','bad');else{console.warn(ins.error);toast('Konnte die Bande nicht anlegen. Verbindung prüfen.','bad')}return}
+    await claimGang(id);
+    try{localStorage.setItem(LS_KEY,id)}catch(e){}
+    lsSet(SEEN_KEY,CURRENT_VERSION);
+    const mine=await q(sb.from('players').select('*').eq('id',id));
+    me=norm(mine&&mine[0]||row); players[id]=me;
+    const x=await shopAct('gruenden');
+    await refreshSlots().catch(()=>{});
+    const start=x&&DM[x.d]||null;
+    if(x&&x.npc&&start)addEvent({kind:'info',actor:id,district:start.id,txt:`${name} kauft ${NPC[x.npc].name} einen Laden in ${start.name} ab.`});
+    welcomeGang(id,name,start);
+  }catch(e){console.warn(e);toast('Konnte die Bande nicht anlegen. Verbindung prüfen.','bad')}
+  creating=false;
+}
+async function welcomeGang(id,name,start){
+    ui.sel=start?start.id:'altstadt';
+    await addEvent({kind:'join',actor:id,district:ui.sel,txt:`🆕 Neue Bande in der Stadt: ${name}${start?` startet mit einem Späti in ${start.name}`:''}.`});
+    startGame(); pendingBoss=true;
+    showModal(`<div class="mbox" role="dialog" aria-label="Los geht's"><h3 class="gt">WILLKOMMEN, BOSS</h3>
+      <p>${start?`Dein erster Späti steht in ${start.name}.`:'Such dir einen freien Platz.'} Tipp: Bau als Nächstes ein Wettbüro, das bringt Bargeld, und probier unten links deinen ersten 🎯 Coup. Dein Späti wäscht nur Bargeld, das du verdienst, dein Startgeld bleibt dir zum Bauen.</p>
+      <ul class="list"><li><span>🗺️ Karte ziehen, mit zwei Fingern zoomen, Viertel antippen</span></li><li><span>🔲 Unten einen Platz antippen: bauen, kassieren, angreifen</span></li><li><span>📲 In Safari: Teilen → „Zum Home-Bildschirm“</span></li></ul>
+      ${pushState()==='off'?'<button class="btn wide mint" data-act="push">🔔 Mitteilungen bei Angriffen einschalten</button>':pushState()==='needs-home'?'<p class="small muted">🔔 Tipp: Über das Home-Bildschirm-Icon kannst du Mitteilungen bei Angriffen einschalten.</p>':''}
+      <button class="btn wide" data-act="close">Los geht's</button></div>`);
 }
 let started=false;
 function startGame(){
@@ -5528,9 +5732,11 @@ function subscribe(){
   if(!sb.channel)return;
   try{
     worldCh=sb.channel('world-'+WORLD)
-      .on('postgres_changes',{event:'*',schema:'public',table:'slots',filter:'world=eq.'+WORLD},p=>{const s=p.new;if(s&&s.district){slots[key(s.district,s.idx)]=s;syncOpen();dirty=true}})
+      .on('postgres_changes',{event:'*',schema:'public',table:'slots',filter:'world=eq.'+WORLD},p=>{const s=p.new;if(s&&s.district&&!(srvShop()&&me&&s.owner!==me.id)){slots[key(s.district,s.idx)]=s;syncOpen();dirty=true}})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'events',filter:'world=eq.'+WORLD},p=>{const e=p.new;if(!e||events.some(x=>x.id===e.id))return;pushEvent(e);onNewEvent(e);feedShow()})
-      .on('postgres_changes',{event:'*',schema:'public',table:'players',filter:'world=eq.'+WORLD},p=>{const r=p.new;if(r&&r.id&&r.id!==me.id){players[r.id]=norm(r);dirty=true}})
+      .on('postgres_changes',{event:'*',schema:'public',table:'players',filter:'world=eq.'+WORLD},p=>{const r=p.new;if(r&&r.id&&r.id!==me.id&&!srvShop()){players[r.id]=norm(r);dirty=true}})
+      .on('postgres_changes',{event:'*',schema:'public',table:'gang_pub',filter:'world=eq.'+WORLD},p=>{const r=p.new;if(r&&r.id&&r.id!==me.id&&srvShop()){players[r.id]=pubNorm(r);dirty=true}})
+      .on('postgres_changes',{event:'*',schema:'public',table:'slot_pub',filter:'world=eq.'+WORLD},p=>{const r=p.new;if(r&&r.district&&srvShop())pubSlot(r)})
       .on('postgres_changes',{event:'*',schema:'public',table:'reactions'},p=>onReact(p))
       .on('postgres_changes',{event:'*',schema:'public',table:'landmarks',filter:'world=eq.'+WORLD},p=>{const r=p.new;if(r&&r.id){landmarks[r.id]=r;dirty=true}})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:'world=eq.'+WORLD},p=>onMsg(p.new))
@@ -5647,7 +5853,7 @@ function ensureWeek(){
   if(me.week_key)me.week_last={key:me.week_key,pts:weekRaw(me)};
   me.week_key=k; me.week_ruf0=+me.ruf||0; me.week_loot=0;
 }
-function weekRaw(p){return Math.max(0,Math.round((p.week_ruf0==null?0:(+p.ruf||0)-(+p.week_ruf0||0))+(+p.week_loot||0)/100))}
+function weekRaw(p){if(p&&p._pub)return +p.week_pts||0;return Math.max(0,Math.round((p.week_ruf0==null?0:(+p.ruf||0)-(+p.week_ruf0||0))+(+p.week_loot||0)/100))}
 function weekPts(p){return p&&p.week_key===weekKey(now())?weekRaw(p):0}
 function weekLoot(v){if(!me||!(v>0))return;ensureWeek();me.week_loot=(+me.week_loot||0)+Math.round(v)}
 function wkBossId(){return world&&world.boss_id&&world.boss_week===weekKey(now()-7*DAY)?world.boss_id:null}
@@ -5660,6 +5866,7 @@ function weekCard(){
 }
 let wkBusy=false;
 async function applyWeekBoss(){
+  if(srvShop())return claimPrizes();
   if(!me||wkBusy)return; wkBusy=true;
   try{
     const rows=(await q(sb.from('events').select('*').eq('world',WORLD).in('kind',['boss','lmwin']).eq('target',me.id).eq('applied',false)))||[];
@@ -5680,6 +5887,7 @@ const RADIO_BONUS=5000;
 let radioBusy=false;
 async function claimRadio(){
   if(!me||me.radio===true||radioBusy||pushState()!=='on')return; radioBusy=true;
+  if(srvShop()){me.radio=true;bk('radio',{bar:RADIO_BONUS});toast(`📻 Funkgerät an: +${fmt(RADIO_BONUS)} Bargeld`,'good');floatGain('📻');renderHUD();radioBusy=false;return}
   try{
     const data=await q(sb.from('players').update({radio:true,push_ok:true}).eq('id',me.id).eq('radio',false).select());
     me.radio=true; me.push_ok=true;
@@ -5905,7 +6113,8 @@ function tickerHTML(){
 function festOf(p,F){const x=p&&p.fest;return x&&F&&x.id===F.id?x:null}
 function festPts(p,F){const x=festOf(p,F);return x?(+x.p||0):0}
 function festToday(F){const x=festOf(me,F);return x&&x.d===berlinDay()?(+x.dp||0):0}
-function addHearts(n,t){
+function addHearts(n,t,h){
+  if(srvShop())return h!=null?(+h||0):(+(lastRes&&lastRes.hearts)||0); // ab 5.1.2 zählt der Server die Herzen
   const F=festAt(t||now()); if(!F||!F.pts||!me||!(n>0))return 0;
   const day=berlinDay(); let x=festOf(me,F)||{id:F.id,p:0,dp:0,d:day};
   if(x.d!==day)x={...x,d:day,dp:0};
@@ -6076,6 +6285,7 @@ function festRankHTML(F){
 /* Preis aus der Fest-Wertung (cashcheck schreibt ein Ereignis, das Spiel verbucht es genau einmal) */
 let festBusy=false;
 async function applyFestPrize(){
+  if(srvShop())return;
   if(!me||festBusy)return; festBusy=true;
   try{
     const rows=(await q(sb.from('events').select('*').eq('world',WORLD).eq('kind','fest').eq('target',me.id).eq('applied',false)))||[];
@@ -6107,10 +6317,13 @@ async function codeLogin(){
   if(c.length<8){toast('Gib deinen Bandencode ein, z. B. BRAT-7K4M-Q9TX.','bad');return}
   let r=null; try{const x=await sb.rpc('code_login',{p_code:c});if(x.error)throw x.error;r=x.data}catch(e){console.warn(e);toast('Keine Verbindung. Versuch es nochmal.','bad');return}
   if(!r||!r.ok){toast('Diesen Code gibt es nicht.','bad');return}
+  try{sessionStorage.removeItem('imperium-out')}catch(_){}
+  try{const row=await q(sb.from('players').select('*').eq('id',r.id));if(row&&row[0])players[r.id]=norm(row[0])}catch(e){}
   if(!players[r.id]){try{await refreshPlayers()}catch(e){}}
   if(!players[r.id]){toast('Diese Bande gibt es nicht mehr.','bad');return}
   try{localStorage.setItem(LS_KEY,r.id)}catch(_){}
   me=players[r.id]; try{await claimGang(r.id)}catch(e){}
+  if(srvShop())try{await refreshSlots()}catch(e){}
   if(me.ruf==null)me.ruf=assignRuf(); ui.sel=null; ecoAdvance(); savePlayer(); startGame(); refreshPush(); toast(`Willkommen zurück, ${me.name}!`,'good');
 }
 async function newCode(){
