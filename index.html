@@ -996,7 +996,7 @@ async function loadAll(){
     shop?q(sb.from('slot_pub').select('*').eq('world',WORLD)):null
   ]);
   players={}; (gp||[]).forEach(r=>{players[r.id]=pubNorm(r)}); pl.forEach(p=>{players[p.id]=norm(p)});
-  slots={}; (sp||[]).forEach(s=>{slots[key(s.district,s.idx)]={...s,_pub:true}}); sl.forEach(s=>{slots[key(s.district,s.idx)]=s});
+  slots={}; (sp||[]).forEach(s=>{slots[key(s.district,s.idx)]={...s,_pub:true}}); sl.forEach(s=>{slots[key(s.district,s.idx)]=slotIn(s)});
   events=ev; world=wo[0]||null; syncOpen();
   await loadLm(); // ab 5.0
 }
@@ -1013,12 +1013,15 @@ async function refreshPlayers(){
   pl.forEach(p=>{if(!me||p.id!==me.id)players[p.id]=norm(p);else{const n=norm(p);me.push_ok=p.push_ok;me.radio=p.radio===true||me.radio===true;me.badges=n.badges;me.born=+p.born||0;me.rat_fx=p.rat_fx||null;mergeMine(n)}})}
 async function refreshSlots(){
   const shop=srvShop(), [sl,sp]=await Promise.all([shop&&me?q(sb.from('slots').select('*').eq('world',WORLD).eq('owner',me.id)):q(sb.from('slots').select('*').eq('world',WORLD)),shop?q(sb.from('slot_pub').select('*').eq('world',WORLD)):null]);
-  slots={}; (sp||[]).forEach(s=>{slots[key(s.district,s.idx)]={...s,_pub:true}}); sl.forEach(s=>{slots[key(s.district,s.idx)]=s}); syncOpen()}
+  slots={}; (sp||[]).forEach(s=>{slots[key(s.district,s.idx)]={...s,_pub:true}}); sl.forEach(s=>{slots[key(s.district,s.idx)]=slotIn(s)}); syncOpen()}
 /* Ab 5.1.2: öffentliche Sicht auf fremde Banden (Name, Farbe, Boss, Ruf-Stufe, online, Punkte) */
 function pubNorm(r){const l=+r.lvl||0,p=norm({id:r.id,world:r.world,name:r.name,color:r.color,boss:r.boss,ruf:l?RUF_AT[l-1]:null,last_seen:r.last_seen,renamed:r.renamed,badges:r.badges,fest:r.fest,week_key:r.week_key,push_ok:r.push_ok,rank_pos:r.rank_pos,jail:r.jail});
   p._pub=true;p.week_pts=+r.week_pts||0;p.pts=+r.pts||0;p.born=+r.born||0;return p}
+/* Ab 5.2.1: Ausbau/Sicherung, die der Server noch nicht bestätigt hat, bleiben sichtbar, auch wenn zwischendurch ein älterer Stand ankommt */
+let slotPend={};
+function slotIn(s){const p=s&&slotPend[key(s.district,s.idx)];return p&&s.owner===(me&&me.id)?{...s,...p}:s}
 function pubSlot(s){const k=key(s.district,s.idx),c=slots[k];
-  if(me&&s.owner===me.id&&c&&c.owner===me.id&&!c._pub){c.type=s.type;c.lvl=s.lvl}
+  if(me&&s.owner===me.id&&c&&c.owner===me.id&&!c._pub){c.type=s.type;c.lvl=s.lvl;Object.assign(c,slotPend[k]||{})}
   else{slots[k]={...s,_pub:true};if(me&&s.owner===me.id)fetchSlot(s.district,s.idx).catch(()=>{})}
   syncOpen();dirty=true}
 function norm(p){p.push_rank=p.push_rank!==false;p.push_upd=p.push_upd!==false;p.week_last=typeof p.week_last==='string'?JSON.parse(p.week_last):(p.week_last||null);p.push_attack=p.push_attack!==false;p.push_dm=p.push_dm!==false;p.push_cash=p.push_cash!==false;p.push_new=p.push_new!==false;p.push_heat=p.push_heat!==false;p.push_coup=p.push_coup!==false;p.onboard=typeof p.onboard==='string'?JSON.parse(p.onboard):(p.onboard||null);p.boss=typeof p.boss==='string'?JSON.parse(p.boss):(p.boss||null);p.renamed=p.renamed===true;p.wash_pool=p.wash_pool==null?null:(+p.wash_pool||0);p.guards=typeof p.guards==='string'?JSON.parse(p.guards):(p.guards||{});p.tips=typeof p.tips==='string'?JSON.parse(p.tips):(p.tips||{});p.bribe_n=+p.bribe_n||0;p.coups=typeof p.coups==='string'?JSON.parse(p.coups):(p.coups||{});p.daily=typeof p.daily==='string'?JSON.parse(p.daily):(p.daily||{});p.ruf=p.ruf==null?null:(+p.ruf||0);p.energy=p.energy==null?null:+p.energy;p.energy_at=+p.energy_at||0;p.crew=typeof p.crew==='string'?JSON.parse(p.crew):(p.crew||{s:2,f:0,h:0,a:0});p.ware=typeof p.ware==='string'?JSON.parse(p.ware):(p.ware||{});p.gear=typeof p.gear==='string'?JSON.parse(p.gear):(p.gear||{});p.helping=typeof p.helping==='string'?JSON.parse(p.helping):(p.helping||null);p.fest=typeof p.fest==='string'?JSON.parse(p.fest):(p.fest||null);p.badges=typeof p.badges==='string'?JSON.parse(p.badges):(Array.isArray(p.badges)?p.badges:[]);['bar','clean','coins','basis','heat','reserve','eco_at','busy_until','hack_until','last_seen','home_at'].forEach(k=>p[k]=+p[k]||0);p.home_far=p.home_far===true;crewMig(p);return p}
@@ -1040,7 +1043,7 @@ async function casSlot(d,i,expect,patch){
 }
 async function fetchSlot(d,i){let data=await q(sb.from('slots').select('*').eq('world',WORLD).eq('district',d).eq('idx',i));
   if(!data[0]&&srvShop()){data=await q(sb.from('slot_pub').select('*').eq('world',WORLD).eq('district',d).eq('idx',i));if(data[0])data[0]._pub=true}
-  if(data[0])slots[key(d,i)]=data[0];return data[0]||null}
+  if(data[0])slots[key(d,i)]=slotIn(data[0]);return data[0]||null}
 async function addEvent(ev){
   const row=Object.assign({world:WORLD,ts:now(),applied:false},ev);
   try{const data=await q(sb.from('events').insert(row).select());if(data&&data[0])pushEvent(data[0])}catch(e){console.warn(e)}
@@ -1379,7 +1382,7 @@ function attackSrv(did,i,kind,victim){
   playGame(kind,(mult,hits)=>guard(async()=>{
     const pk=kind==='hack'?null:crewPick();
     const r=await kampf({act:'angriff',d:did,i,kind,n:pk?pk.n:0,nitro:kind!=='hack'&&usesCar(),rev:!!revBonus(victim),victim},hits,mult);
-    await fetchSlot(did,i).catch(()=>{});
+    fetchSlot(did,i).then(()=>{dirty=true}).catch(()=>{}); // ab 5.2.1: Ergebnis nicht auf das Neuladen warten lassen
     if(fightWhy(r,true))return;
     const x=r.res; dirty=true;
     if(x.stop==='neuling'){showResult(false,'NEULINGSSCHUTZ','Diese Bande ist noch zu klein für eine Übernahme. Raub sie aus, wenn es sein muss.','');return}
@@ -2103,10 +2106,11 @@ function upSrv(did,i){
   const s=slotOf(did,i); if(!me||!s||s.owner!==me.id||s.lvl>=3)return;
   const T=TYPES[s.type], c=upCost(s), d=DM[did], k=key(did,i), lv=s.lvl+1, cu=T.cur==='bar'?'bar':'clean';
   if(!canPay(T.cur,c)){toast('Dafür reicht dein Geld nicht.','bad');return}
-  const pd={cu,c}; slots[k]={...s,lvl:lv,stock:T.kind==='ware'?wareStock(s,d):curStock(s,d),stock_at:now()}; me[cu]-=c; shopPend.push(pd);
+  const pd={cu,c}; slots[k]={...s,lvl:lv,stock:T.kind==='ware'?wareStock(s,d):curStock(s,d),stock_at:now()}; me[cu]-=c; shopPend.push(pd); slotPend[k]={...(slotPend[k]||{}),lvl:lv};
   floatGain('⬆️'); toast(`⬆️ ${T.name} auf Stufe ${lv}!`,'good'); upShow(did,i);
   shopLater(async()=>{const x=await shopAct('ausbau',{d:did,i},false,pd);
-    if(x)daily('build',1);else slots[k]=s;
+    if(slotPend[k]&&slotPend[k].lvl===lv)delete slotPend[k].lvl; if(slotPend[k]&&!Object.keys(slotPend[k]).length)delete slotPend[k];
+    if(x)daily('build',1);else slots[k]=slotIn(s);
     await fetchSlot(did,i).catch(()=>{}); upShow(did,i)});
 }
 function secSrv(did,i){
@@ -2114,10 +2118,11 @@ function secSrv(did,i){
   const lv=(+s.sec||0)+1, S=SEC[lv]; if(!S||!unlocked('sec'+lv))return;
   if(me.clean<S.cost){toast('Dafür reicht dein sauberes Geld nicht.','bad');return}
   const k=key(did,i), d=DM[did], T=TYPES[s.type];
-  const pd={cu:'clean',c:S.cost}; slots[k]={...s,sec:lv,stock:T.kind==='ware'?wareStock(s,d):curStock(s,d),stock_at:now()}; me.clean-=S.cost; shopPend.push(pd);
+  const pd={cu:'clean',c:S.cost}; slots[k]={...s,sec:lv,stock:T.kind==='ware'?wareStock(s,d):curStock(s,d),stock_at:now()}; me.clean-=S.cost; shopPend.push(pd); slotPend[k]={...(slotPend[k]||{}),sec:lv};
   floatGain(S.ico); toast(`${S.ico} ${S.name} eingebaut: ${S.txt}.`,'good'); upShow(did,i);
   shopLater(async()=>{const x=await shopAct('sicherung',{d:did,i},false,pd);
-    if(!x)slots[k]=s;
+    if(slotPend[k]&&slotPend[k].sec===lv)delete slotPend[k].sec; if(slotPend[k]&&!Object.keys(slotPend[k]).length)delete slotPend[k];
+    if(!x)slots[k]=slotIn(s);
     await fetchSlot(did,i).catch(()=>{}); upShow(did,i)});
 }
 function upgrade(did,i){if(srvShop())return upSrv(did,i);return guard(async()=>{
@@ -2144,7 +2149,7 @@ function demolish(did,i){return guard(async()=>{
   const T=TYPES[s.type], cr=credit(s), cur=Math.floor(curStock(s,d)), wv=Math.floor(wareStock(s,d)), lost=losesControl(did,i);
   closeModal();
   if(srvShop()){
-    const x=await shopAct('abriss',{d:did,i}); await fetchSlot(did,i).catch(()=>{}); if(!x)return;
+    const x=await shopAct('abriss',{d:did,i}); fetchSlot(did,i).then(()=>{dirty=true}).catch(()=>{}); if(!x)return;
     normGuards(); toast(`🧨 ${T.name} abgerissen · +${fmt(x.cr)}${T.cur==='clean'?' sauber':''} zurück${x.cur>0?` · Kasse +${fmt(x.cur)}`:''}`,'good');
     return;
   }
@@ -2161,7 +2166,7 @@ function convert(did,i,t){return guard(async()=>{
   if(!canPay(N.cur,k.pay)){toast('Dafür reicht dein Geld nicht.','bad');return}
   if(srvShop()){
     closeModal(); toast(`🔁 Umbau zu ${N.name} läuft …`,'ev');
-    const x=await shopAct('umbau',{d:did,i,t}); await fetchSlot(did,i).catch(()=>{}); if(!x)return;
+    const x=await shopAct('umbau',{d:did,i,t}); fetchSlot(did,i).then(()=>{dirty=true}).catch(()=>{}); if(!x)return;
     floatGain(N.ico); toast(`🔁 Umbau fertig: ${N.ico} ${N.name} statt ${O.name}${x.cur>0?` · Kasse +${fmt(x.cur)}`:''}`,'good');
     return;
   }
@@ -3575,7 +3580,7 @@ function orderBlock(o){
 function deliverOrder(){return guard(async()=>{
   const o=orderOpen(); if(!o||orderBlock(o))return;
   if(srvShop()){
-    const x=await shopAct('liefern',{},true); await loadOrder(); if(!x)return;
+    const x=await shopAct('liefern',{},true); loadOrder().then(()=>{dirty=true}).catch(()=>{}); if(!x)return;
     showResult(true,'GELIEFERT!',`${cap1(o.who)} ist zufrieden. Bar auf die Hand.`,`+${fmt(x.pay)} Bargeld · ⭐ +${x.ruf||ORDER_RUF}`,'c-dirty',true);
     return;
   }
@@ -5180,7 +5185,7 @@ function doReload(){
 }
 
 /* ---------- Menü, Anleitung, FAQ, Versionsverlauf ---------- */
-const CURRENT_VERSION='Beta 5.2.1', SEEN_KEY='imperium-seen-version';
+const CURRENT_VERSION='Beta 5.2.1.1', SEEN_KEY='imperium-seen-version';
 /* ---------- Ab Beta 5.0 „Wahrzeichen“: drei gleichzeitig, Kaiserburg und Plärrer fest, das dritte wechselt sonntags um 20 Uhr ----------
    Erobert wird nur über die Datenbank-Funktion landmark_attack (der Server würfelt, feste Verteidigung 10, Türsteher zählen nicht).
    Tabelle landmarks: {id, district, pos, active, owner, since, shield_until}, owner null = Stadtwache. */
@@ -5318,9 +5323,8 @@ function dayPhase(t){t=t||now();const s=sunTimes(t),D=40*60000;if(t>s.rise+D&&t<
 function applyPhase(){const svg=document.getElementById('mapsvg'),box=document.getElementById('mapbox');if(!svg)return;const p=dayPhase();['day','dusk','night'].forEach(k=>{svg.classList.toggle(k,k===p);if(box)box.classList.toggle(k,k===p)})}
 
 const VERSIONS=[
-  {v:'Beta 5.2.1',date:'12.10.2026',title:'Sofort ausgebaut',items:[
-    '⬆️ Ausbauen und Sicherung einbauen zeigen sofort die neue Stufe, ohne Warten',
-    '↩️ Klappt es doch nicht, bekommst du dein Geld sofort zurück']},
+  {v:'Beta 5.2.1.1',date:'12.10.2026',title:'Sofort ausgebaut',items:[
+    '⚡ Das Spiel reagiert schneller']},
   {v:'Beta 5.2',date:'12.10.2026',title:'Intrigen & Ratte',items:[
     '💻 Darknet: Im Fenster einer anderen Bande ein Knopf für Tipp, Gerücht, Paket und Kopfgeld, jeder Dienst einmal am Tag',
     '🪙 Tipp, Gerücht und Paket bezahlst du mit BratCoin, „+ Coins kaufen“ steht gleich daneben. Kopfgeld bleibt sauberes Geld',
@@ -5629,7 +5633,7 @@ const GUIDE=[
   ['🧰 Ausrüstung','Ab Stufe 3 (Kiezbande) baust du im Lager Ausrüstung aus Ware. 🗝️ Dietrich (3 Teile): Beim nächsten Überfall auf einen Laden mit Sicherung zählen Stahltür, Kamera und Tresor nicht. 🦺 Schutzweste (2 Teile, 1 Fusel): Der nächste Überfall auf dich trifft auf 20 % mehr Verteidigung. 🚀 Nitro (2 Teile, 3 Fusel): Schaltest du es im Angriffsfenster an, macht dieser Überfall oder diese Übernahme keine Hitze, und dein Trupp ist sofort zurück. Ohne Schalter bleibt es im Lager. Dietrich und Schutzweste wirken von selbst. Von jeder Sorte hast du höchstens 3. Wie viele du hast, steht im Lager und im Angriffsfenster; nach jedem Angriff siehst du, was verbraucht wurde und was übrig ist. Bei Übernahme und Hack hilft der Dietrich nicht. Bricht ein Angriff ab, bekommst du die Ausrüstung zurück. Etwa jeder 5. gelungene Coup bringt welche mit.','kampf'],
   ['📦 Bestellungen','Zweimal am Tag sucht jemand in Nürnberg 10 bis 20 Fusel oder Teile, zum Beispiel der Wirt vom Weißgerbergraben. Die Bestellung steht im Kurier, auf der Karte als 📦 und im Lager und gilt 6 Stunden. Wer zuerst liefert, bekommt den doppelten Hehlerpreis als Bargeld und ⭐ 20. Eine Mitteilung gibt es über den Schalter „Coups, Großcoups & Transporter“.','akt'],
   ['💸 Geldfluss','Oben im Geld-Tab steht Schritt für Schritt, was pro Stunde passiert: wie viel Bargeld reinkommt, wie viel davon gewaschen wird (die Quote zeigt den Anteil), was die Löhne kosten und was unterm Strich als Bargeld und sauberes Geld bleibt. Darunter steht ein Tipp, was sich gerade lohnt. Ein Tipp auf die Karte zeigt jeden Laden einzeln.','geld'],
-  ['⬆️ Ausbauen','Im Pop-up deines Ladens hebst du ihn auf Stufe 2 und 3: mehr Einnahmen, größere Kasse. Die neue Stufe siehst du sofort. Klappt es doch nicht, etwa weil dir jemand den Laden gerade abgenommen hat, ist das Geld gleich wieder da.','geld'],
+  ['⬆️ Ausbauen','Im Pop-up deines Ladens hebst du ihn auf Stufe 2 und 3: mehr Einnahmen, größere Kasse.','geld'],
   ['🔁 Umbauen & 🧨 Abreißen','Im Pop-up deines Ladens. Beim Abriss bekommst du 40 % von Bau und Upgrades zurück, der Platz wird frei. Beim Umbau wird diese Gutschrift mit dem neuen Laden verrechnet, er startet auf Stufe 1. Die Kasse wird vorher automatisch kassiert. Deinen letzten Laden kannst du nur umbauen.','geld'],
   ['🎩 Boss','Jede Bande hat einen Boss. Tipp auf deinen Namen oben und dann auf „🎩 Bearbeiten“: Dort wählst du Gesicht und Hautton für das Abzeichen deiner Bande und einen Spruch mit höchstens 40 Zeichen, das geht jederzeit gratis. Die Boss-Art bringt einen Bonus: 💼 Geschäftsmann wäscht 10 % mehr und baut Immobilien 10 % günstiger, 🥊 Schläger greift 10 % stärker an und seine Wachen verteidigen 20 % besser, 🦊 Schlitzohr hackt 15 % mehr und baut 1 Hitze pro Stunde schneller ab, 🎲 Zocker holt bei Coups 15 % mehr und findet 1,5-mal so oft etwas, 👑 Pate kassiert 25 % mehr Schutzgeld. Die erste Wahl ist gratis, ein Wechsel kostet 25.000 sauberes Geld und geht höchstens einmal am Tag.','stadt'],
   ['🏴 Banden','Tipp auf deinen Namen oben oder auf eine Bande in der Rangliste. Du siehst Rang, Läden, kontrollierte Viertel und die Bilanz aus Angriffen und Razzien. Geld, Crew und Hitze anderer Banden bleiben geheim. Deine eigene Bande kannst du dort einmal pro Saison umbenennen, die Farbe bleibt. In der Rangliste hängen die drei stärksten Banden als WANTED-Plakat, das Kopfgeld sind ihre Rang-Punkte.','stadt'],
@@ -5664,7 +5668,6 @@ const FAQ=[
   ['Warum zeigt der Geldfluss weniger, als meine Läden bringen?','Volle Kassen verdienen nichts mehr, bis du kassierst. Sie zählen deshalb nicht mit und stehen in den Details als „voll“.','geld'],
   ['Warum wäscht mein Späti am Anfang nichts?','Gewaschen wird nur Bargeld, das du verdienst: aus Kassen, Schutzgeld und Beute. Dein Startgeld bleibt dir so zum Bauen. Bau ein Wettbüro, Hehlerlager oder einen Club, dann hat dein Späti zu tun. Das gilt für alle Banden, die ab Beta 3.3.1 gegründet wurden.','geld'],
   ['Wie viel Bargeld wasche ich gerade?','Das steht im Geldfluss bei „Wäsche“, dazu die Quote: welcher Anteil deines Bargelds sauber wird. Liegt genug Bargeld über deiner Reserve, waschen alle Fassaden mit voller Leistung. Liegt es an der Reserve, wird nur gewaschen, was nach den Löhnen reinkommt. Kommt nichts rein, pausiert die Wäsche. Kommt mehr Bargeld rein, als du waschen kannst, lohnt sich eine weitere Fassade.','geld'],
-  ['Mein Ausbau ist wieder weg. Warum?','Ausbau und Sicherung zeigt das Spiel sofort an, die Stadt bestätigt sie kurz danach. Hat sich in der Zwischenzeit etwas geändert, zum Beispiel wurde der Laden übernommen, wird der Ausbau zurückgenommen und du bekommst dein Geld zurück.','geld'],
   ['Lohnt sich Abreißen oder Umbauen?','Du bekommst 40 % von Bau und Upgrades zurück. Umbauen lohnt sich, wenn ein anderer Laden in dem Viertel einen Bonus hat oder du weniger Hitze willst. Achtung: Ein Abriss kann dich die Kontrolle über das Viertel kosten, das Pop-up warnt dich vorher.','geld'],
   ['Wie benenne ich meine Bande um?','Tipp oben auf deinen Namen, dann auf den Stift. Das geht einmal pro Saison und kostet nichts. Der Name muss neu in der Stadt sein, höchstens 18 Zeichen. Die Farbe bleibt.','stadt'],
   ['Was ist der Unterschied zwischen Bargeld und sauberem Geld?','Bargeld kommt aus Wettbüros, Hehlerlagern und Clubs. Damit baust du die meisten Läden und bezahlst die Crew. Sauberes Geld entsteht durch Geldwäsche, Mieten und BratCoin-Verkäufe. Es ist für Immobilien, Bestechung und manche Upgrades nötig und zählt voll für die Rangliste.','geld'],
@@ -5958,7 +5961,7 @@ function subscribe(){
   if(!sb.channel)return;
   try{
     worldCh=sb.channel('world-'+WORLD)
-      .on('postgres_changes',{event:'*',schema:'public',table:'slots',filter:'world=eq.'+WORLD},p=>{const s=p.new;if(s&&s.district&&!(srvShop()&&me&&s.owner!==me.id)){slots[key(s.district,s.idx)]=s;syncOpen();dirty=true}})
+      .on('postgres_changes',{event:'*',schema:'public',table:'slots',filter:'world=eq.'+WORLD},p=>{const s=p.new;if(s&&s.district&&!(srvShop()&&me&&s.owner!==me.id)){slots[key(s.district,s.idx)]=slotIn(s);syncOpen();dirty=true}})
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'events',filter:'world=eq.'+WORLD},p=>{const e=p.new;if(!e||events.some(x=>x.id===e.id))return;pushEvent(e);onNewEvent(e);feedShow()})
       .on('postgres_changes',{event:'*',schema:'public',table:'players',filter:'world=eq.'+WORLD},p=>{const r=p.new;if(r&&r.id&&r.id!==me.id&&!srvShop()){players[r.id]=norm(r);dirty=true}})
       .on('postgres_changes',{event:'*',schema:'public',table:'gang_pub',filter:'world=eq.'+WORLD},p=>{const r=p.new;if(r&&r.id&&r.id!==me.id&&srvShop()){players[r.id]=pubNorm(r);dirty=true}})
