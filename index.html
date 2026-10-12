@@ -1318,6 +1318,7 @@ function fightTake(P){
   if('kstate' in P)me.kstate=P.kstate;
   if('rat_fx' in P)me.rat_fx=P.rat_fx; // ab 5.2: Sabotage der Ratte
   if(lastSaved){const pt=patchOf(me,true);FIGHT_NO.forEach(k=>{if(k in P)lastSaved[k]=JSON.stringify(pt[k])});if(P.crew)lastSaved.crew=JSON.stringify(P.crew)}
+  pendItems(); // ab 5.2.1.2: noch unbestätigtes Basteln/Verkaufen bleibt sichtbar
   normGuards(); levelUp(lv);
 }
 function fightApply(P){
@@ -1549,9 +1550,11 @@ async function lmAttackSrv(id){
   await loadLm(); dirty=true;
 }
 /* Ausrüstung basteln */
-async function craftSrv(k){
-  const G=GEAR[k], r=await kampf({act:'basteln',k}); if(fightWhy(r))return;
+async function craftSrv(k){ // ab 5.2.1.2: sofort im Lager, der Server bestätigt danach (shopLater)
+  const G=GEAR[k], pd={w:{...G.need},g:{[k]:1}};
+  Object.keys(G.need).forEach(w=>addWare(w,-G.need[w])); addGear(k,1); shopPend.push(pd);
   floatGain(G.ico); toast(`${G.ico} ${G.name} gebaut: ${G.txt}. Du hast jetzt ${hasG(me,k)}.`,'good'); dirty=true; render();
+  shopLater(async()=>{fightWhy(await kampf({act:'basteln',k},null,null,pd))});
 }
 /* Kopfgeld */
 async function bountySetSrv(o,amt){
@@ -2101,8 +2104,9 @@ function build(did,i,t){return guard(async()=>{
    Lehnt der Server ab, kommen Geld und alter Laden zurück (Meldung macht shopAct). */
 let shopQ=Promise.resolve(), shopPend=[];
 /* Schon abgezogene, vom Server noch nicht bestätigte Beträge: bleiben abgezogen, wenn zwischendurch andere Antworten den Kontostand setzen */
-function pendLocal(){shopPend.forEach(x=>{me[x.cu]=Math.max(0,(+me[x.cu]||0)-x.c)})}
-function pendDone(x,r){if(!x||!shopPend.includes(x))return;shopPend=shopPend.filter(y=>y!==x);if(!r||!r.p)me[x.cu]+=x.c}
+function pendLocal(){shopPend.forEach(x=>{if(x.cu)me[x.cu]=Math.max(0,(+me[x.cu]||0)-x.c)})}
+function pendItems(){shopPend.forEach(x=>{if(x.w)Object.keys(x.w).forEach(k=>addWare(k,-x.w[k]));if(x.g)Object.keys(x.g).forEach(k=>addGear(k,x.g[k]))})}
+function pendDone(x,r){if(!x||!shopPend.includes(x))return;shopPend=shopPend.filter(y=>y!==x);if(!r||!r.p){if(x.cu)me[x.cu]+=x.c;if(x.w)Object.keys(x.w).forEach(k=>addWare(k,x.w[k]));if(x.g)Object.keys(x.g).forEach(k=>addGear(k,-x.g[k]))}}
 function shopLater(fn){shopQ=shopQ.then(async()=>{
   try{await fn()}catch(e){console.warn(e);toast('Verbindung hakt. Versuch es gleich nochmal.','bad');setNet(false);try{await refreshSlots()}catch(_){}}
   dirty=true;render()})}
@@ -3538,7 +3542,11 @@ function cap1(t){return t.charAt(0).toUpperCase()+t.slice(1)}
 function sellWare(k){
   if(!unlocked('brenn'))return;
   const n=hasW(me,k); if(n<1)return;
-  if(srvShop())return guard(async()=>{const x=await shopAct('verkauf',{k});if(x){floatGain('+'+fmt(x.v));toast(`📦 ${x.n} ${WARE[k].name} an den Hehler: +${fmt(x.v)} Bargeld`,'good')}});
+  if(srvShop()){ // ab 5.2.1.2: Geld sofort, der Server bestätigt danach
+    const v=n*WARE[k].price, pd={w:{[k]:n},cu:'bar',c:-v}; addWare(k,-n); me.bar+=v; shopPend.push(pd);
+    floatGain('+'+fmt(v)); toast(`📦 ${n} ${WARE[k].name} an den Hehler: +${fmt(v)} Bargeld`,'good'); dirty=true; render();
+    return shopLater(async()=>{await shopAct('verkauf',{k},false,pd)});
+  }
   const v=n*WARE[k].price; addWare(k,-n); bk('sell',{bar:v}); savePlayer();
   floatGain('+'+fmt(v)); toast(`📦 ${n} ${WARE[k].name} an den Hehler: +${fmt(v)} Bargeld`,'good');
 }
@@ -3550,7 +3558,7 @@ function gearBlock(k){
 }
 function craft(k){
   const G=GEAR[k]; if(!G||gearBlock(k))return;
-  if(srvFight())return guard(()=>craftSrv(k));
+  if(srvFight())return craftSrv(k);
   Object.keys(G.need).forEach(w=>addWare(w,-G.need[w])); addGear(k,1); savePlayer();
   floatGain(G.ico); toast(`${G.ico} ${G.name} gebaut: ${G.txt}. Du hast jetzt ${hasG(me,k)}.`,'good');
 }
@@ -5190,7 +5198,7 @@ function doReload(){
 }
 
 /* ---------- Menü, Anleitung, FAQ, Versionsverlauf ---------- */
-const CURRENT_VERSION='Beta 5.2.1.1', SEEN_KEY='imperium-seen-version';
+const CURRENT_VERSION='Beta 5.2.1.2', SEEN_KEY='imperium-seen-version';
 /* ---------- Ab Beta 5.0 „Wahrzeichen“: drei gleichzeitig, Kaiserburg und Plärrer fest, das dritte wechselt sonntags um 20 Uhr ----------
    Erobert wird nur über die Datenbank-Funktion landmark_attack (der Server würfelt, feste Verteidigung 10, Türsteher zählen nicht).
    Tabelle landmarks: {id, district, pos, active, owner, since, shield_until}, owner null = Stadtwache. */
@@ -5328,7 +5336,11 @@ function dayPhase(t){t=t||now();const s=sunTimes(t),D=40*60000;if(t>s.rise+D&&t<
 function applyPhase(){const svg=document.getElementById('mapsvg'),box=document.getElementById('mapbox');if(!svg)return;const p=dayPhase();['day','dusk','night'].forEach(k=>{svg.classList.toggle(k,k===p);if(box)box.classList.toggle(k,k===p)})}
 
 const VERSIONS=[
-  {v:'Beta 5.2.1.1',date:'12.10.2026',title:'Sofort ausgebaut',items:[
+  {v:'Beta 5.2.1.2',date:'12.10.2026',title:'Schnelles Lager',items:[
+    '⚡ Bauen und Verkaufen im Lager reagiert sofort']},
+  {v:'Beta 5.2.1.1',date:'12.10.2026',title:'Feinschliff',items:[
+    '⚡ Läden, Lieferungen und Angriffe reagieren schneller']},
+  {v:'Beta 5.2.1',date:'12.10.2026',title:'Sofort ausgebaut',items:[
     '⚡ Das Spiel reagiert schneller']},
   {v:'Beta 5.2',date:'12.10.2026',title:'Intrigen & Ratte',items:[
     '💻 Darknet: Im Fenster einer anderen Bande ein Knopf für Tipp, Gerücht, Paket und Kopfgeld, jeder Dienst einmal am Tag',
