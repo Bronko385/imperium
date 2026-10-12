@@ -820,6 +820,82 @@ button.car{cursor:pointer;touch-action:manipulation}
 .dnbar.pk{border-color:var(--clean);background:var(--night2);cursor:pointer}
 .dnbar.pk b{color:var(--clean)}
 .dnbar .btn{flex:none}
+/* 5.2.2 Die Fürther kommen: Banner, Karte, Viertel-Leiste, Verteidigen, Fürther Invaders, Ergebnis */
+#mapsvg .fa{fill:#ff3b5c;fill-opacity:.38;stroke:none;pointer-events:none;animation:fpulse 1.2s ease-in-out infinite}
+#mapsvg .fh{fill:#2fd27a;fill-opacity:.35;stroke:none;pointer-events:none}
+@keyframes fpulse{50%{fill-opacity:.15}}
+#mapsvg .farr0,#mapsvg .farr{fill:none;stroke-linecap:round;vector-effect:non-scaling-stroke;pointer-events:none}
+#mapsvg .farr0{stroke:#11132a;stroke-width:8;opacity:.6}
+#mapsvg .farr{stroke:#2fd27a;stroke-width:4;stroke-dasharray:10 7;animation:fdash 1s linear infinite}
+@keyframes fdash{to{stroke-dashoffset:-17}}
+#mapsvg .fmk text{font-family:var(--f-body)}
+.fbn{position:absolute;left:8px;right:8px;top:48px;z-index:6;background:#7a1630;border:3px solid var(--ink);border-radius:14px;box-shadow:3px 4px 0 var(--ink);padding:7px 10px 8px;color:#fff;background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 10px,transparent 10px 20px)}
+.fbn.pre{background-color:#2b5a3a}
+.fbn .t{display:flex;align-items:center;gap:8px}
+.fbn .t b{font:400 22px var(--f-display);letter-spacing:.04em;color:var(--yellow);text-shadow:2px 2px 0 var(--ink);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fbn .clk{font:800 16px var(--f-body);background:var(--ink);border-radius:999px;padding:2px 10px;color:#fff;white-space:nowrap}
+.fbn .row{display:flex;align-items:center;gap:6px;margin-top:6px}
+.fbn .sh{width:30px;height:30px;padding:0;border-radius:50%;border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:15px;background:#3a3f80;flex:none}
+.fbn .sh.ok{background:#2fd27a}.fbn .sh.at{background:#ff3b5c;animation:fsh .8s ease-in-out infinite}
+@keyframes fsh{50%{transform:scale(1.12)}}
+.fbn .st{font:800 13px var(--f-body);margin-left:4px;line-height:1.15;min-width:0}
+.fbn .st em{font-style:normal;color:var(--yellow)}
+.fbn{pointer-events:none}.fbn .sh{pointer-events:auto;cursor:pointer}
+.fbn .st .sm{display:none}
+/* kleine Handys: eine Zeile mit Schilden, Stand und Uhr */
+@media(max-width:350px),(max-height:700px){.fbn{display:flex;align-items:center;gap:6px;padding:5px 8px;top:46px}.fbn .t{order:2;margin-left:auto}.fbn .t b{display:none}.fbn.pre .t b{display:block;font-size:17px}.fbn .row{margin:0;gap:4px}.fbn .sh{width:26px;height:26px;font-size:12px}.fbn .st{font-size:13px}.fbn .st .lg{display:none}.fbn .st .sm{display:inline;white-space:nowrap}.fbn .clk{font-size:14px;padding:2px 8px}}
+.fdbar{display:flex;align-items:center;gap:10px;margin:2px 0 8px;padding:6px 8px;background:#7a1630;border:2.5px solid var(--ink);border-radius:12px}
+.fdbar.ok{background:#1d4a32}
+.fdbar .cnt{font:800 14px var(--f-body);background:#2b8a4e;border:2px solid var(--ink);border-radius:999px;padding:3px 9px;white-space:nowrap;color:#fff}
+.fdbar .small{font-size:12.5px;color:var(--paper)}
+.fdbar .go{margin-left:auto;background:var(--yellow);border:3px solid var(--ink);border-radius:12px;box-shadow:2px 3px 0 var(--ink);font:400 17px var(--f-display);letter-spacing:.03em;padding:6px 10px;color:var(--ink);white-space:nowrap}
+.fvs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;background:var(--ink);border-radius:14px;padding:10px;margin-bottom:10px}
+.fvs .side{display:flex;flex-direction:column;align-items:center;gap:4px;font:800 13px var(--f-body);text-align:center}
+.fvs .av{width:58px;height:58px;border-radius:50%;border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:2px 3px 0 #000}
+.fvs .vs{font:400 34px var(--f-display);color:#ff3b5c;text-shadow:2px 2px 0 #000}
+.fvs .big{font:400 30px var(--f-display);line-height:1}
+.ftr{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;justify-items:center;margin-bottom:8px}
+.ftr i{width:36px;height:36px;border-radius:50%;background:#2b8a4e;border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:19px;box-shadow:1px 2px 0 var(--ink);position:relative}
+.ftr i.x{background:#3a3f60;opacity:.45}
+.ftr i.x::after{content:'✖';position:absolute;color:#ff3b5c;font-size:24px;font-weight:900}
+.fnote{font-size:13px;color:var(--muted);text-align:center;margin:0 0 8px}
+.fdef{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px}
+.fdef span{background:var(--ink);border-radius:999px;padding:4px 10px;font:800 13px var(--f-body)}
+.fdef span.me{background:var(--yellow);color:var(--ink)}
+.fwin{background:#2fd27a;color:var(--ink);border:3px solid var(--ink);border-radius:14px;box-shadow:3px 4px 0 var(--ink);text-align:center;padding:10px;transform:rotate(-1.5deg);margin-bottom:10px}
+.fwin.lose{background:#ff3b5c;color:#fff}
+.fwin b{display:block;font:400 34px var(--f-display);letter-spacing:.03em;line-height:1}
+.fl{display:grid;gap:5px;margin-bottom:10px}.fl div{display:flex;justify-content:space-between;background:var(--ink);border-radius:10px;padding:6px 10px;font-weight:800;font-size:14px}
+.frw{display:flex;align-items:center;gap:10px;background:#3a2a10;border:3px solid var(--yellow);border-radius:12px;padding:8px 12px;font-weight:800;margin-bottom:10px}
+.frw .r{font:400 26px var(--f-display);color:var(--yellow);white-space:nowrap}
+.mbox.fmg{padding:12px 12px 14px}
+.fhud{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.fhud .tt{font:400 23px var(--f-display);color:var(--yellow);letter-spacing:.03em;text-shadow:2px 2px 0 var(--ink);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fhud .fsc{font:800 15px var(--f-body);background:#2b8a4e;border:2.5px solid var(--ink);border-radius:999px;padding:3px 10px;white-space:nowrap;color:#fff}
+.ftime{height:12px;background:var(--ink);border-radius:999px;overflow:hidden;border:2px solid var(--ink);margin-bottom:8px}
+.ftime i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ffd23f,#ff8a3d)}
+.flive{font:800 12px var(--f-body);background:var(--ink);border-radius:999px;padding:4px 10px;display:inline-flex;gap:6px;margin-bottom:8px;color:#5be6b4}
+.flive b{color:#ff3b5c}
+.fhow{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+.inv{position:relative;height:min(400px,52vh);border:3px solid var(--ink);border-radius:14px;overflow:hidden;box-shadow:3px 4px 0 var(--ink);background:radial-gradient(circle at 70% 15%,#3a3f8a 0,#1b1d45 60%);touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.inv .stars{position:absolute;inset:0;background-image:radial-gradient(#fff 1px,transparent 1.5px);background-size:37px 41px;opacity:.35;pointer-events:none}
+.inv .from{position:absolute;top:6px;right:8px;font:800 11px var(--f-body);background:#2b8a4e;border:2px solid var(--ink);border-radius:6px;padding:1px 6px;color:#fff}
+.inv .ft{position:absolute;left:0;top:0;font-size:28px;line-height:1;pointer-events:none;will-change:transform}
+.inv .ft .cap{position:absolute;left:50%;top:-10px;transform:translateX(-50%);width:28px;height:12px;background:#2b8a4e;border:2.5px solid var(--ink);border-radius:16px 16px 3px 3px;font-size:7px;display:flex;align-items:center;justify-content:center}
+.inv .ft.gone{visibility:hidden}
+.inv .u1{position:absolute;top:26px;left:0;display:flex;align-items:center;gap:4px;font:800 12px var(--f-body);color:#fff;pointer-events:none}
+.inv .u1 .z{background:#1f6fb5;border:2.5px solid var(--ink);border-radius:8px;padding:3px 10px;font:400 15px var(--f-display);letter-spacing:.04em}
+.inv .u1 .bn{color:var(--yellow);font:400 16px var(--f-display);text-shadow:1px 1px 0 var(--ink)}
+.inv .shot{position:absolute;left:0;top:0;width:8px;height:20px;background:var(--yellow);border:2px solid var(--ink);border-radius:6px;pointer-events:none}
+.inv .boom2{position:absolute;font:400 17px var(--f-display);color:#ff3b5c;background:var(--yellow);padding:3px 7px;border:2.5px solid var(--ink);border-radius:8px;transform:rotate(-10deg);pointer-events:none;white-space:nowrap}
+.inv .sky{position:absolute;left:0;right:0;bottom:0;height:70px;background:var(--ink);pointer-events:none;clip-path:polygon(0 60%,8% 60%,8% 35%,14% 35%,14% 55%,22% 55%,24% 20%,28% 20%,30% 50%,40% 50%,40% 30%,46% 30%,46% 55%,60% 55%,62% 10%,64% 10%,66% 40%,74% 40%,74% 25%,82% 25%,82% 55%,100% 55%,100% 100%,0 100%)}
+.inv .bude{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.inv .bude .dach{width:80px;height:17px;background:repeating-linear-gradient(90deg,#ff3b5c 0 12px,#fff 12px 24px);border:2.5px solid var(--ink);border-radius:8px 8px 0 0}
+.inv .bude .bx{width:68px;height:32px;background:var(--yellow);border:2.5px solid var(--ink);border-top:0;display:flex;align-items:center;justify-content:center;font-size:21px}
+.inv .drag{position:absolute;bottom:62px;left:50%;transform:translateX(-50%);font:400 14px var(--f-display);color:#fff;white-space:nowrap;text-shadow:1px 1px 0 var(--ink);pointer-events:none}
+.fres{text-align:center}
+.fres .big{font:400 52px var(--f-display);color:var(--yellow);text-shadow:3px 3px 0 var(--ink);line-height:1;margin:6px 0}
+.fres .btn{margin-top:8px}
 
 </style>
 </head>
@@ -1285,13 +1361,13 @@ async function kampf(body,hits,mult,pend){
   try{r=await kampfCall(body);setNet(true)}catch(e){console.warn(e);setNet(false);pendDone(pend,null);return {error:'netz'}}
   pendDone(pend,r);
   if(r.error==='gang'){deviceOut();return r}
-  if(r.off){if(r.dn===false)moneyCfg={...moneyCfg,dn:false};else if(r.shops===false)moneyCfg={...moneyCfg,shops:false};else moneyCfg={...moneyCfg,fights:false};return r}
+  if(r.off){if(r.fu===false)moneyCfg={...moneyCfg,fu:false};else if(r.dn===false)moneyCfg={...moneyCfg,dn:false};else if(r.shops===false)moneyCfg={...moneyCfg,shops:false};else moneyCfg={...moneyCfg,fights:false};return r}
   lastRes=r.res||null;
   if(r.p)fightApply(r.p);
   (r.hints||[]).forEach(safeHintGot); // ab 5.1: Safe-Hinweis aus Coups und Überfällen
   return r;
 }
-const FIGHT_WHY={ziel:'Das Ziel gibt es so nicht mehr.',spezl:'🤝 Ihr seid Spezln. Erst auflösen oder verraten.',stufe:'Dafür ist deine Stufe noch zu niedrig.',hacker:'Braucht 1 Hacker.',warten:'Deine Hacker machen noch Pause.',besetzt:'Dort läuft schon ein Überfall.',unterwegs:'Dein Trupp ist schon dort.',crew:'Zu wenig Schläger daheim.',spiel:'Das Minispiel ist abgelaufen. Versuch es nochmal.',vorbei:'Zu spät, das ist schon vorbei.',energie:'Zu wenig Energie.',versucht:'Du hattest deinen Versuch schon.',spaet:'Zu spät: Jemand anderes war schneller.',voll:'Zu spät: Da ist kein Platz mehr frei.',heute:'Heute warst du schon dabei.',offen:'Gerade läuft schon ein Großcoup.',zeit:'Das geht gerade nicht (Uhrzeit).',fest:'Das geht nur während des Fests.',zu:'Der Markt schließt gleich.',ware:'Dafür fehlt Ware.',art:'Das geht so nicht.',ally:'🤝 Nicht auf deine Spezln.',geld:'Dafür reicht dein sauberes Geld nicht.',leer:'Nichts zurückzuholen.',netz:'Verbindung hakt. Versuch es gleich nochmal.',busy:'Gerade viel los. Versuch es gleich nochmal.',server:'Geht gerade nicht. Versuch es gleich nochmal.',knast:'🚔 Im Knast geht das nicht. Wirtschaften geht, zuschlagen nicht.',knastmax:'🚔 Sitzt im Knast und hat schon einen Laden verloren. Mehr gibt es erst, wenn sie draußen ist'};
+const FIGHT_WHY={pause:'⏳ Kurz verschnaufen, gleich darfst du wieder ran.',ziel:'Das Ziel gibt es so nicht mehr.',spezl:'🤝 Ihr seid Spezln. Erst auflösen oder verraten.',stufe:'Dafür ist deine Stufe noch zu niedrig.',hacker:'Braucht 1 Hacker.',warten:'Deine Hacker machen noch Pause.',besetzt:'Dort läuft schon ein Überfall.',unterwegs:'Dein Trupp ist schon dort.',crew:'Zu wenig Schläger daheim.',spiel:'Das Minispiel ist abgelaufen. Versuch es nochmal.',vorbei:'Zu spät, das ist schon vorbei.',energie:'Zu wenig Energie.',versucht:'Du hattest deinen Versuch schon.',spaet:'Zu spät: Jemand anderes war schneller.',voll:'Zu spät: Da ist kein Platz mehr frei.',heute:'Heute warst du schon dabei.',offen:'Gerade läuft schon ein Großcoup.',zeit:'Das geht gerade nicht (Uhrzeit).',fest:'Das geht nur während des Fests.',zu:'Der Markt schließt gleich.',ware:'Dafür fehlt Ware.',art:'Das geht so nicht.',ally:'🤝 Nicht auf deine Spezln.',geld:'Dafür reicht dein sauberes Geld nicht.',leer:'Nichts zurückzuholen.',netz:'Verbindung hakt. Versuch es gleich nochmal.',busy:'Gerade viel los. Versuch es gleich nochmal.',server:'Geht gerade nicht. Versuch es gleich nochmal.',knast:'🚔 Im Knast geht das nicht. Wirtschaften geht, zuschlagen nicht.',knastmax:'🚔 Sitzt im Knast und hat schon einen Laden verloren. Mehr gibt es erst, wenn sie draußen ist'};
 /* true = abgelehnt (und gemeldet) */
 function fightWhy(r,modal){
   if(r&&r.res&&!r.why&&!r.error&&!r.off)return false;
@@ -1336,7 +1412,7 @@ const SHOP_NO=['ware','boss','home','home_at','home_set','home_far','open_week',
 const TRADE_AGE=7*864e5, OPEN_RUN=30*60000;
 function srvShop(){return srvFight()&&!!moneyCfg.shops}
 let lastRes=null;
-const SHOP_WHY={runde:'Eröffnungsrunde: In einem frisch erschlossenen Stadtteil darf jede Bande in der ersten halben Stunde nur einen Laden haben.',woche:'Das geht erst wieder ab Sonntag 20 Uhr.',jung:'Handel und Geld schicken gehen erst, wenn beide Banden mindestens 7 Tage dabei sind.',letzter:'Dein letzter Laden kann nur umgebaut werden.',viele:'Höchstens 3 offene Angebote gleichzeitig.',bar:'Zu viel Bargeld für diese Ware.',leer:'Auf beiden Seiten muss etwas stehen.',stufe2:'Diese Bande ist dafür noch zu klein.',schon:'Einer von euch hat schon ein Bündnis.',laeuft:'Anfrage läuft schon.',wenig:'Zu wenig.',limit:'Heute schon 20k geschickt.',warten:'Das geht gerade noch nicht.',voll:'Mehr als 6 Fahrer bringen nichts.',ware:'Dafür fehlt dir Ware.',spaet:'Zu spät: Jemand anderes war schneller.',geld:'Dafür reicht dein Geld nicht.',vorbei:'Das gilt nicht mehr.',nichts:''};
+const SHOP_WHY={tueren:'🚪 Alle Türen voll. Mehr Türsteher gibt es mit Läden in weiteren Vierteln.',runde:'Eröffnungsrunde: In einem frisch erschlossenen Stadtteil darf jede Bande in der ersten halben Stunde nur einen Laden haben.',woche:'Das geht erst wieder ab Sonntag 20 Uhr.',jung:'Handel und Geld schicken gehen erst, wenn beide Banden mindestens 7 Tage dabei sind.',letzter:'Dein letzter Laden kann nur umgebaut werden.',viele:'Höchstens 3 offene Angebote gleichzeitig.',bar:'Zu viel Bargeld für diese Ware.',leer:'Auf beiden Seiten muss etwas stehen.',stufe2:'Diese Bande ist dafür noch zu klein.',schon:'Einer von euch hat schon ein Bündnis.',laeuft:'Anfrage läuft schon.',wenig:'Zu wenig.',limit:'Heute schon 20k geschickt.',warten:'Das geht gerade noch nicht.',voll:'Mehr als 6 Fahrer bringen nichts.',ware:'Dafür fehlt dir Ware.',spaet:'Zu spät: Jemand anderes war schneller.',geld:'Dafür reicht dein Geld nicht.',vorbei:'Das gilt nicht mehr.',nichts:''};
 /* Eine Laden-Aktion beim Server; null = abgelehnt (und gemeldet) */
 async function shopAct(act,body,modal,pend){
   const r=await kampf({act,...(body||{})},null,null,pend);
@@ -1400,6 +1476,7 @@ function attackSrv(did,i,kind,victim){
       return;
     }
     if(kind==='ueberfall'){
+      if(isNpc(victim))step('rob');
       if(x.ok){daily('rob',1);showResult(true,x.loot>0?'BEUTE!':'LEER!',x.loot>0?pick(LINES.robOk):'Rein, umgeschaut, nichts drin.',x.loot>0?`+${fmt(x.loot)} Bargeld`:'','c-dirty')}
       else showResult(false,'VERKACKT!',pick(LINES.robNo),hurtTxt(x.hurt));
     }else if(kind==='uebernahme'){
@@ -2087,7 +2164,7 @@ function build(did,i,t){return guard(async()=>{
     if(!canPay(T.cur,buildPrice(t))||openRunLeft(did))return;
     closeModal(); toast(`🔨 ${T.name} wird eröffnet …`,'ev');
     const x=await shopAct('bau',{d:did,i,t}); await fetchSlot(did,i).catch(()=>{}); if(!x)return;
-    popSlot=did+':'+i; daily('build',1); if(t==='wett')step('wett'); floatGain(T.ico);
+    popSlot=did+':'+i; daily('build',1); step('laden'); floatGain(T.ico);
     toast(`${T.ico} ${T.name} in ${dname(did)} eröffnet!`,'good'); if(x.ctrl)toast(`👑 Du kontrollierst jetzt ${dname(did)}!`,'good');
     return;
   }
@@ -2095,7 +2172,7 @@ function build(did,i,t){return guard(async()=>{
   closeModal(); toast(`🔨 ${T.name} wird eröffnet …`,'ev'); renderHUD();
   const ok=await casSlot(did,i,{free:true},{owner:me.id,type:t,lvl:1,stock:0,stock_at:now(),ver:(s.ver||0)+1});
   if(!ok){unbk(pid);await fetchSlot(did,i);toast('Zu spät, jemand war schneller. Geld zurück.','bad');return}
-  popSlot=did+':'+i; addRuf(10,'build'); daily('build',1); if(t==='wett')step('wett'); savePlayer(); floatGain(T.ico);
+  popSlot=did+':'+i; addRuf(10,'build'); daily('build',1); step('laden'); savePlayer(); floatGain(T.ico);
   toast(`${T.ico} ${T.name} in ${dname(did)} eröffnet!`,'good');
   addEvent({kind:'info',actor:me.id,district:did,txt:`${me.name} eröffnet ${art(t)} ${T.name} in ${dname(did)}.`});
   if(controller(DM[did])===me.id){toast(`👑 Du kontrollierst jetzt ${dname(did)}!`,'good');addEvent({kind:'win',actor:me.id,district:did,txt:`👑 ${me.name} kontrolliert jetzt ${dname(did)}.`})}
@@ -2420,6 +2497,15 @@ async function collectSlot(did,i){
   }
   return 0;
 }
+/* Warum beim Kassieren weniger kam: Razzia, Kontrolle, Laden verloren oder schon kassiert */
+function missTxt(miss,raids,amt){
+  const big=raids.some(x=>x.kind==='big'), rd=raids.filter(x=>x.kind==='district').map(x=>x.did), ct=raids.filter(x=>x.kind==='small').map(x=>x.did);
+  const ds=k=>[...new Set(miss.filter(k).map(it=>dname(it.d)))].join(', ');
+  if(big||miss.some(it=>rd.includes(it.d)))return `🚨 Razzia! ${fmt(amt)} aus den Kassen${big?'':' in '+ds(it=>rd.includes(it.d))} beschlagnahmt.`;
+  if(miss.some(it=>ct.includes(it.d)))return `👮 Kontrolle in ${ds(it=>ct.includes(it.d))}: Die Hälfte der Kasse ist weg, der Rest bleibt drin.`;
+  if(miss.some(it=>{const s=slotOf(it.d,it.i);return s&&s.owner!==me.id}))return `🏴 Ein Laden in ${ds(it=>{const s=slotOf(it.d,it.i);return s&&s.owner!==me.id})} gehört dir nicht mehr. ${fmt(amt)} sind weg.`;
+  return `Ein Teil (${fmt(amt)}) war schon kassiert.`;
+}
 /* Kassieren: sofortige Rückmeldung, dann eine einzige Anfrage für alle Kassen */
 let collecting=false;
 function floatGain(txt){
@@ -2449,7 +2535,8 @@ async function collectMany(list,label){
       if(srvShop()){if(r.p&&r.p.ware)me.ware=jparse(r.p.ware,{})}
       else Object.keys(wexp).forEach(k=>addWare(k,(+(r.col.ware||{})[k]||0)-wexp[k]));
       done.forEach(x=>{const s=slotOf(x.d,x.i);if(s)s.ver=x.v});
-      if(got<expect-1||items.some(it=>!done.some(x=>x.d===it.d&&+x.i===+it.i))){if(got<expect-1)toast(`Ein Teil (${fmt(expect-got)}) war schon weg, jemand war schneller.`,'bad');try{await refreshSlots()}catch(e){}}
+      const miss=items.filter(it=>!done.some(x=>x.d===it.d&&+x.i===+it.i));
+      if(got<expect-1||miss.length){try{await refreshSlots()}catch(e){} if(got<expect-1)toast(missTxt(miss,(r.fx&&r.fx.raids)||[],expect-got),'bad')}
     }else{
       got=0; Object.keys(wexp).forEach(k=>addWare(k,-wexp[k])); me.bar=Math.max(0,me.bar-expect); clampPool();
       toast('Keine Verbindung zur Bank. Nichts kassiert, versuch es gleich nochmal.','bad');
@@ -2494,7 +2581,10 @@ function fireModal(k){
 }
 function fire(k){const C=CREW[k];if(!C||!fireOk(k))return;me.crew={...me.crew,[k]:me.crew[k]-1};if(k==='t')normGuards();savePlayer();toast(`👋 Ein ${C.name} ist entlassen. Lohn −${C.up}/Std.`,'good')}
 function unlockKey(k){return k==='t'?'guards':k}
+/* Ab 5.2.2: Türsteher nur so viele, wie es Türen gibt (3 je Viertel mit eigenem Laden) */
+function doorsN(){return MAX_T*new Set(mySlots().map(x=>x[1].id)).size}
 function hire(k){const C=CREW[k];if(me.bar<C.cost||!unlocked(unlockKey(k)))return;if(k==='f'&&(me.crew.f||0)>=MAX_FH){toast(`Mehr als ${MAX_FH} Fahrer bringen nichts.`,'bad');return}
+  if(k==='t'&&(me.crew.t||0)>=doorsN()){toast(`🚪 Alle Türen voll: ${doorsN()} Türen, ${me.crew.t||0} Türsteher. Mehr gibt es mit Läden in weiteren Vierteln.`,'bad');return}
   if(k==='f'&&hasW(me,'t')<FAHRER_TEILE){toast(`Ein Fahrer braucht ein Auto: ${FAHRER_TEILE} 🔩 Teile. Du hast ${hasW(me,'t')}.`,'bad');return}
   if(srvShop())return guard(async()=>{const x=await shopAct('anheuern',{k});if(x)toast(k==='f'?`🏎️ Neuer Fahrer mit Auto an Bord! −${FAHRER_TEILE} 🔩 Teile.`:`${C.ico} Neuer ${C.name} an Bord!`,'good')});
   bk('crew',{bar:-C.cost},{k});if(k==='f')addWare('t',-FAHRER_TEILE);me.crew={...me.crew,[k]:(me.crew[k]||0)+1};savePlayer();toast(k==='f'?`🏎️ Neuer Fahrer mit Auto an Bord! −${FAHRER_TEILE} 🔩 Teile.`:`${C.ico} Neuer ${C.name} an Bord!`,'good')}
@@ -2573,7 +2663,7 @@ async function sellCoin(f){
 function attackReq(kind,victim){
   const kb=knastBlock(); if(kb)return kb; // ab 5.1
   if(kind==='uebernahme'&&victim&&jailOn(victim)&&jailLost(victim)>=1)return '🚔 Sitzt im Knast und hat schon einen Laden verloren. Mehr gibt es erst, wenn sie draußen ist';
-  if(kind==='uebernahme'&&!unlocked('uebernahme'))return lockTxt('uebernahme');
+  if(kind==='uebernahme'&&!unlocked('uebernahme')&&!(victim&&isNpc(victim)))return lockTxt('uebernahme'); // ab 5.2.2: KI-Läden ab Stufe 1
   if(kind==='hack')return !unlocked('hack')?lockTxt('hack'):me.crew.h>=1?null:'Braucht 1 Hacker';
   // Ab Beta 4.8: Trupp im Auto, pro Gegner nur ein Angriff gleichzeitig
   if(victim&&tripOn(victim))return `Dein Trupp ist schon dort, zurück in ${dur(Math.ceil((+tripOn(victim).until-now())/1000))}`;
@@ -2893,35 +2983,240 @@ function coupModal(){
     <button class="btn wide" data-act="close">Fertig</button></div>`;
 }
 
+/* ---------- Beta 5.2.2: Die Fürther kommen ----------
+   Samstag 20:00–20:30 greift die Kleeblatt-Gang die 5 Viertel an, die Fürth am nächsten liegen. Alles zählt der Server
+   (kampf: fu, fu_ende); das Spiel fragt den Stand ab, zeigt Banner, Karte und Viertel-Leiste und spielt die Minispiele.
+   Minispiele im Wochenwechsel, 5.2.2 bringt „Fürther Invaders“. */
+const FU_GAME={inv:{title:'Fürther Invaders!',how:'Zieh die Bratwurstbude hin und her, sie schießt von allein. Lass keinen Fürther unten ankommen!'}};
+const FU_SEC=15, FU_TICK=5*60000, FU_PAUSE=60000;
+let fu=null, fuT=0, fuSkew=0, fuBusy=false, fuPlaying=false, fuWasLive=false;
+function srvFu(){return srvFight()&&!!(moneyCfg&&moneyCfg.fu)}
+function fuNow(){return Date.now()+fuSkew}
+function fuLoc(ts){return +ts-fuSkew}
+function fuLive(){return !!(fu&&fu.live&&fu.ds&&fuNow()<fu.ends)}
+function fuD(did){return fuLive()?fu.ds.find(x=>x.d===did)||null:null}
+/* Fürther im Viertel jetzt: Stand vom Server plus Nachschub seither */
+function fuN(x){if(!x||x.held)return 0;const t=Math.min(fuNow(),fu.ends),k=Math.floor((t-fu.at)/FU_TICK)-Math.floor((Math.min(fu.now,fu.ends)-fu.at)/FU_TICK);return Math.max(0,x.n+Math.max(0,k)*(+fu.regen||0))}
+function fuHeld(){return fu&&fu.ds?fu.ds.filter(x=>x.held).length:0}
+function fuPauseUntil(){return fu&&fu.last?fuLoc(fu.last)+FU_PAUSE:0}
+function fuWait(){
+  if(!fu)return 10*60000;
+  const n=fuNow();
+  if(fuLive())return fuPlaying||!document.getElementById('modal').hidden?5000:10000;
+  if(fu.at&&!fu.done&&n>=fu.ends)return 15000; // Auswertung abwarten
+  const dt=fu.next-n;
+  if(dt>0&&dt<=2*60000)return Math.max(3000,dt+2000);
+  if(dt>0&&dt<=20*60000)return 60000;
+  return 10*60000;
+}
+async function fuLoad(force){
+  if(!me||!srvFu()||fuBusy)return;
+  if(!force&&Date.now()-fuT<fuWait())return;
+  fuBusy=true; fuT=Date.now();
+  try{const r=await kampf({act:'fu'});if(r&&r.res&&r.res.fu)fuSet(r.res.fu)}catch(e){console.warn(e)}
+  fuBusy=false;
+}
+function fuSet(v){
+  fu=v; fuSkew=(+v.now||Date.now())-Date.now(); dirty=true;
+  const live=fuLive();
+  if(live&&!fuWasLive&&fu.at&&fuNow()-fu.at<FU_PAUSE*20)toast('🍀 Die Fürther sind da! Verteidige Nürnberg.');
+  fuWasLive=live;
+  if(document.getElementById('fuwin'))fuRefresh();
+  fuResult();
+}
+/* Banner oben auf der Karte: während des Angriffs, und 15 Min. vorher als Countdown */
+function fuBannerHTML(){
+  if(!fu)return '';
+  if(fuLive()){
+    const h=fuHeld();
+    return `<div class="fbn" role="status"><div class="t"><b>🍀 Die Fürther kommen!</b><span class="clk">⏱ <span class="fut" data-fut="${fuLoc(fu.ends)}">${fuClock(fuLoc(fu.ends)-Date.now())}</span></span></div>
+      <div class="row">${fu.ds.map(x=>`<button class="sh ${x.held?'ok':'at'}" data-act="fugo" data-d="${x.d}" aria-label="${esc(dname(x.d))}: ${x.held?'gehalten':'wird angegriffen'}">${x.held?'✅':'⚔️'}</button>`).join('')}<span class="st"><span class="lg">Nürnberg hält ${h} von ${fu.ds.length}<br><em>ab 3 gewinnt Nürnberg</em></span><span class="sm">🛡️ ${h}/${fu.ds.length}</span></span></div></div>`;
+  }
+  const dt=fu.next-fuNow();
+  if(!fu.live&&dt>0&&dt<=15*60000)return `<div class="fbn pre" role="status"><div class="t"><b>🍀 Gleich kommen die Fürther</b><span class="clk">⏱ <span class="fut" data-fut="${fuLoc(fu.next)}">${fuClock(fuLoc(fu.next)-Date.now())}</span></span></div></div>`;
+  return '';
+}
+function fuClock(ms){const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
+/* Karte: angegriffene Viertel rot blinkend, gehaltene grün, Pfeile aus Fürth */
+function fuMapHL(){
+  if(!fuLive())return '';
+  const C=CITY.fue||CITY.fuerth, src=C&&C.label?C.label:null;
+  let s='';
+  fu.ds.forEach(x=>{const g=GEO[x.d];if(!g)return;
+    s+=`<path class="${x.held?'fh':'fa'}" d="${g.path}"/>`;
+    if(src&&!x.held){const [cx,cy]=g.c, sx=src[0]+12, sy=src[1]+6, mx=(sx+cx)/2, my=Math.min(sy,cy)-30;
+      s+=`<path class="farr0" d="M${sx} ${sy} Q${mx.toFixed(1)} ${my.toFixed(1)} ${cx-14} ${cy+10}"/><path class="farr" d="M${sx} ${sy} Q${mx.toFixed(1)} ${my.toFixed(1)} ${cx-14} ${cy+10}" marker-end="url(#fah)"/>`}});
+  return s;
+}
+function fuMarks(){
+  if(!fuLive())return '';
+  return fu.ds.map(x=>{const g=GEO[x.d];if(!g)return '';const [cx,cy]=g.c, n=fuN(x);
+    return `<g class="mk fmk" data-x="${cx}" data-y="${cy}" data-d="${x.d}">${x.held?`<g transform="translate(0,-30)"><circle r="12" fill="#2fd27a" stroke="#11132a" stroke-width="2.5"/><text y="5" font-size="12" text-anchor="middle">🛡️</text></g>`
+      :`<g transform="translate(0,27)"><rect x="-25" y="-11" width="50" height="22" rx="11" fill="#2b8a4e" stroke="#11132a" stroke-width="2.5"/><text x="-11" y="5" font-size="12" text-anchor="middle">🍀</text><text x="9" y="5.5" font-size="13" font-weight="900" fill="#fff" text-anchor="middle">${n}</text><text x="24" y="-7" font-size="12" text-anchor="middle">⚔️</text></g>`}</g>`}).join('');
+}
+/* Viertel-Leiste: Zeile mit Fürthern und Verteidigen-Knopf */
+function fuDbarHTML(d){
+  const x=fuD(d.id); if(!x)return '';
+  if(x.held)return `<div class="fdbar ok"><span class="cnt">✅ Gehalten</span><span class="small">Die Fürther sind hier verjagt.</span></div>`;
+  return `<div class="fdbar"><span class="cnt">🍀 ${fuN(x)} Fürther</span><button class="go" data-act="fu" data-d="${d.id}">🛡️ ${(window.innerWidth||390)<350?'LOS':'VERTEIDIGEN'}</button></div>`;
+}
+function fuName(p){return me&&p===me.id?'Du':esc(ownerInfo(p).name)}
+function fuDefHTML(n){const t=(fu&&fu.top||[]).slice(0,n||6);return t.length?`<div class="fdef">${t.map((x,i)=>`<span class="${me&&x.p===me.id?'me':''}">${i===0?'🏅':'🛡️'} ${fuName(x.p)} ${x.n}</span>`).join('')}</div>`:''}
+/* Fenster „Verteidigen“ */
+function fuModal(did){
+  const x=fuD(did);
+  if(!x)return `<div class="mbox" role="dialog" aria-label="Die Fürther kommen" id="fuwin" data-d="${did}"><div class="mtop"><span></span><h3>🍀 Die Fürther kommen</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div><p class="muted">Der Angriff ist vorbei.</p><button class="btn wide" data-act="close">OK</button></div>`;
+  const n=fuN(x), tot=n+(+x.gone||0), k=tot?Math.round(12*(+x.gone||0)/tot):0, pu=fuPauseUntil(), wait=pu-Date.now();
+  const others=fu.ds.filter(y=>!y.held&&y.d!==did);
+  const G=FU_GAME[fu.game]||FU_GAME.inv;
+  const btn=x.held?(others.length?`<p class="fnote">Noch angegriffen:</p><div class="fdef">${others.map(y=>`<button class="chip" data-act="fugo" data-d="${y.d}">⚔️ ${esc(dname(y.d))} · 🍀 ${fuN(y)}</button>`).join('')}</div>`:'')
+    :wait>0?`<button class="btn wide" data-act="fuplay" data-d="${did}" disabled data-fen="🛡️ VERTEIDIGEN">⏳ Nochmal in <span class="fut" data-fut="${pu}">${fuClock(wait)}</span></button>`
+    :`<button class="btn wide" data-act="fuplay" data-d="${did}">🛡️ VERTEIDIGEN<span class="sub">${esc(G.title)} · danach 1 Min. Pause</span></button>`;
+  return `<div class="mbox" role="dialog" aria-label="Verteidigen: ${esc(dname(did))}" id="fuwin" data-d="${did}"><div class="mtop"><span></span><h3>${x.held?'✅':'⚔️'} ${esc(dname(did))}</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
+    <div class="fvs"><div class="side"><span class="av" style="background:#2b8a4e">🍀</span>Kleeblatt-Gang<span class="big" style="color:#2fd27a">${n}</span><span class="fnote">noch da</span></div><span class="vs">VS</span>
+    <div class="side"><span class="av" style="background:#ffd23f">🛡️</span>Nürnberg<span class="big" style="color:#ffd23f">${fmt(+x.gone||0)}</span><span class="fnote">verjagt</span></div></div>
+    <div class="ftr" aria-hidden="true">${Array.from({length:12},(_,i)=>`<i class="${i<k?'x':''}">🍀</i>`).join('')}</div>
+    <p class="fnote">${x.held?'Gehalten! Hier kommen keine Fürther mehr nach.':`Jeder Treffer verjagt einen Fürther. Alle 5 Min. kommen ${+fu.regen||2} nach.`}</p>
+    ${fuDefHTML(6)}${btn}</div>`;
+}
+function fuRefresh(){const w=document.getElementById('fuwin');if(w&&w.dataset.d&&!w.dataset.r&&!fuPlaying)showModal(fuModal(w.dataset.d),true)} // Rundenergebnis bleibt stehen
+function fuGo(did){closeModal();ui.tab='stadt';ui.sel=did;ui.dopen=true;render();centerOn(did);showModal(fuModal(did))}
+/* Eine Runde verteidigen */
+function fuPlay(did){
+  const x=fuD(did);
+  if(!x){toast('Der Angriff ist vorbei.');closeModal();return}
+  if(x.held){showModal(fuModal(did));return}
+  if(fuPauseUntil()>Date.now()){toast('⏳ Kurz verschnaufen, gleich darfst du wieder ran.');return}
+  fuPlaying=true;
+  fuInvaders(did,async hits=>{
+    showModal(`<div class="mbox fmg" role="dialog" aria-label="Wird gezählt"><div class="fres"><div class="big">…</div><p>Die Treffer werden gezählt.</p></div></div>`);
+    const tok=await (mgTokP||Promise.resolve(null)); mgTokP=null;
+    const r=await kampf({act:'fu_ende',d:did,hits,tok});
+    fuPlaying=false;
+    if(r&&r.res&&r.res.fu)fuSet(r.res.fu);
+    if(!r||r.error||r.off){showModal(fuModal(did));toast(FIGHT_WHY.netz);return}
+    if(r.why){showModal(fuModal(did));toast(FIGHT_WHY[r.why]||FIGHT_WHY.server);return}
+    showModal(fuRoundHTML(did,r.res.n,r.res.held));
+  });
+}
+function fuRoundHTML(did,n,won){
+  const x=fuD(did), pu=fuPauseUntil(), left=x?fuN(x):0;
+  return `<div class="mbox fmg" role="dialog" aria-label="Runde vorbei" id="fuwin" data-d="${did}" data-r="1"><div class="fres"><div class="fhud"><span class="tt" style="text-align:center">${esc(dname(did))}</span></div>
+    <div class="big">${n} VERJAGT!</div><p>${won?`✅ <b>${esc(dname(did))} ist frei!</b>`:x&&x.held?'✅ Das Viertel ist schon frei.':`noch <b>${left} Fürther</b> im Viertel`}</p>
+    ${fuDefHTML(4)}
+    ${x&&!x.held?`<button class="btn wide" data-act="fuplay" data-d="${did}" ${pu>Date.now()?`disabled data-fen="🛡️ NOCHMAL"`:''}>${pu>Date.now()?`⏳ Nochmal in <span class="fut" data-fut="${pu}">${fuClock(pu-Date.now())}</span>`:'🛡️ NOCHMAL'}</button>`:''}
+    <button class="btn wide dark" data-act="close">Zur Karte</button></div></div>`;
+}
+/* Ergebnis nach dem Angriff, einmal je Samstag */
+function fuResult(){
+  if(!fu||!fu.done||!fu.result||!fu.key)return;
+  if(fuNow()-fu.ends>6*3600000||lsGet('fuRes')===fu.key)return;
+  if(!document.getElementById('modal').hidden&&!document.getElementById('fuwin'))return; // anderes Fenster offen: später
+  try{localStorage.setItem('fuRes',fu.key)}catch(e){}
+  const R=fu.result, ds=fu.ds||[], mine=(R.top||[]).find(x=>me&&x.p===me.id);
+  showModal(`<div class="mbox" role="dialog" aria-label="Die Fürther kommen: Ergebnis"><div class="mtop"><span></span><h3>🍀 Die Fürther kommen</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
+    <div class="${R.win?'fwin':'fwin lose'}"><b>${R.win?'NÜRNBERG HÄLT!':'FÜRTH LACHT!'}</b>${R.held} von ${R.n} Vierteln ${R.win?'verteidigt':'gehalten'}</div>
+    <div class="fl">${ds.map(x=>`<div${x.held?'':' style="opacity:.6"'}><span>${x.held?'✅':'❌'} ${esc(dname(x.d))}</span><span>${x.held?fmt(x.gone)+' verjagt':'verloren'}</span></div>`).join('')}</div>
+    ${R.win?`<div class="frw"><span class="r">+${R.ruf&&me&&R.ruf[me.id]?R.ruf[me.id]:50} Ruf</span><span>${mine?'für dich und alle Banden, die mitverteidigt haben':'für alle Banden, die mitverteidigt haben'}</span></div>`:`<p class="fnote">Nächsten Samstag um 20 Uhr kommen sie wieder.</p>`}
+    ${(R.top||[]).length?`<div class="fdef">${R.top.slice(0,6).map((x,i)=>`<span class="${me&&x.p===me.id?'me':''}">${i===0?'🏅 ':''}${fuName(x.p)} · ${x.n}</span>`).join('')}</div>`:''}
+    <button class="btn wide" data-act="close">${R.win?'🍺 Prost, Nürnberg!':'Nächstes Mal!'}</button></div>`);
+}
+/* Countdown-Anzeigen (Banner, Pause) jede Sekunde nachführen */
+function fuTick(){
+  document.querySelectorAll('.fut[data-fut]').forEach(el=>{const ms=+el.dataset.fut-Date.now();el.textContent=fuClock(ms);
+    if(ms<=0){const b=el.closest('[data-fen]');if(b){b.disabled=false;b.innerHTML=b.dataset.fen;b.removeAttribute('data-fen')}}});
+}
+/* Minispiel C: Fürther Invaders (Bude ziehen, schießt von allein, U1 = +3) */
+function fuInvaders(did,done){
+  const G=FU_GAME.inv, tok=++gameTok; cancelAnimationFrame(gameRAF);
+  mgQuick=false; mgTokP=null; if(srvFight())kampfStart('fu',did);
+  const x=fuD(did), left0=x?fuN(x):0;
+  showModal(`<div class="mbox fmg" role="dialog" aria-label="${G.title}"><div class="fhud"><span class="tt">${G.title}</span><span class="fsc" id="fsc">🍀 0 verjagt</span></div>
+    <div class="ftime"><i id="ftm"></i></div><div class="flive">⚡ ${esc(dname(did))} · <b id="fleft">noch ${left0} da</b></div>
+    <div class="inv" id="farena"><div class="stars"></div><span class="from">⬇ aus Fürth</span><div class="sky"></div><div class="drag" id="fdrag">⟵ ziehen ⟶</div><div class="bude" id="fbude"><div class="dach"></div><div class="bx">🌭</div></div></div>
+    <p class="fhow">${G.how}</p></div>`);
+  const A=document.getElementById('farena'), W=A.clientWidth||A.getBoundingClientRect().width||340, H=A.clientHeight||A.getBoundingClientRect().height||360, bude=document.getElementById('fbude');
+  const sc=document.getElementById('fsc'), tm=document.getElementById('ftm'), fl=document.getElementById('fleft');
+  const alive=()=>tok===gameTok&&document.getElementById('farena')===A;
+  let hits=0, bx=W/2, t0=performance.now(), last=t0, nextShot=t0+400, end=false, wave=0, ox=0, oy=0, dir=1, speed=34, U=null, nextU=t0+3500;
+  const FT=[], SH=[], ROWS=3, COLS=W<340?5:6, gap=Math.min(52,(W-40)/COLS), BOT=H-92;
+  function el(cls,html){const e=document.createElement('span');e.className=cls;if(html)e.innerHTML=html;A.appendChild(e);return e}
+  function newWave(){wave++;ox=0;oy=0;dir=1;speed=34+wave*12;
+    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)FT.push({x:(W-gap*(COLS-1))/2+c*gap,y:58+r*40,e:el('ft','<span class="cap">🍀</span>😠'),on:true})}
+  function boom(px,py,txt){const b=el('boom2',txt);b.style.left=(px-30)+'px';b.style.top=(py-14)+'px';setTimeout(()=>b.remove(),450)}
+  function finish(){if(end)return;end=true;cancelAnimationFrame(gameRAF);tm.style.width='0%';
+    setTimeout(()=>{if(tok===gameTok)done(hits)},350)}
+  mgEnd=finish;
+  const move=e=>{const r=A.getBoundingClientRect();bx=clamp(e.clientX-r.left,40,W-40);const d=document.getElementById('fdrag');if(d)d.remove()};
+  A.addEventListener('pointerdown',e=>{e.preventDefault();try{A.setPointerCapture(e.pointerId)}catch(_){}move(e)});
+  A.addEventListener('pointermove',e=>{if(e.buttons||e.pointerType==='touch')move(e)});
+  newWave();
+  const loop=t=>{
+    if(!alive()){fuPlaying=false;return}
+    const dt=Math.min(.05,(t-last)/1000); last=t;
+    const el_=(t-t0)/1000; tm.style.width=Math.max(0,100-el_/FU_SEC*100)+'%';
+    if(el_>=FU_SEC){finish();return}
+    // Formation: hin und her, am Rand eine Reihe tiefer
+    const on=FT.filter(f=>f.on);
+    if(!on.length){FT.length=0;newWave()}
+    else{
+      ox+=dir*speed*dt*(1+(ROWS*COLS-on.length)/(ROWS*COLS));
+      const minx=Math.min(...on.map(f=>f.x))+ox, maxx=Math.max(...on.map(f=>f.x))+ox;
+      if(maxx>W-20&&dir>0||minx<20&&dir<0){dir=-dir;oy+=16}
+      if(Math.max(...on.map(f=>f.y))+oy>BOT){fl.textContent='Die Fürther sind durch!';finish();return}
+    }
+    FT.forEach(f=>{if(f.on)f.e.style.transform=`translate(${(f.x+ox-16).toFixed(1)}px,${(f.y+oy).toFixed(1)}px)`});
+    // U-Bahn U1 fährt oben durch: +3
+    if(!U&&t>nextU){U={x:-90,e:el('u1','<span class="z">U1</span><span class="bn">+3</span>')}}
+    if(U){U.x+=120*dt;U.e.style.transform=`translateX(${U.x.toFixed(1)}px)`;if(U.x>W+10){U.e.remove();U=null;nextU=t+5000}}
+    // Schüsse
+    if(t>=nextShot){nextShot=t+430;SH.push({x:bx,y:H-70,e:el('shot')})}
+    for(let i=SH.length-1;i>=0;i--){const s=SH[i];s.y-=540*dt;
+      let hit=null;
+      if(U&&s.y<52&&s.y>20&&s.x>U.x&&s.x<U.x+90){hits+=3;boom(s.x,30,'U1 +3!');U.e.remove();U=null;nextU=t+6000;hit=1}
+      if(!hit)for(const f of FT){if(f.on&&Math.abs(f.x+ox-s.x)<18&&s.y>f.y+oy-14&&s.y<f.y+oy+30){f.on=false;f.e.classList.add('gone');hits++;boom(s.x,f.y+oy,'BATSCH!');hit=1;break}}
+      if(hit||s.y<-20){s.e.remove();SH.splice(i,1)}else s.e.style.transform=`translate(${(s.x-4).toFixed(1)}px,${s.y.toFixed(1)}px)`}
+    sc.textContent=`🍀 ${hits} verjagt`; fl.textContent=`noch ${Math.max(0,left0-hits)} da`;
+    bude.style.left=bx+'px';
+    gameRAF=requestAnimationFrame(loop);
+  };
+  gameRAF=requestAnimationFrame(loop);
+}
 /* ---------- Beta 4.1: Erste Schritte für neue Banden ---------- */
+// ab 5.2.2 neu: erster Laden (mit freien Plätzen), KI-Bande überfallen, Bandencode sichern statt Wettbüro, Viertel, Kurier
 const STEPS=[
-  {k:'wett',ico:'🎲',txt:'Bau ein Wettbüro',how:'Tipp unten in der Viertel-Leiste auf einen freien Platz (+).'},
+  {k:'laden',ico:'🏪',txt:'Bau deinen ersten Laden',how:'Tipp unten in der Viertel-Leiste auf einen freien Platz (+).'},
   {k:'coup',ico:'🎯',txt:'Mach deinen ersten Coup',how:'Tipp unten links auf „Coups“.'},
-  {k:'collect',ico:'💵',txt:'Kassier deine Kasse',how:'Sobald sich etwas angesammelt hat, erscheint in der Leiste unten rechts „Kassieren“.'},
-  {k:'district',ico:'🗺️',txt:'Schau dir ein anderes Viertel an',how:'Tipp auf der Karte auf ein Viertel.'},
-  {k:'feed',ico:'📰',txt:'Lies den Kurier',how:'Unten der Tab „Kurier“: Dort steht, was in der Stadt passiert.'}
+  {k:'collect',ico:'💵',txt:'Kassier deine Kasse',how:'Unten rechts „Kassieren“.'},
+  {k:'rob',ico:'🥊',txt:'Überfall eine KI-Bande',how:'Tipp auf einen Laden einer KI-Bande.'},
+  {k:'code',ico:'🔑',txt:'Sichere deinen Bandencode',how:'Menü ☰ › Bandencode. Ohne Code ist die Bande bei Handywechsel weg.'}
 ];
+const STEP_OLD={wett:'laden'}; // ältere Erste Schritte zählen weiter
 function onboardOn(){return me&&me.onboard&&typeof me.onboard==='object'&&!me.onboard.fin}
-function stepDone(k){return onboardOn()&&(me.onboard.done||[]).includes(k)}
+function stepDone(k){return onboardOn()&&(me.onboard.done||[]).some(x=>x===k||STEP_OLD[x]===k)}
+function stepsN(){return STEPS.filter(x=>stepDone(x.k)).length}
+/* Freie Plätze für den ersten Laden: bis zu 3 offene Viertel mit freiem Platz */
+function freeDs(){return D.filter(d=>slotsOfD(d).some(x=>!x||!x.owner)).slice(0,3)}
 function step(k){
-  if(!onboardOn()||stepDone(k))return;
+  if(!onboardOn()||stepDone(k)||!STEPS.some(x=>x.k===k))return;
   me.onboard={...me.onboard,done:[...(me.onboard.done||[]),k]};
   bk('step',{bar:1000}); addRuf(20,'step');
-  const n=me.onboard.done.length;
+  const n=stepsN();
   if(n>=STEPS.length){me.onboard={...me.onboard,fin:true};bk('step',{bar:3000});setEnergy(energyNow()+2);if(srvFight())bk('energie',{},'steps');toast('🎓 Erste Schritte geschafft! +3k Bargeld · ⚡ +2','good');floatGain('🎓')}
   else toast(`✅ Erster Schritt ${n}/${STEPS.length}: ${STEPS.find(x=>x.k===k).txt} · +1k · ⭐ +20`,'good');
   savePlayer();
 }
 function stepsChip(){
   if(!onboardOn())return '';
-  const n=(me.onboard.done||[]).length, nx=STEPS.find(x=>!stepDone(x.k));
+  const n=stepsN(), nx=STEPS.find(x=>!stepDone(x.k));
   return `<div class="chipb steps"><b>ERSTE SCHRITTE ${n}/${STEPS.length}</b>${nx?`${nx.ico} ${nx.txt}`:''} <button class="minib" data-act="steps">Zeigen</button></div>`;
 }
-function stepsShort(){const n=(me.onboard.done||[]).length;return `<button class="chipb steps" data-act="steps"><b>ERSTE SCHRITTE ${n}/${STEPS.length}</b>Zeigen</button>`}
+function stepsShort(){const n=stepsN();return `<button class="chipb steps" data-act="steps"><b>ERSTE SCHRITTE ${n}/${STEPS.length}</b>Zeigen</button>`}
+function stepFreeHTML(){const f=freeDs();if(!f.length)return 'Gerade ist alles belegt. Übernimm einen Laden einer KI-Bande (🔓).';return `Freie Plätze: ${f.map(d=>esc(d.name)).join(', ')}. <a href="#" class="lnk" data-act="goto" data-d="${f[0].id}">Hinbringen</a>`}
 function stepsModal(){
   return `<div class="mbox" role="dialog" aria-label="Erste Schritte"><div class="mtop"><span></span><h3>Erste Schritte</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
     <p class="small muted">Fünf kleine Aufgaben, damit du die Stadt kennenlernst. Jede bringt 1.000 Bargeld und ⭐ 20 Ruf, alle zusammen noch 3.000 und ⚡ 2 obendrauf.</p>
-    <div class="goals">${STEPS.map(x=>`<div class="goal ${stepDone(x.k)?'done':''}"><span>${stepDone(x.k)?'✅':x.ico}</span><div><b>${x.txt}</b><small>${x.how}</small></div><small>${stepDone(x.k)?'erledigt':''}</small></div>`).join('')}</div>
+    <div class="goals">${STEPS.map(x=>`<div class="goal ${stepDone(x.k)?'done':''}"><span>${stepDone(x.k)?'✅':x.ico}</span><div><b>${x.txt}</b><small>${x.k==='laden'&&!stepDone(x.k)?stepFreeHTML():x.how}</small></div><small>${stepDone(x.k)?'erledigt':''}</small></div>`).join('')}</div>
     <button class="btn wide" data-act="close">Los geht's</button></div>`;
 }
 
@@ -4238,6 +4533,7 @@ function buildMapSVG(){
   let s=`<svg id="mapsvg" xmlns="${NS}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Stadtplan Nürnberg mit Vierteln">
   <defs><pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="#1a1d44"/><line x1="0" y1="0" x2="0" y2="7" stroke="#242859" stroke-width="3"/></pattern>
   <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <marker id="fah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2fd27a" stroke="#11132a" stroke-width="1.2"/></marker>
   <clipPath id="cityclip">${(MAP.cities||[{boundary:MAP.boundary}]).map(c=>`<path d="${c.boundary}"/>`).join('')}</clipPath></defs><g id="tiles">`;
   // Erst die Nachbarstädte, dann Nürnberg darüber, damit gemeinsame Grenzen sauber aussehen
   const order=[...MAP.districts.filter(g=>g.city&&g.city!=='nbg'),...MAP.districts.filter(g=>!g.city||g.city==='nbg')];
@@ -4277,8 +4573,9 @@ function updateMap(){
   if(me)D.forEach(d=>{if(controller(d)!==me.id&&slotsOfD(d).some(x=>x&&x.owner===me.id)&&GEO[d.id])hl+=`<path class="t-mine" d="${GEO[d.id].path}" style="stroke:${me.color}"/>`});
   if(ui.sel&&GEO[ui.sel])hl+=`<path class="t-sel" d="${GEO[ui.sel].path}"/>`;
   if(ui.alarm&&now()<ui.alarm.until&&GEO[ui.alarm.d])hl+=`<path class="t-alarm" d="${GEO[ui.alarm.d].path}"/>`;
+  hl+=fuMapHL(); // ab 5.2.2: Die Fürther kommen
   document.getElementById('hl').innerHTML=hl;
-  document.getElementById('marks').innerHTML=markerHTML();
+  document.getElementById('marks').innerHTML=markerHTML()+fuMarks();
   applyPhase();
   applyView();
 }
@@ -4324,7 +4621,7 @@ function dbarHTML(){
   const d=DM[ui.sel]; if(!d)return '';
   const c=controller(d);
   const mine=slotsOfD(d).some(x=>x&&x.owner===me.id), gN=guardN(me,d.id);
-  return `<div class="top" data-act="dtog" role="button" aria-expanded="${ui.dopen?'true':'false'}" aria-label="Plätze in ${d.name} ${ui.dopen?'zuklappen':'aufklappen'}"><h2>${d.name}</h2>${c?`<span class="chip" style="background:${ownerInfo(c).color}">♛ ${c===me.id?'Deins':esc(ownerInfo(c).name)}</span>`:''}${mine&&(unlocked('guards')||gN)?`<button class="chip gch" data-act="guards" data-d="${d.id}" aria-label="Türsteher in ${d.name}">🚪 ${gN}/${MAX_T}</button>`:''}${lmDChips(d.id)}<span class="bon">${d.txt}</span>${ui.dopen?'':'<span class="dtog" aria-hidden="true">▲</span>'}</div>
+  return `<div class="top" data-act="dtog" role="button" aria-expanded="${ui.dopen?'true':'false'}" aria-label="Plätze in ${d.name} ${ui.dopen?'zuklappen':'aufklappen'}"><h2>${d.name}</h2>${c?`<span class="chip" style="background:${ownerInfo(c).color}">♛ ${c===me.id?'Deins':esc(ownerInfo(c).name)}</span>`:''}${mine&&(unlocked('guards')||gN)?`<button class="chip gch" data-act="guards" data-d="${d.id}" aria-label="Türsteher in ${d.name}">🚪 ${gN}/${MAX_T}</button>`:''}${lmDChips(d.id)}<span class="bon">${d.txt}</span>${ui.dopen?'':'<span class="dtog" aria-hidden="true">▲</span>'}</div>${fuDbarHTML(d)}
     ${ui.dopen?'<button class="dclose" data-act="dtog" aria-label="Plätze zuklappen">▼ Zuklappen</button>':''}<div class="slotrow" style="grid-template-columns:repeat(${d.n},1fr)">${slotsOfD(d).map((b,i)=>slotCard(d,b,i)).join('')}</div>`;
 }
 let hintDone=false, wosOn=false, wosLast='';
@@ -4332,7 +4629,7 @@ function viewStadt(m){
   if(!document.getElementById('mapsvg')){
     m.className='split';
     m.innerHTML=`<div class="mapbox" id="mapbox">${buildMapSVG()}
-      <div class="chips" id="chips"></div>
+      <div class="chips" id="chips"></div><div id="fubn"></div>
       <div class="mapui"><button data-act="zhome" aria-label="Auf Innenstadt zentrieren">⌖</button></div>
       <div class="hint" id="hint">Ziehen zum Verschieben · zwei Finger zum Zoomen</div>
       <div class="tickbox" id="ticker"></div><div class="actbar"><div class="collectbtn" id="collect"></div><div class="coupbtn" id="coupbtn"></div></div></div>
@@ -4342,6 +4639,7 @@ function viewStadt(m){
   }
   updateMap(); drawFx(); trackLive();
   document.getElementById('chips').innerHTML=overlayHTML();
+  const fb=document.getElementById('fubn'); if(fb){const h=ui.dopen?'':fuBannerHTML();if(fb.innerHTML!==h)fb.innerHTML=h} // offenes Läden-Blatt: Banner weg, die Leiste zeigt die Fürther
   if(wosOn&&!document.getElementById('modal').hidden){const w=wosModal();if(w!==wosLast)showModal(w,true)}
   document.getElementById('ticker').innerHTML=tickerHTML();
   const st=totalStock(), cb=document.getElementById('collect'), wr=wareReady();
@@ -4438,7 +4736,7 @@ async function openDistrict(did){
 function tapDistrict(id){
   if(!DM[id]&&DXM[id]&&me){showModal(openModal(id));return}
   if(!DM[id]){const g=GEO[id],c=g&&g.city&&g.city!=='nbg'&&CITY[g.city];toast(`🔒 ${c?c.name+' · ':''}${g.name} ist noch gesperrt und wird mit einem späteren Update freigeschaltet.`,'ev');return}
-  if(me&&id!==ui.sel)step('district');
+  
   ui.sel=id; ui.dopen=true; viewStadt(document.getElementById('main'));
 }
 window.addEventListener('resize',()=>{if(document.getElementById('mapsvg'))applyView()});
@@ -4683,9 +4981,9 @@ function guardModal(did){
 /* Andere Ansichten */
 /* Ab Beta 4.6.4: +1 anheuern (Fahrer höchstens 6) und −1 entlassen; ab 4.8 Fahrer mit Teilen, Türsteher */
 function crewBtns(k){
-  const C=CREW[k], n=me.crew[k]||0, full=k==='f'&&n>=MAX_FH, uk=unlockKey(k), parts=k==='f'?` + 🔩${FAHRER_TEILE}`:'';
+  const C=CREW[k], n=me.crew[k]||0, tfull=k==='t'&&n>=doorsN(), full=k==='f'&&n>=MAX_FH, uk=unlockKey(k), parts=k==='f'?` + 🔩${FAHRER_TEILE}`:'';
   const poor=me.bar<C.cost||(k==='f'&&hasW(me,'t')<FAHRER_TEILE);
-  const add=!unlocked(uk)?`<small class="lk">${lockTxt(uk)}</small>`:full?`<small class="lk">Mehr bringt nichts</small>`:`<button class="btn sm" data-act="hire" data-k="${k}" ${poor?'disabled':''}>+1 · ${fmt(C.cost)}${parts}</button>`;
+  const add=!unlocked(uk)?`<small class="lk">${lockTxt(uk)}</small>`:full?`<small class="lk">Mehr bringt nichts</small>`:tfull?`<small class="lk">Alle Türen voll</small>`:`<button class="btn sm" data-act="hire" data-k="${k}" ${poor?'disabled':''}>+1 · ${fmt(C.cost)}${parts}</button>`;
   return `<div class="cbtns">${add}${n>0?`<button class="btn sm ghost" data-act="fire" data-k="${k}" aria-label="1 ${C.name} entlassen">−1</button>`:''}</div>`;
 }
 function crewRow(k,sub){const C=CREW[k];return `<li class="crow"><span class="ico">${C.ico}</span><div><b>${C.name}</b><small>${sub||C.desc} · Lohn ${C.up}/Std</small></div><span class="cnt">${me.crew[k]||0}</span>${crewBtns(k)}</li>`}
@@ -4947,7 +5245,7 @@ document.addEventListener('click',e=>{
   if(act==='color'){pickedColor=a.dataset.c;document.querySelectorAll('.swatch').forEach(x=>x.classList.toggle('on',x.dataset.c===pickedColor));return}
   if(!me)return;
   switch(act){
-    case 'tab':ui.tab=a.dataset.tab;if(ui.tab==='feed'){unread=0;step('feed');dnLoad();loadReacts().then(()=>{if(ui.tab==='feed')renderMain()})}checkVersion();break;
+    case 'tab':ui.tab=a.dataset.tab;if(ui.tab==='feed'){unread=0;dnLoad();loadReacts().then(()=>{if(ui.tab==='feed')renderMain()})}checkVersion();break;
     case 'steps':showModal(stepsModal());return;
     case 'bossedit':bossDraft=null;bossTab='face';showModal(bossEditor(false));return;
     case 'lk':bossDraft.look[a.dataset.k]=+a.dataset.v;bossRefresh();return;
@@ -5018,6 +5316,9 @@ document.addEventListener('click',e=>{
     case 'sec':buySec(did,i);return;
     case 'tip':giveTip(a.dataset.o);return;
     case 'dnopen':dnOpen(a.dataset.o);return;
+    case 'fu':showModal(fuModal(did));return;
+    case 'fugo':fuGo(did);return;
+    case 'fuplay':fuPlay(did);return;
     case 'dnpick':dnPick=a.dataset.k||null;dnOk=null;if(dnPick==='t'){dnPick=null;dnGo('t',a.dataset.o);return}if(dnPick==='k'){bountyAsk=null;bountyOk=null}dnRefresh();return;
     case 'dngo':dnGo(a.dataset.k,a.dataset.o,a.dataset.v);return;
     case 'dncoin':closeModal();ui.tab='geld';ui.gtab='coin';render();return;
@@ -5198,7 +5499,7 @@ function doReload(){
 }
 
 /* ---------- Menü, Anleitung, FAQ, Versionsverlauf ---------- */
-const CURRENT_VERSION='Beta 5.2.1.2', SEEN_KEY='imperium-seen-version';
+const CURRENT_VERSION='Beta 5.2.2', SEEN_KEY='imperium-seen-version';
 /* ---------- Ab Beta 5.0 „Wahrzeichen“: drei gleichzeitig, Kaiserburg und Plärrer fest, das dritte wechselt sonntags um 20 Uhr ----------
    Erobert wird nur über die Datenbank-Funktion landmark_attack (der Server würfelt, feste Verteidigung 10, Türsteher zählen nicht).
    Tabelle landmarks: {id, district, pos, active, owner, since, shield_until}, owner null = Stadtwache. */
@@ -5336,6 +5637,14 @@ function dayPhase(t){t=t||now();const s=sunTimes(t),D=40*60000;if(t>s.rise+D&&t<
 function applyPhase(){const svg=document.getElementById('mapsvg'),box=document.getElementById('mapbox');if(!svg)return;const p=dayPhase();['day','dusk','night'].forEach(k=>{svg.classList.toggle(k,k===p);if(box)box.classList.toggle(k,k===p)})}
 
 const VERSIONS=[
+  {v:'Beta 5.2.2',date:'13.10.2026',title:'Die Fürther kommen',items:[
+    '🍀 Die Fürther kommen: Jeden Samstag um 20 Uhr greift die Kleeblatt-Gang aus Fürth 30 Minuten lang 5 Viertel an. Alle Banden verteidigen gemeinsam, hält Nürnberg 3 von 5, gibt es Ruf für jeden Verteidiger',
+    '🌭 Neues Minispiel „Fürther Invaders“: Bratwurstbude ziehen, sie schießt von allein. Die U1 bringt +3',
+    '🎮 Jede Woche ein anderes Minispiel gegen die Fürther, die nächsten kommen bald',
+    '🏪 KI-Läden kannst du schon ab Stufe 1 übernehmen',
+    '🎓 Neue Erste Schritte: erster Laden mit Liste der freien Plätze, KI-Bande überfallen, Bandencode sichern',
+    '🚪 Türsteher nur noch so viele, wie du Türen hast (3 je Viertel mit eigenem Laden). wer mehr hatte, bekam sie erstattet',
+    '💵 Klarere Meldung, wenn beim Kassieren etwas fehlt']},
   {v:'Beta 5.2.1.2',date:'12.10.2026',title:'Schnelles Lager',items:[
     '⚡ Bauen und Verkaufen im Lager reagiert sofort']},
   {v:'Beta 5.2.1.1',date:'12.10.2026',title:'Feinschliff',items:[
@@ -5607,9 +5916,10 @@ const VERSIONS=[
     '🪙 BratCoin mit gemeinsamem Kurs für alle Spieler']}
 ];
 function stufenHTML(){
-  return 'Ruf sammelst du mit Coups, Tageszielen, Bauen und gewonnenen Angriffen. Die Stufe zeigt, wie groß deine Bande ist:</p><table class="stufen"><tr><th>Stufe</th><th>Ruf</th><th>Neu dabei</th></tr>'+RUF_TITLE.map((t,i)=>{const u=unlocksAt(i+1);return `<tr><td><b>${i+1} · ${t}</b></td><td>${i?fmt(RUF_AT[i]):'Start'}</td><td>${i===0?'Späti, Wettbüro, Schläger, Überfall, Coups':u.length?u.join(', '):'mehr mit späteren Updates'}</td></tr>`}).join('')+'</table><p class="small muted">Banden, die 2 oder mehr Stufen unter dir sind, stehen unter Neulingsschutz.';
+  return 'Ruf sammelst du mit Coups, Tageszielen, Bauen und gewonnenen Angriffen. Die Stufe zeigt, wie groß deine Bande ist:</p><table class="stufen"><tr><th>Stufe</th><th>Ruf</th><th>Neu dabei</th></tr>'+RUF_TITLE.map((t,i)=>{const u=unlocksAt(i+1);return `<tr><td><b>${i+1} · ${t}</b></td><td>${i?fmt(RUF_AT[i]):'Start'}</td><td>${i===0?'Späti, Wettbüro, Schläger, Überfall, Coups, Übernahme von KI-Läden':u.length?u.join(', '):'mehr mit späteren Updates'}</td></tr>`}).join('')+'</table><p class="small muted">Banden, die 2 oder mehr Stufen unter dir sind, stehen unter Neulingsschutz.';
 }
 const GUIDE=[
+  ['🍀 Die Fürther kommen','Jeden Samstag um 20 Uhr greift die Kleeblatt-Gang aus Fürth an, 30 Minuten lang, in den 5 Vierteln, die Fürth am nächsten liegen. Um 19:45 und 20 Uhr kommt eine Mitteilung, oben auf der Karte zeigt ein Banner die Viertel und die Zeit. Tipp auf ein Viertel und auf 🛡️ Verteidigen: Im Minispiel verjagt jeder Treffer einen Fürther, egal wem das Viertel gehört. Nach jeder Runde 1 Min. Pause. In Viertel, die noch nicht frei sind, kommen alle 5 Minuten Fürther nach. Ein Viertel ohne Fürther ist gehalten. Hält Nürnberg am Ende 3 von 5, bekommt jede Bande, die mitverteidigt hat, 50 Ruf, die beste steht im Kurier. Sonst lacht Fürth im Kurier, mehr passiert nicht. Je mehr Banden mitspielen, desto mehr Fürther kommen. Das Minispiel wechselt jede Woche. Fürther Invaders: Zieh die Bratwurstbude hin und her, sie schießt von allein, die U1 oben bringt +3.','stadt'],
   ['🎓 Erste Schritte','Neue Banden sehen auf der Karte „Erste Schritte“: fünf kleine Aufgaben, jede mit 1.000 Bargeld und ⭐ 20 Ruf, alle zusammen mit 3.000 und ⚡ 2 obendrauf.','start'],
   ['🔢 Sparkassen-Safe','Neben den Coups unten links sitzt der 🔢 Safe. Jeden Sonntag um 20 Uhr steht ein neuer Safe mit einem Code aus 4 Ziffern da. Er startet mit 10.000 und wächst mit 10 % aller Wäsche-Gebühren und Bestechungen in der Stadt, dazu Kaution und Richter-Schmiergeld. Jede Bande hat einen Versuch pro Tag (nicht aus dem Knast). Danach steht im Kurier, welche Stellen gepasst haben, etwa „4-7-?-?“, das sehen alle. Hinweise („Stelle 2 ist eine 7“) fallen mit etwas Glück bei Coups und Überfällen ab, und im Knast verrät der Zellennachbar eine Ziffer. Wer den Code knackt, bekommt den ganzen Topf als sauberes Geld, alle bekommen Bescheid. Knackt ihn bis Sonntag 20 Uhr niemand, verrät der Kurier den Code und das Geld wandert in den neuen Safe.','akt'],
   ['🎯 Coups','Tipp auf 🎯 auf der Karte, auf „Coups“ unten links oder auf ⚡ oben. Alle 2 Stunden gibt es drei neue Coups: leicht (⚡1), mittel (⚡2) und schwer (⚡3). Im Minispiel blinken Alarm-Lichter, die du nachtippst. Jede Runde kommt ein Licht dazu, das ergibt bis zu 3 Treffer. Bei leichten Coups brauchst du einen Treffer, bei mittleren und schweren zwei. Leichte Coups kannst du auch „schnell erledigen“, das zählt wie 2 Treffer. Gelingt der Coup, gibt es Bargeld und Ruf, manchmal einen Glücksfund. Coups machen etwas Hitze. Energie lädt sich alle 20 Minuten um 1 auf, höchstens 5.','akt'],
@@ -5625,7 +5935,7 @@ const GUIDE=[
   ['👊 Angreifen','Tipp auf einen fremden Laden: Überfall räumt die Kasse aus, Übernahme schnappt dir den Laden, Hack klaut sauberes Geld. Jede Angriffsart hat ihr Minispiel: Beim Überfall tippst du, wenn der Zeiger im grünen Feld steht, bei der Übernahme knackst du ein Drehrad, beim Hack tippst du nur die grünen Pakete. Gegen KI-Banden kannst du auch „schnell erledigen“, das zählt wie 2 Treffer. Für Überfall und Übernahme wählst du mit − und +, wie viele Schläger mitfahren: In jedes Auto passen 3 Schläger, dein eigenes fährt umsonst, jedes Fahrer-Auto braucht 1 🥃 Fusel. Pro Angriff fahren höchstens 3 Autos, also 9 Schläger. Der Trupp ist ein paar Minuten unterwegs, deine Türsteher bleiben auf Posten. Mit genug Autos laufen mehrere Angriffe gleichzeitig, auf dieselbe Bande aber immer nur einer. Geht ein Angriff schief, fällt jeder 4. Mitfahrer 1 Std. verletzt aus. Nach einem Hack machen nur deine Hacker 10 Minuten Pause. Ein gelungener Überfall auf Mitspieler holt auch 20 % ihres Lagers, ein Hack auch 12 % ihrer BratCoins. Raubst oder hackst du dieselbe Bande am selben Tag öfter, gibt es beim zweiten Mal die Hälfte der Beute und danach ein Viertel. Wie voll die Kasse eines fremden Ladens ist, siehst du im Angriffsfenster.','kampf'],
   ['🎲 Fair gewürfelt','Ob ein Angriff, Coup oder Großcoup klappt, würfelt der Server. Dein Handy schickt nur, wie gut du im Minispiel warst. Ohne Netz geht deshalb kein Angriff.','kampf'],
   ['🚨 Polizei-Hitze','Wettbüros, Hehlerlager, Clubs und Angriffe erhöhen die Hitze. Pro Stunde sinkt sie um 5, jeder Anwalt senkt sie um 4 mehr. Deine Läden heizen höchstens bis 80, darüber bringen dich nur Angriffe, und dort sinkt die Hitze um mindestens 10 pro Stunde. Ab 60 kommen Kontrollen, ab 80 Razzien im heißesten Viertel, bei 100 sofort die große Razzia und 2 Stunden 🚔 Knast. Bist du weg, gibt es höchstens ein Polizei-Ereignis und nie die große Razzia. Tipp oben auf 🚨: Dort steht alles im Detail. Bestechung senkt die Hitze sofort um 25, jedes weitere Mal am Tag kostet 1.000 mehr.','pol'],
-  ['🚪 Türsteher & Sicherung','Türsteher heuerst du ab Stufe 2 im Crew-Tab unter 🚪 Türsteher an und stellst sie dort (oder über 🚪 in der Viertel-Leiste) in ein Viertel: Leere Tür antippen stellt einen hin, volle Tür zieht ihn ab. Jeder verteidigt alle deine Läden im Viertel mit +2,5, höchstens 3 pro Viertel zählen. Türsteher greifen nicht an, Schläger verteidigen nicht. Dazu kann jeder Laden eine Sicherung bekommen: 🚪 Stahltür (+3 Verteidigung), 📹 Kamera (Angreifer bekommen +5 Hitze), 🔐 Tresor (Überfälle holen höchstens die Hälfte der Kasse).','kampf'],
+  ['🚪 Türsteher & Sicherung','Türsteher heuerst du ab Stufe 2 im Crew-Tab unter 🚪 Türsteher an und stellst sie dort (oder über 🚪 in der Viertel-Leiste) in ein Viertel: Leere Tür antippen stellt einen hin, volle Tür zieht ihn ab. Jeder verteidigt alle deine Läden im Viertel mit +2,5, höchstens 3 pro Viertel zählen. Anheuern kannst du nur so viele, wie du Türen hast: 3 je Viertel mit eigenem Laden. Türsteher greifen nicht an, Schläger verteidigen nicht. Dazu kann jeder Laden eine Sicherung bekommen: 🚪 Stahltür (+3 Verteidigung), 📹 Kamera (Angreifer bekommen +5 Hitze), 🔐 Tresor (Überfälle holen höchstens die Hälfte der Kasse).','kampf'],
   ['📻 Stadtfunk','Im Kurier oben auf „📻 Funk“ tippen. „Stadt“ lesen alle Banden mit. Eine Direktnachricht schreibst du über 💬 in der Übersicht einer Bande, dann erscheint sie oben als eigener Kanal. Höchstens 200 Zeichen, eine Nachricht alle 5 Sekunden, ohne Schimpfwörter. Eine eigene Nachricht antippen, dann erscheint „🗑️ Löschen“. Nachrichten verschwinden nach 7 Tagen. Für Direktnachrichten gibt es eine Mitteilung, das schaltest du unter ☰ → Mitteilungen.','stadt'],
   ['🚗 Autos & Trupp','Deine Garage steht oben im Crew-Tab: dein eigenes Auto und eins pro Fahrer, mit Uhr, solange es unterwegs ist. Ein Fahrer kostet beim Anheuern 1.000 Bargeld und 3 🔩 Teile für sein Auto, jede Fahrt 1 🥃 Fusel. Teile bauen das Auto, Fusel füllt den Tank. Im Angriffsfenster wählst du mit − und +, wie viele Schläger mitfahren, die Autos füllen sich von selbst. Angriffskraft ist 1 plus die Schläger im Trupp. Mehr Fahrer in der Bande machen jede Fahrt schneller, bis 6 Fahrer (dann 3 Minuten).','kampf'],
   ['🚨 Überfall als Duell','Ein Überfall auf eine Bande von Mitspielern ist nicht sofort entschieden. Nach deinem Minispiel läuft er 5 Minuten, das Opfer bekommt eine Mitteilung. In der Zeit kann es sich mit einem eigenen Minispiel wehren (bis zu 50 % mehr Verteidigung) oder alle freien Schläger als Wache ins Viertel schicken. Danach wird entschieden, beide bekommen das Ergebnis. Reagiert das Opfer nicht, zählt die normale Verteidigung. Übernahme, Hack und Angriffe auf KI-Banden laufen weiter sofort.','kampf'],
@@ -5666,6 +5976,8 @@ const GUIDE=[
   ['💰 Großcoups','Ab Stufe 3 (Kiezbande) im Coup-Fenster: Du planst einen Großcoup (⚡ 3, zwischen 8 und 21 Uhr), alle anderen Banden ab Kiezbande bekommen Bescheid und haben 2 Stunden zum Einsteigen (⚡ 3), höchstens 3 Banden. Danach spielt jede ihr eigenes schweres Minispiel mit Alarm-Lichtern. Wer es schafft, bekommt seinen Anteil: 20.000 zu zweit, 25.000 zu dritt, mit deiner Stufe mehr, dazu ⭐ 40 und 8 Hitze. Steigt keiner ein, gibt es die Energie zurück. Einmal am Tag pro Bande.','akt'],
 ];
 const FAQ=[
+  ['Wie verteidige ich gegen die Fürther?','Samstag zwischen 20 und 20:30 Uhr ein angegriffenes Viertel antippen (rot auf der Karte oder ⚔️ im Banner) und 🛡️ Verteidigen. Jeder Treffer im Minispiel verjagt einen Fürther. Du brauchst keine Schläger und verlierst nichts. Nach jeder Runde 1 Min. Pause, dann gleich wieder. Wer mindestens einmal verteidigt hat, bekommt bei einem Sieg 50 Ruf.','stadt'],
+  ['Kann ich als neue Bande schon Läden übernehmen?','Ja, Läden von KI-Banden kannst du schon ab Stufe 1 übernehmen. Läden von Mitspielern erst ab Stufe 3 (Kiezbande).','start'],
   ['Wie funktionieren die Minispiele?','Es gibt vier Arten: Zeiger-Balken (Überfall, Verteidigen), Tresor-Drehrad (Übernahme), Pakete (Hack) und Alarm-Lichter (Coups, Großcoups, Geldtransporter, Schmuggel). Überall zählen bis zu 3 Treffer, Perfekt bringt etwas mehr. Bei Angriffen auf KI-Banden und leichten Coups kannst du „schnell erledigen“ wählen, das zählt wie 2 Treffer. Gegen Mitspieler wird immer gespielt.','kampf'],
   ['Wer entscheidet, ob mein Angriff klappt?','Seit Beta 5.1.1 der Server. Dein Handy schickt nur deine Treffer im Minispiel, die Chance am Knopf ist dieselbe wie vorher.','kampf'],
   ['Wie erschließe ich einen Stadtteil?','Ab Stufe 3 tippst du auf einen schraffierten Stadtteil mit 🔑. Das kostet 10 % deines sauberen Geldes, mindestens 5.000, und geht einmal pro Woche (ab Sonntag 20 Uhr wieder). Danach hat der Stadtteil 4 Plätze für alle, den ersten bekommst du mit einem Späti geschenkt. In der ersten halben Stunde darf jede Bande dort nur einen Laden haben.','stadt'],
@@ -5716,7 +6028,7 @@ const FAQ=[
   ['Warum ist meine Energie leer?','Jeder Coup kostet 1 bis 3 Energie. Alle 20 Minuten kommt eine dazu, bis 5 erreicht sind. Wenn du alle drei Tagesziele schaffst, gibt es 2 Energie extra.','akt'],
   ['Warum fahren nur 9 Schläger mit?','Pro Angriff fahren höchstens 3 Autos mit je 3 Schlägern, sonst würde die größte Truppe jeden Laden knacken. Mehr Schläger lohnen sich trotzdem: Mit genug Autos fährst du mehrere Angriffe gleichzeitig auf verschiedene Banden und hast Ersatz, wenn welche verletzt sind.','kampf'],
   ['Was bringen mehr Fahrer?','Jeder Fahrer bringt ein Auto mehr, also mehr Angriffe gleichzeitig, und macht jede Fahrt 2 Minuten kürzer, bis 6 Fahrer (dann 3 Minuten). Mehr als 6 kannst du nicht anheuern.','kampf'],
-  ['Warum zählen nur 3 Türsteher pro Viertel?','Sonst würde die Bande mit den meisten Leuten unangreifbar. Ein 4. Türsteher lässt sich deshalb gar nicht erst hinstellen. Freie Türsteher stellst du in andere Viertel oder entlässt sie mit −1.','kampf'],
+  ['Warum zählen nur 3 Türsteher pro Viertel?','Sonst würde die Bande mit den meisten Leuten unangreifbar. Ein 4. Türsteher lässt sich deshalb gar nicht erst hinstellen, und anheuern kannst du nur so viele, wie du Türen hast (3 je Viertel mit eigenem Laden). Steht „Alle Türen voll“, bau erst einen Laden in einem neuen Viertel. Freie Türsteher stellst du in andere Viertel oder entlässt sie mit −1.','kampf'],
   ['Wie werde ich Leute wieder los?','Im Crew-Tab steht neben jedem Eintrag „−1“. Damit entlässt du einen Mann, sein Lohn fällt sofort weg. Geld fürs Anheuern gibt es nicht zurück. Entlassen kannst du nur Schläger, die daheim sind, und Fahrer, deren Auto in der Garage steht. Türsteher entlässt du nur, wenn sie frei sind. Stehen alle auf Posten, ziehst du erst einen ab (volle Tür antippen), so entscheidest du, welches Viertel Schutz verliert.','kampf'],
   ['Was bedeutet 💤 auf der Karte?','Diese Bande war seit mindestens 3 Tagen nicht online. Ihre Läden verteidigen sich nur noch halb so gut. Nach 7 Tagen holen sich die KI-Banden ihre Läden nach und nach, der letzte bleibt ihr. Sobald die Bande wieder spielt, ist der Spuk vorbei.','start'],
   ['Was passiert, wenn die Stadt voll ist?','KI-Banden bauen höchstens 12 Läden und nur, solange mindestens 6 Plätze frei sind. Eine neue Bande bekommt immer einen Start-Späti, notfalls kauft sie einer KI-Bande einen Laden ab. Seit Beta 4.7 könnt ihr außerdem neue Stadtteile erschließen, dort bauen KI-Banden nicht.','start'],
@@ -5781,7 +6093,7 @@ const CHAPTERS=[
   {id:'akt',ico:'🎯',name:'Aktionen',sub:'Coups, Safe, Großcoups, Tagesziele, Transporter, Schmuggel',order:['🎯 Coups','🔢 Sparkassen-Safe','💰 Großcoups','🛷 Lebkuchen-Schmuggel','✅ Tagesziele & ⭐ Ruf','🚚 Geldtransporter','🍺 Feierabend-Coup','📦 Bestellungen']},
   {id:'kampf',ico:'👊',name:'Kampf',sub:'Angreifen, Duell, Ausrüstung, Kopfgeld',order:['👊 Angreifen','🚨 Überfall als Duell','🥊 Hilfe im Duell','🚪 Türsteher & Sicherung','🚗 Autos & Trupp','🧰 Ausrüstung','💰 Kopfgeld','🎯 Spitzenreiter-Prämie','🏴 Zielscheibe','⚔️ Revanche','👑 Viertel kontrollieren']},
   {id:'pol',ico:'🚨',name:'Polizei',sub:'Hitze, Razzien, Knast, Darknet',order:['🚨 Polizei-Hitze','🚔 Knast','💻 Darknet','📞 Anonymer Tipp']},
-  {id:'stadt',ico:'🏴',name:'Banden & Stadt',sub:'Live-Stadt, Spieltag, Wetter, Bündnis, Boss, Ratte, Kurier',order:['🟢 Live-Stadt','⚽ Club-Spieltag','🌧️ Wetter','🤝 Bündnis','🎩 Boss','🏆 Boss der Woche','🐀 Die Ratte','🎄 Feste','🏴 Banden','📰 Kurier','📻 Stadtfunk','📻 Funkgerät & Mitteilungen']}];
+  {id:'stadt',ico:'🏴',name:'Banden & Stadt',sub:'Live-Stadt, Spieltag, Wetter, Bündnis, Boss, Ratte, Fürther, Kurier',order:['🟢 Live-Stadt','⚽ Club-Spieltag','🌧️ Wetter','🤝 Bündnis','🎩 Boss','🏆 Boss der Woche','🐀 Die Ratte','🍀 Die Fürther kommen','🎄 Feste','🏴 Banden','📰 Kurier','📻 Stadtfunk','📻 Funkgerät & Mitteilungen']}];
 function chTiles(act,list){return `<div class="chtiles">${CHAPTERS.map(c=>{const n=list.filter(x=>x[2]===c.id).length;return `<button class="cht" data-act="${act}" data-k="${c.id}"><span>${c.ico}</span><b>${c.name}</b><small>${act==='fch'?n+' Fragen':c.sub}</small></button>`}).join('')}</div>`}
 function chHead(title,back){return `<div class="mtop"><button class="back" data-act="${back}" aria-label="Zurück zur Übersicht">‹</button><h3>${title}</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>`}
 function showGuide(ch){
@@ -5840,7 +6152,7 @@ function showPushSettings(){
 function showCode(){
   if(!myCode){showModal(`<div class="mbox" role="dialog" aria-label="Bandencode">${mHead('Bandencode')}<p class="small muted" id="bcwait">Einen Moment …</p></div>`);
     sb.rpc('my_code',{p_id:me.id}).then(({data})=>{if(data){myCode=data;showCode()}else{const m=document.getElementById('bcwait');if(m)m.textContent='Der Code lässt sich gerade nicht laden. Versuch es gleich nochmal.'}},()=>{});return}
-  showModal(`<div class="mbox" role="dialog" aria-label="Bandencode">${mHead('Bandencode')}<p class="small muted">Geheim! Damit holst du deine Bande auf ein anderes Gerät. Wer den Code hat, spielt deine Bande.</p><p class="num codebox" id="bcode">${esc(myCode)}</p><button class="btn wide mint" data-act="copycode">🔑 Bandencode kopieren</button><button class="btn wide ${ui.ncSure?'pink':'ghost'}" data-act="newcode" style="margin-top:8px">${ui.ncSure?'Sicher? Andere Geräte fliegen raus':'🔄 Neuen Code erzeugen'}</button></div>`)}
+  showModal(`<div class="mbox" role="dialog" aria-label="Bandencode">${mHead('Bandencode')}<p class="small muted">Geheim! Damit holst du deine Bande auf ein anderes Gerät. Wer den Code hat, spielt deine Bande.</p><p class="num codebox" id="bcode">${esc(myCode)}</p><button class="btn wide mint" data-act="copycode">🔑 Bandencode kopieren</button><button class="btn wide ${ui.ncSure?'pink':'ghost'}" data-act="newcode" style="margin-top:8px">${ui.ncSure?'Sicher? Andere Geräte fliegen raus':'🔄 Neuen Code erzeugen'}</button></div>`);step('code')}
 function showInvite(){const link=esc(location.href.split('#')[0]);showModal(`<div class="mbox" role="dialog" aria-label="Freunde einladen">${mHead('Freunde einladen')}<p class="small muted">Schick deinen Freunden diesen Link. Auf dem iPhone in Safari öffnen, dann Teilen → „Zum Home-Bildschirm“.</p><p class="num codebox" id="invite">${link}</p><button class="btn wide" data-act="copy">Link kopieren</button></div>`)}
 
 /* ---------- Start, Anmeldung, Synchronisierung ---------- */
@@ -5946,8 +6258,9 @@ function startGame(){
   document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='fmsg'){e.preventDefault();sendMsg()}});
   setInterval(sync,20000); setInterval(appHere,15000);
   dnLoad(); setInterval(()=>{if(!document.hidden)dnLoad()},5*60000); // ab 5.2: Darknet, Pakete, Ratte
+  fuLoad(true); setInterval(()=>{if(!document.hidden)fuLoad()},5000); setInterval(fuTick,1000); // ab 5.2.2: Die Fürther kommen
   setInterval(()=>{if(dirty&&now()-lastTouch>1500)renderMain();else if(ui.tab==='stadt'&&now()-lastTouch>1500&&document.getElementById('modal').hidden)renderMain();renderHUD()},5000);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden){appHere();resubscribe();checkVersion(true);sync(true).then(()=>setTimeout(checkRevenge,600))}else appAway()});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){appHere();resubscribe();fuLoad(true);checkVersion(true);sync(true).then(()=>setTimeout(checkRevenge,600))}else appAway()});
   window.addEventListener('pagehide',appAway);
 }
 let syncing=false, syncN=0;
