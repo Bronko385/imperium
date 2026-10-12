@@ -59,6 +59,10 @@ label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--m
 .chip{display:inline-block;font-size:11px;font-weight:700;color:var(--ink);padding:2px 7px;border-radius:999px;border:2px solid var(--ink);white-space:nowrap;background:var(--paper)}
 .chip.red{background:var(--heat)}
 .det{margin-top:2px;line-height:1.35}
+.rate{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.3px;padding:2px 7px;border-radius:99px;margin:3px 0 1px;color:var(--ink)}
+.rate.l0{background:var(--clean)}.rate.l1{background:var(--yellow)}.rate.l2{background:var(--pink);color:#fff}
+.flag.l0 .row{opacity:.8}
+.rsum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.rsum div{background:var(--night2);border-radius:10px;padding:8px 4px;text-align:center;font-size:12px;color:var(--muted)}.rsum b{display:block;font-size:20px;color:var(--paper)}
 .sday{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:10px 0 2px}.sday:first-child{margin-top:0}
 .sline{display:grid;grid-template-columns:auto 22px 1fr;gap:6px;align-items:baseline;font-size:14px;line-height:1.35;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.06)}.sline .t{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;white-space:nowrap}.sline .i{text-align:center}.sline b{color:var(--yellow)}
 .flag{display:grid;gap:6px}.flag .acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:6px;padding-left:34px}.flag .acts .btn{font-size:13px;padding:7px 6px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -292,7 +296,7 @@ function vGang() {
   <div class="card">
     <div style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:${esc(p.color)};width:16px;height:16px"></span><h2>${esc(p.name)}</h2>${g.flags ? `<span class="chip red" style="margin-left:auto">⚠️ ${g.flags}</span>` : ''}</div>
     <div class="pills"><div class="m"><small>Bar</small><b class="d">${fmt(p.bar)}</b></div><div class="m"><small>Sauber</small><b class="c">${fmt(p.clean)}</b></div><div class="m"><small>Coins</small><b class="k">${coin(p.coins)}</b></div></div>
-    <div class="sm">Ruf ${fmt(p.ruf)} · ${g.dev.n} ${g.dev.n === 1 ? 'Gerät' : 'Geräte'} · Hitze <span class="h">${Math.round(p.heat)} %</span> · ${p.on ? '🟢 online' : esc(when(p.seen))}</div>
+    <div class="sm">${p.born ? `Gegründet ${esc(when(p.born))} · ` : ''}Ruf ${fmt(p.ruf)} · ${g.dev.n} ${g.dev.n === 1 ? 'Gerät' : 'Geräte'} · Hitze <span class="h">${Math.round(p.heat)} %</span> · ${p.on ? '🟢 online' : esc(when(p.seen))}</div>
   </div>
   <div class="two"><button class="btn mint" data-a="s-book">💸 GELD<span class="sub">gutschreiben / abziehen</span></button><button class="btn teal" data-a="s-code">🔑 NEUER CODE<span class="sub">alle Geräte fliegen raus</span></button></div>
   <div class="two"><button class="btn violet" data-a="s-rename">✏️ NAME<span class="sub">umbenennen</span></button><button class="btn ghost" data-a="s-restore">⏪ BACKUP<span class="sub">Stand einer Nacht</span></button></div>
@@ -324,6 +328,7 @@ function flagView(x) {
     x.sameNet ? '⚠️ Vom selben Anschluss' : ''], x.gangs];
   if (x.kind === 'give') return ['🎁', `${x.name} gibt ${x.share} % an ${x.toName} ab`, [
     `Gegründet ${when(x.born)}`, `+${fmt(x.v)} an ${x.toName}: ${x.ks.join(', ')}`], [{ id: x.to, name: x.toName }, { id: x.id, name: x.name }]];
+  if (x.kind === 'hop') return ['🔄', `${x.name} · ${x.n}× Gerät gewechselt`, ['Per Bandencode auf ein anderes Gerät geholt, das alte flog jeweils raus', 'Teilen sich vielleicht mehrere Leute den Code', span(x.from, x.ts)]];
   if (x.kind === 'bot') return ['🤖', `${x.name} · vielleicht ein Bot`, [
     x.hours >= 18 ? `⚠️ In ${x.hours} von 24 Std. online, längste Pause ${x.gap} Std.` : `In ${x.hours} von 24 Std. online`,
     x.takt ? `⚠️ ${x.takt.n} Aktionen im gleichen Takt, alle ${x.takt.every}` : ''], [{ id: x.id, name: x.name }]];
@@ -339,16 +344,22 @@ function vFlags() {
   if (S.seg === 'story') return seg + vStory();
   const f = S.data.flags; if (!f) return seg + loading();
   let rows = '';
-  if (S.seg === 'bad') rows = f.list.map((x, i) => {
-    const [ico, head, lines, gs] = flagView(x);
-    const det = lines.filter(Boolean).map((l) => `<div class="sm det">${esc(l)}</div>`).join('');
-    const row = `<button class="row" data-a="gang" data-v="${esc(x.id)}" style="align-items:flex-start"><span style="font-size:20px">${ico}</span><div><div class="nm">${esc(head)}</div>${det}</div><div class="r">›</div></button>`;
-    if (!gs) return row;
-    const acts = [
-      ...(gs.length > 1 ? [`<button class="btn violet" data-a="s-merge" data-v="${i}">🔗 ZUSAMMEN</button>`] : []),
-      ...gs.map((g) => `<button class="btn red" data-a="fdel" data-v="${i}|${esc(g.id)}">${S.sure === `fdel${i}|${g.id}` ? `SICHER? ${esc(g.name)}` : `🗑️ ${esc(g.name)}`}</button>`)];
-    return `<div class="flag">${row}<div class="acts">${acts.join('')}</div></div>`;
-  }).join('');
+  const RATE = ['🟢 NORMAL', '🟡 PRÜFEN', '🔴 VERDÄCHTIG'];
+  if (S.seg === 'bad') {
+    const cnt = [0, 1, 2].map((l) => f.list.filter((x) => (x.lvl || 0) === l).length);
+    rows = `<div class="rsum"><div><b>${cnt[2]}</b>🔴 verdächtig</div><div><b>${cnt[1]}</b>🟡 prüfen</div><div><b>${cnt[0]}</b>🟢 normal</div></div>` + f.list.map((x, i) => {
+      if (!x.lvl && !S.green) return '';
+      const [ico, head, lines, gs] = flagView(x);
+      const det = lines.filter(Boolean).map((l) => `<div class="sm det">${esc(l)}</div>`).join('');
+      const badge = `<div><span class="rate l${x.lvl || 0}">${RATE[x.lvl || 0]}</span> <span class="sm">${esc(x.why || '')}</span></div>`;
+      const row = `<button class="row" data-a="gang" data-v="${esc(x.id)}" style="align-items:flex-start"><span style="font-size:20px">${ico}</span><div><div class="nm">${esc(head)}</div>${badge}${det}</div><div class="r">›</div></button>`;
+      const acts = !gs || !x.lvl ? [] : [
+        ...(gs.length > 1 ? [`<button class="btn violet" data-a="s-merge" data-v="${i}">🔗 ZUSAMMEN</button>`] : []),
+        ...gs.map((g) => `<button class="btn red" data-a="fdel" data-v="${i}|${esc(g.id)}">${S.sure === `fdel${i}|${g.id}` ? `SICHER? ${esc(g.name)}` : `🗑️ ${esc(g.name)}`}</button>`)];
+      return `<div class="flag l${x.lvl || 0}">${row}${acts.length ? `<div class="acts">${acts.join('')}</div>` : ''}</div>`;
+    }).join('') + (cnt[0] ? `<button class="btn ghost" data-a="green">${S.green ? '🟢 Normale ausblenden' : `🟢 ${cnt[0]} normale Meldungen zeigen`}</button>` : '');
+    if (!cnt[1] && !cnt[2] && !S.green) rows = rows.replace('<button class="btn ghost"', '<div class="mut">Nichts Verdächtiges. 👍</div><button class="btn ghost"');
+  }
   if (S.seg === 'big') rows = f.list.map((x) => `<button class="row" data-a="gang" data-v="${esc(x.id)}"><div><div class="nm">${esc(x.name)}</div><div class="sm">${esc(kname(x.k))} · ${dayhm(x.ts)}</div></div><div class="r ${x.v > 0 ? 'd' : 'h'}">${x.v > 0 ? '+' : '−'}${fmt(Math.abs(x.v))}</div></button>`).join('');
   if (S.seg === 'admin') rows = `<div class="card" style="gap:6px"><div class="log">${f.list.map(logRow).join('') || '<div class="sm">Noch nichts.</div>'}</div></div>`;
   return seg + (rows || '<div class="mut">Heute nichts Auffälliges. 👍</div>') + (S.seg === 'bad' ? '<div class="mut">Geld 24 Std., Anschlüsse und Online-Zeiten 7 Tage. Antippen öffnet die Bande.</div>' : '');
@@ -375,6 +386,7 @@ function storyLine(x) {
   if (x.t === 'bad') return ['🚫', `${kname(x.k)} abgelehnt${x.n > 1 ? ` (${x.n}×)` : ''}: ${WHY[x.why] || x.why || 'Server sagt nein'}${x.v ? `, wollte ${money(x.v)}` : ''}`];
   if (x.t === 'api') return ['🤖', `Per Programm (${x.tool}) geändert: ${x.cols.map((c) => COL[c] || c).join(', ')}${x.n > 1 ? ` (${x.n}×)` : ''}${x.other.length ? ` ⚠️ bei fremder Bande ${x.other.map((o) => S.names[o] || 'Bande').join(', ')}` : ''}`];
   if (x.t === 'dev') return [x.prog ? '⚠️' : '📱', `${x.n > 1 ? `${x.n} neue Geräte` : 'Neues Gerät'} angemeldet: ${x.dev === 'unbekannt' ? 'Gerätart unbekannt' : x.dev}${x.revoked ? ` (${x.n > 1 ? `${x.revoked} ` : ''}inzwischen abgemeldet)` : ''}`];
+  if (x.t === 'hop') return ['🔄', 'Gerät gewechselt: per Bandencode auf ein anderes Gerät geholt, das alte ist abgemeldet'];
   if (x.t === 'on') return ['🟢', `Im Spiel, ${mins < 60 ? `${Math.max(5, mins)} Min.` : `${String(Math.round(mins / 6) / 10).replace('.', ',')} Std.`}`];
   if (x.t === 'adm') return ['🛠️', `Admin: ${admText(x)}${x.why ? ` („${x.why}“)` : ''}`];
   return [EVI[x.kind] || '📰', x.txt];
@@ -496,6 +508,7 @@ document.addEventListener('click', async (e) => {
     case 'copy': try { await navigator.clipboard.writeText(S.mfa.secret); toast('Schlüssel kopiert.'); } catch (_) { toast('Bitte von Hand abschreiben.', true); } return;
     case 'logout': return logout();
     case 'tab': return show(v);
+    case 'green': S.green = !S.green; return show('flags');
     case 'seg': S.seg = v; S.data.flags = null; S.data.story = null; return show('flags');
     case 'gang': S.gang = v; S.data.gang = null; return show('gang', { gang: v });
     case 'story': S.data.story = null; return show('story', { gang: v });
