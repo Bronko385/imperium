@@ -1512,7 +1512,7 @@ function attackSrv(did,i,kind,victim){
       if(x.ok){daily('rob',1);showResult(true,x.loot>0?'BEUTE!':'LEER!',x.loot>0?pick(LINES.robOk):'Rein, umgeschaut, nichts drin.',x.loot>0?`+${fmt(x.loot)} Bargeld`:'','c-dirty')}
       else showResult(false,'VERKACKT!',pick(LINES.robNo),hurtTxt(x.hurt));
     }else if(kind==='uebernahme'){
-      if(x.ok){let extra=`${T.ico} ${T.name} gehört dir${x.top?' · 🎯 Spitzenreiter-Prämie: ⭐ doppelt':''}`;if(x.ctrl)extra+=` · 👑 ${d.name} unter deiner Kontrolle`;if(x.bounty)extra+=` · 💰 Kopfgeld +${fmt(x.bounty)} sauber`;showResult(true,'ÜBERNOMMEN!',pick(LINES.takeOk),extra,'c-yellow')}
+      if(x.ok){step('laden');let extra=`${T.ico} ${T.name} gehört dir${x.top?' · 🎯 Spitzenreiter-Prämie: ⭐ doppelt':''}`;if(x.ctrl)extra+=` · 👑 ${d.name} unter deiner Kontrolle`;if(x.bounty)extra+=` · 💰 Kopfgeld +${fmt(x.bounty)} sauber`;showResult(true,'ÜBERNOMMEN!',pick(LINES.takeOk),extra,'c-yellow')}
       else showResult(false,'ABGEWEHRT!',pick(LINES.takeNo),hurtTxt(x.hurt));
     }else{
       if(x.leer)showResult(false,'KONTO LEER','Da war nichts zu holen.','');
@@ -2808,7 +2808,7 @@ function attack(did,i,kind){
         addEvent({kind:'atk',actor:me.id,target:victim,district:did,txt:`${me.name} hat ${vName} ${art(s.type)} ${T.name} in ${d.name} abgenommen!${isNpc(victim)?'':' BratCoin −1 %.'}`});
         if(!isNpc(victim))coinPush(-.01,'event');
         if(top)addEvent({kind:'info',actor:me.id,target:victim,district:did,txt:`🎯 ${me.name} legt sich mit der Nr. 1 an: ${vName} verliert ${art(s.type)} ${T.name} in ${d.name}!`});
-        showResult(true,'ÜBERNOMMEN!',pick(LINES.takeOk),extra,'c-yellow');
+        step('laden'); showResult(true,'ÜBERNOMMEN!',pick(LINES.takeOk),extra,'c-yellow');
       }else{
         bk('heat',{heat:8+cam(s)}); const lost=hurtCrew(trip.n,trip.id);
         addEvent({kind:'def',actor:me.id,target:victim,district:did,txt:`${vName} schlägt eine Übernahme von ${me.name} in ${d.name} zurück.`});
@@ -3336,7 +3336,7 @@ function fuNinja(did,done){
 /* ---------- Beta 4.1: Erste Schritte für neue Banden ---------- */
 // ab 5.2.2 neu: erster Laden (mit freien Plätzen), KI-Bande überfallen, Bandencode sichern statt Wettbüro, Viertel, Kurier
 const STEPS=[
-  {k:'laden',ico:'🏪',txt:'Bau deinen ersten Laden',how:'Tipp unten in der Viertel-Leiste auf einen freien Platz (+).'},
+  {k:'laden',ico:'🏪',txt:'Bau oder übernimm deinen ersten Laden',how:'Tipp unten in der Viertel-Leiste auf einen freien Platz (+).'},
   {k:'coup',ico:'🎯',txt:'Mach deinen ersten Coup',how:'Tipp unten links auf „Coups“.'},
   {k:'collect',ico:'💵',txt:'Kassier deine Kasse',how:'Unten rechts „Kassieren“.'},
   {k:'rob',ico:'🥊',txt:'Überfall eine KI-Bande',how:'Tipp auf einen Laden einer KI-Bande.'},
@@ -5650,7 +5650,7 @@ function doReload(){
 }
 
 /* ---------- Menü, Anleitung, FAQ, Versionsverlauf ---------- */
-const CURRENT_VERSION='Beta 5.2.4.1', SEEN_KEY='imperium-seen-version';
+const CURRENT_VERSION='Beta 5.2.4.2', SEEN_KEY='imperium-seen-version';
 /* ---------- Ab Beta 5.0 „Wahrzeichen“: drei gleichzeitig, Kaiserburg und Plärrer fest, das dritte wechselt sonntags um 20 Uhr ----------
    Erobert wird nur über die Datenbank-Funktion landmark_attack (der Server würfelt, feste Verteidigung 10, Türsteher zählen nicht).
    Tabelle landmarks: {id, district, pos, active, owner, since, shield_until}, owner null = Stadtwache. */
@@ -5788,6 +5788,8 @@ function dayPhase(t){t=t||now();const s=sunTimes(t),D=40*60000;if(t>s.rise+D&&t<
 function applyPhase(){const svg=document.getElementById('mapsvg'),box=document.getElementById('mapbox');if(!svg)return;const p=dayPhase();['day','dusk','night'].forEach(k=>{svg.classList.toggle(k,k===p);if(box)box.classList.toggle(k,k===p)})}
 
 const VERSIONS=[
+  {v:'Beta 5.2.4.2',date:'13.10.2026',title:'Erster Laden',items:[
+    '🏪 Erste Schritte: Auch ein übernommener Laden zählt als erster Laden']},
   {v:'Beta 5.2.4.1',date:'13.10.2026',title:'Safe zu bis Sonntag',items:[
     '🔢 Geknackter Safe: Der Knopf wird grau mit Schloss und zeigt, wie viel schon wieder für den neuen Safe drin ist']},
   {v:'Beta 5.2.4',date:'13.10.2026',title:'Rache der KI',items:[
@@ -6083,7 +6085,7 @@ function stufenHTML(){
 }
 const GUIDE=[
   ['🍀 Die Fürther kommen','Jeden Samstag um 20 Uhr greift die Kleeblatt-Gang aus Fürth an, 30 Minuten lang, in den 5 Vierteln, die Fürth am nächsten liegen. Um 19:45 und 20 Uhr kommt eine Mitteilung, oben auf der Karte zeigt ein Banner die Viertel und die Zeit. Tipp auf ein Viertel und auf 🛡️ Verteidigen: Im Minispiel verjagt jeder Treffer einen Fürther, egal wem das Viertel gehört. Nach jeder Runde 1 Min. Pause. In Viertel, die noch nicht frei sind, kommen alle 5 Minuten Fürther nach. Ein Viertel ohne Fürther ist gehalten. Hält Nürnberg am Ende 3 von 5, bekommt jede Bande, die mitverteidigt hat, 50 Ruf, die beste steht im Kurier. Sonst lacht Fürth im Kurier, mehr passiert nicht. Je mehr Banden mitspielen, desto mehr Fürther kommen. Das Minispiel wechselt jede Woche. Fürther Invaders: Zieh die Bratwurstbude hin und her, sie schießt von allein, die U1 oben bringt +3. Fürther raus!: Tipp die Fürther in den Fenstern weg, die Oma kostet 2. Kleeblatt-Ninja: Wisch durch die Fürther, ein Kleeblatt bringt +2, ein zerschnittener Lebkuchen kostet 2.','stadt'],
-  ['🎓 Erste Schritte','Neue Banden sehen auf der Karte „Erste Schritte“: fünf kleine Aufgaben, jede mit 1.000 Bargeld und ⭐ 20 Ruf, alle zusammen mit 3.000 und ⚡ 2 obendrauf.','start'],
+  ['🎓 Erste Schritte','Neue Banden sehen auf der Karte „Erste Schritte“: fünf kleine Aufgaben, jede mit 1.000 Bargeld und ⭐ 20 Ruf, alle zusammen mit 3.000 und ⚡ 2 obendrauf. Ist kein Platz frei, nimm deinen ersten Laden einer KI-Bande ab.','start'],
   ['🔢 Sparkassen-Safe','Neben den Coups unten links sitzt der 🔢 Safe. Jeden Sonntag um 20 Uhr steht ein neuer Safe mit einem Code aus 4 Ziffern da. Er startet mit 10.000 und wächst mit 10 % aller Wäsche-Gebühren und Bestechungen in der Stadt, dazu Kaution und Richter-Schmiergeld. Jede Bande hat einen Versuch pro Tag (nicht aus dem Knast). Danach steht im Kurier, welche Stellen gepasst haben, etwa „4-7-?-?“, das sehen alle. Hinweise („Stelle 2 ist eine 7“) fallen mit etwas Glück bei Coups und Überfällen ab, und im Knast verrät der Zellennachbar eine Ziffer. Wer den Code knackt, bekommt den ganzen Topf als sauberes Geld, alle bekommen Bescheid. Dann ist der Knopf grau mit 🔒 bis Sonntag 20 Uhr. Was bis dahin wieder hineinfließt, steht daneben und kommt in den neuen Safe. Knackt ihn bis Sonntag 20 Uhr niemand, verrät der Kurier den Code und das Geld wandert in den neuen Safe.','akt'],
   ['🎯 Coups','Tipp auf 🎯 auf der Karte, auf „Coups“ unten links oder auf ⚡ oben. Alle 2 Stunden gibt es drei neue Coups: leicht (⚡1), mittel (⚡2) und schwer (⚡3). Im Minispiel blinken Alarm-Lichter, die du nachtippst. Jede Runde kommt ein Licht dazu, das ergibt bis zu 3 Treffer. Bei leichten Coups brauchst du einen Treffer, bei mittleren und schweren zwei. Leichte Coups kannst du auch „schnell erledigen“, das zählt wie 2 Treffer. Gelingt der Coup, gibt es Bargeld und Ruf, manchmal einen Glücksfund. Coups machen etwas Hitze. Energie lädt sich alle 20 Minuten um 1 auf, höchstens 5.','akt'],
   ['✅ Tagesziele & ⭐ Ruf','Jeden Tag gibt es drei Ziele: zwei wie Coups machen, kassieren oder waschen und eins mit Mitspielern, also einen Überfall auf eine echte Bande gewinnen, auf Kurier-Meldungen anderer Banden reagieren oder nach einem Kampf einen Spruch hinterlassen. Jedes bringt Bargeld und Ruf, alle drei zusammen Bonus-Ruf, 2 Energie und verlängern deine Serie. Ruf bekommst du auch fürs Bauen und für gewonnene Angriffe. Mit jeder Stufe wird etwas freigeschaltet, siehe ⭐ Stufen.','akt'],
@@ -6370,7 +6372,7 @@ async function createGang(){
     await addEvent({kind:'join',actor:id,district:ui.sel,txt:`🆕 Neue Bande in der Stadt: ${name}${start?` startet mit einem Späti in ${start.name}`:''}.`});
     startGame(); pendingBoss=true;
     showModal(`<div class="mbox" role="dialog" aria-label="Los geht's"><h3 class="gt">WILLKOMMEN, BOSS</h3>
-      <p>${start?`Dein erster Späti steht in ${start.name}.`:'Such dir einen freien Platz.'} Tipp: Bau als Nächstes ein Wettbüro, das bringt Bargeld, und probier unten links deinen ersten 🎯 Coup. Dein Späti wäscht nur Bargeld, das du verdienst, dein Startgeld bleibt dir zum Bauen.</p>
+      <p>${start?`Dein erster Späti steht in ${start.name}.`:'Such dir einen freien Platz.'} Tipp: Hol dir als Nächstes ein Wettbüro (bauen oder einer KI-Bande abnehmen) und probier unten links deinen ersten 🎯 Coup. Dein Späti wäscht nur Bargeld, das du verdienst, dein Startgeld bleibt dir zum Bauen.</p>
       <ul class="list"><li><span>🗺️ Karte ziehen, mit zwei Fingern zoomen, Viertel antippen</span></li><li><span>🔲 Unten einen Platz antippen: bauen, kassieren, angreifen</span></li><li><span>📲 In Safari: Teilen → „Zum Home-Bildschirm“</span></li></ul>
       ${pushState()==='off'?'<button class="btn wide mint" data-act="push">🔔 Mitteilungen bei Angriffen einschalten</button>':pushState()==='needs-home'?'<p class="small muted">🔔 Tipp: Über das Home-Bildschirm-Icon kannst du Mitteilungen bei Angriffen einschalten.</p>':''}
       <button class="btn wide" data-act="close">Los geht's</button></div>`);
@@ -6401,7 +6403,7 @@ async function welcomeGang(id,name,start){
     await addEvent({kind:'join',actor:id,district:ui.sel,txt:`🆕 Neue Bande in der Stadt: ${name}${start?` startet mit einem Späti in ${start.name}`:''}.`});
     startGame(); pendingBoss=true;
     showModal(`<div class="mbox" role="dialog" aria-label="Los geht's"><h3 class="gt">WILLKOMMEN, BOSS</h3>
-      <p>${start?`Dein erster Späti steht in ${start.name}.`:'Such dir einen freien Platz.'} Tipp: Bau als Nächstes ein Wettbüro, das bringt Bargeld, und probier unten links deinen ersten 🎯 Coup. Dein Späti wäscht nur Bargeld, das du verdienst, dein Startgeld bleibt dir zum Bauen.</p>
+      <p>${start?`Dein erster Späti steht in ${start.name}.`:'Such dir einen freien Platz.'} Tipp: Hol dir als Nächstes ein Wettbüro (bauen oder einer KI-Bande abnehmen) und probier unten links deinen ersten 🎯 Coup. Dein Späti wäscht nur Bargeld, das du verdienst, dein Startgeld bleibt dir zum Bauen.</p>
       <ul class="list"><li><span>🗺️ Karte ziehen, mit zwei Fingern zoomen, Viertel antippen</span></li><li><span>🔲 Unten einen Platz antippen: bauen, kassieren, angreifen</span></li><li><span>📲 In Safari: Teilen → „Zum Home-Bildschirm“</span></li></ul>
       ${pushState()==='off'?'<button class="btn wide mint" data-act="push">🔔 Mitteilungen bei Angriffen einschalten</button>':pushState()==='needs-home'?'<p class="small muted">🔔 Tipp: Über das Home-Bildschirm-Icon kannst du Mitteilungen bei Angriffen einschalten.</p>':''}
       <button class="btn wide" data-act="close">Los geht's</button></div>`);
