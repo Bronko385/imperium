@@ -1248,13 +1248,13 @@ function heatOf(s,d){return TYPES[s.type].heat*s.lvl*(d.heat||1)}
 function cap(s,d){return prod(s,d)*CAP_H}
 function wareRate(s){const T=TYPES[s.type];return (T.rate||0)*lvlM(s.lvl)}
 function wareCap(s){return wareRate(s)*CAP_H}
-function wareStock(s,d){if(!s||!s.owner||TYPES[s.type].kind!=='ware')return 0;return Math.min(wareCap(s),(+s.stock||0)+wareRate(s)*Math.max(0,now()-(+s.stock_at||now()))/HOUR)}
+function wareStock(s,d){if(!s||!s.owner||TYPES[s.type].kind!=='ware')return 0;return Math.min(wareCap(s),(+s.stock||0)+wareRate(s)*Math.max(0,now()-Math.max(+s.stock_at||now(),+s.lahm||0))/HOUR)}
 function hasW(p,k){return Math.floor(+((p&&p.ware)||{})[k]||0)}
 function hasG(p,k){return Math.floor(+((p&&p.gear)||{})[k]||0)}
 function addWare(k,n){me.ware={...(me.ware||{}),[k]:Math.max(0,hasW(me,k)+Math.round(n))}}
 function addGear(k,n){me.gear={...(me.gear||{}),[k]:clamp(hasG(me,k)+n,0,GEAR_MAX)}}
 function wareTxt(w){return Object.keys(WARE).filter(k=>(w[k]||0)>0).map(k=>`${WARE[k].ico} ${w[k]} ${WARE[k].name}`).join(', ')}
-function curStock(s,d){if(!s||!s.owner||TYPES[s.type].kind!=='racket')return 0;const a=+s.stock_at||now();return Math.min(cap(s,d),(+s.stock||0)+prod0(s,d)*Math.max(0,lifeInt(s,d,a,now()))/HOUR)}
+function curStock(s,d){if(!s||!s.owner||TYPES[s.type].kind!=='racket')return 0;const a=Math.max(+s.stock_at||now(),+s.lahm||0);return Math.min(cap(s,d),(+s.stock||0)+prod0(s,d)*Math.max(0,lifeInt(s,d,a,now()))/HOUR)}
 function controller(d){
   const c={}; slotsOfD(d).forEach(s=>{if(s&&s.owner)c[s.owner]=(c[s.owner]||0)+1});
   // Ab 4.4: mindestens die Hälfte der Plätze und mehr als jede andere Bande
@@ -1522,15 +1522,21 @@ function attackSrv(did,i,kind,victim){
   }),{quick:isNpc(victim),fk:kind,fref:did+':'+i});
 }
 /* Duelle: fällige entscheidet der Server (tick), das Ergebnis kommt als Meldung „dres“ an den Angreifer */
+// Ab 5.2.4: Rache der KI rechnet der Server; abends fragt das Spiel alle 5 Minuten nach
+function srvRache(){return srvFight()&&!!(moneyCfg&&moneyCfg.rache)}
+let racheTickAt=0;
+function racheDue(t){if(!srvRache()||t-racheTickAt<5*60000)return false;const h=berlinHour();return h>=16&&h<23}
 function tickDue(){
   const t=now(); if(duels.some(x=>x.status==='open'&&+x.ends_at<=t))return true;
+  if(racheDue(t))return true;
   if(world&&t-(+world.npc_at||0)>=HOUR)return true;
   const tr=truckNow(); return !!(tr&&!tr.fa&&t>=tr.at+TRUCK_NPC&&!(truckRow[tr.id]&&truckRow[tr.id].winner));
 }
 async function kampfTick(){
   if(!tickDue())return;
+  if(srvRache())racheTickAt=now();
   const r=await kampf({act:'tick'}); if(!r||!r.res)return;
-  if(world)world.npc_at=now();
+  if(world&&now()-(+world.npc_at||0)>=HOUR)world.npc_at=now();
   if(!r.res.idle){await loadDuels();await loadTruck();await loadNewEvents();await refreshSlots().catch(()=>{});dirty=true}
 }
 const DRES_KEY='imperium-dres';
@@ -1879,7 +1885,7 @@ function ecoAdvance(){
   while(t<end){
     const dtMs=Math.min(STEP,end-t), dt=dtMs/HOUR; t+=dtMs;
     let wcap=0, inc=0, heatG=0;
-    mySlots().forEach(([s,d])=>{const T=TYPES[s.type];if(T.kind==='front'){wcap+=washOf(s,d,t);inc+=T.clean*s.lvl}else if(T.kind==='immo')inc+=rentOf(s,d);heatG+=heatOf(s,d)});
+    mySlots().forEach(([s,d])=>{const T=TYPES[s.type];if(+s.lahm>t){/* ab 5.2.4: lahmgelegt */}else if(T.kind==='front'){wcap+=washOf(s,d,t);inc+=T.clean*s.lvl}else if(T.kind==='immo')inc+=rentOf(s,d);heatG+=heatOf(s,d)});
     earn(protection(me.id)*1000*bossProtMul(me.id)*dt);
     const w=Math.max(0,Math.min(washable(),wcap*dt)); me.bar-=w; if(me.wash_pool!=null)me.wash_pool-=w; me.clean+=w*(1-washFee())+inc*dt; if(w>0&&me.ruf!=null)daily('wash',w);
     let wage=upkeepOf(me.crew)*dt;
@@ -5306,7 +5312,7 @@ function viewGeld(){
   return seg+fc+pol;
 }
 function viewFeed(){
-  const kindOf=e=>e.kind==='hack'?'atk':e.kind==='def'?(e.target===me.id?'win':'info'):e.kind==='join'||e.kind==='tip'||e.kind==='paket'||e.kind==='ratte'||e.kind==='ally'||e.kind==='deal'||e.kind==='heistk'?'info':e.kind==='betray'?'atk':e.kind==='smugx'?(e.target===me.id?'atk':'info'):e.kind==='taunt'?'taunt':e.kind;
+  const kindOf=e=>e.kind==='hack'?'atk':e.kind==='def'?(e.target===me.id?'win':'info'):e.kind==='join'||e.kind==='tip'||e.kind==='paket'||e.kind==='ratte'||e.kind==='ally'||e.kind==='deal'||e.kind==='heistk'?'info':e.kind==='betray'?'atk':e.kind==='smugx'||e.kind==='rache'?(e.target===me.id?'atk':'info'):e.kind==='taunt'?'taunt':e.kind;
   const today=(()=>{try{return new Intl.DateTimeFormat('de-DE',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'Europe/Berlin'}).format(now())}catch(e){return ''}})();
   const top=events.find(e=>['atk','win','cop','hack'].includes(e.kind));
   const ftabs=`<div class="seg ftabs"><button data-act="ftab" data-k="news" class="${ui.feedTab!=='funk'?'on':''}">📰 Zeitung</button><button data-act="ftab" data-k="funk" class="${ui.feedTab==='funk'?'on':''}">📻 Funk${(()=>{const n=dmUnread()+unreadOf('city');return n?` <b class="nb">${n>9?'9+':n}</b>`:''})()}</button></div>`;
@@ -5643,7 +5649,7 @@ function doReload(){
 }
 
 /* ---------- Menü, Anleitung, FAQ, Versionsverlauf ---------- */
-const CURRENT_VERSION='Beta 5.2.3.1', SEEN_KEY='imperium-seen-version';
+const CURRENT_VERSION='Beta 5.2.4', SEEN_KEY='imperium-seen-version';
 /* ---------- Ab Beta 5.0 „Wahrzeichen“: drei gleichzeitig, Kaiserburg und Plärrer fest, das dritte wechselt sonntags um 20 Uhr ----------
    Erobert wird nur über die Datenbank-Funktion landmark_attack (der Server würfelt, feste Verteidigung 10, Türsteher zählen nicht).
    Tabelle landmarks: {id, district, pos, active, owner, since, shield_until}, owner null = Stadtwache. */
@@ -5781,6 +5787,10 @@ function dayPhase(t){t=t||now();const s=sunTimes(t),D=40*60000;if(t>s.rise+D&&t<
 function applyPhase(){const svg=document.getElementById('mapsvg'),box=document.getElementById('mapbox');if(!svg)return;const p=dayPhase();['day','dusk','night'].forEach(k=>{svg.classList.toggle(k,k===p);if(box)box.classList.toggle(k,k===p)})}
 
 const VERSIONS=[
+  {v:'Beta 5.2.4',date:'13.10.2026',title:'Rache der KI',items:[
+    '⚔️ Rache der KI: Wer KI-Banden oft überfällt oder ihnen Läden abnimmt, muss abends mit ihrer Rache rechnen. Der Kurier warnt dich vorher',
+    '🛡️ Wehrst du die Rache ab, gibt es Ruf',
+    '🐣 Neue Banden bis Stufe 2 lässt die KI in Ruhe']},
   {v:'Beta 5.2.3.1',date:'13.10.2026',title:'Türsteher ohne Tür',items:[
     '🚪 Roter Kreis zeigt Türsteher ohne Tür']},
   {v:'Beta 5.2.3',date:'13.10.2026',title:'Fürther raus!',items:[
@@ -6096,6 +6106,7 @@ const GUIDE=[
   ['🎯 Spitzenreiter-Prämie','Nimmst du der Nr. 1 der Rangliste einen Laden ab, bekommst du doppelten Ruf (⭐ 50 statt 25) und eine Schlagzeile im Kurier. Das gilt für jede Bande, egal wie groß du selbst bist.','kampf'],
   ['🏴 Zielscheibe','Die stärkste echte Bande hängt in der Rangliste immer ganz vorn auf dem WANTED-Plakat. Hast du höchstens halb so viele Punkte, bringt dir ein gelungener Überfall auf sie +50 % Prämie obendrauf (bis 10.000) und doppelten Ruf. Ist dieselbe Bande 3 Tage lang vorn, berichtet der Kurier.','kampf'],
   ['⚔️ Revanche','Hat dich eine Bande ausgeraubt oder gehackt, während du weg warst, siehst du das beim Öffnen. Ein Tipp auf „Revanche“ bringt dich zu ihrem Laden mit der vollsten Kasse, und 10 Minuten lang hast du gegen sie +25 % Angriffskraft. Im Kurier geht das weiter über „Rache“.','kampf'],
+  ['⚔️ Rache der KI','Die KI-Banden vergessen nicht. Wer sie oft überfällt, hackt oder ihnen Läden abnimmt, macht sie wütend. Dann schlagen sie abends zurück, wenn du gerade spielst. Der Kurier kündigt die Rache vorher an und sagt, wo sie sich sammeln: Schick Türsteher hin! Gewinnt die KI, nimmt sie dir dort einen Laden ab oder legt ihn ein paar Stunden lahm. Wehrst du sie ab, bekommst du Ruf. Lässt du sie in Ruhe, beruhigen sie sich wieder. Höchstens eine Rache am Abend, dein letzter Laden ist sicher, und Banden bis Stufe 2 lassen sie in Ruhe.','kampf'],
   ['🏰 Wahrzeichen','Drei Wahrzeichen sind jede Woche umkämpft: die 🏰 Kaiserburg, der 🚇 U-Bahnhof Plärrer und ein drittes, das jeden Sonntag wechselt. Ab Stufe 3 findest du sie im Coups-Fenster (🎯 Coups) und in der Viertel-Leiste und stürmst sie mit deinen Schlägern. Verteidigt wird immer mit 10, Türsteher zählen dort nicht, mit 9 Schlägern hast du also 50 % Chance. Jede Bande kann nur eins halten, nach einer Eroberung gibt es 1 Std. Schonzeit. Solange du es hältst, bekommst du seinen Bonus. Beim Plärrer zeigt das Fenster die U-Bahn-Viertel, dort steht dann unten „🚇 +1 Angriff“. Sonntag um 20 Uhr bekommt jeder Halter 10.000 sauber, danach gehört alles wieder der Stadtwache.','stadt'],
   ['🏆 Boss der Woche','Jede Woche zählt dein Ruf seit Sonntag 20 Uhr plus deine Beute geteilt durch 100 (Überfälle, Hacks, Transporter). Den Zwischenstand siehst du im Reiter 🏆 Woche der Rangliste. Sonntag um 20 Uhr bekommt die beste Bande 20.000 sauberes Geld und eine Woche lang den 🏆 neben dem Namen, alle anderen bekommen eine Mitteilung, wer gewonnen hat.','stadt'],
   ['📻 Funkgerät & Mitteilungen','Unter ☰ → Mitteilungen schaltest du sie ein. Beim ersten Mal gibt es einmal 5.000 Bargeld. Banden ohne Mitteilungen haben in der Rangliste ein 📵. Neu ist eine Mitteilung, wenn dich eine Bande überholt (höchstens alle 3 Stunden), und eine bei neuen Versionen. Mitteilungen kommen nur, wenn das Spiel nicht offen ist.','stadt'],
@@ -6130,6 +6141,7 @@ const FAQ=[
   ['Kann ich als neue Bande schon Läden übernehmen?','Ja, Läden von KI-Banden kannst du schon ab Stufe 1 übernehmen. Läden von Mitspielern erst ab Stufe 3 (Kiezbande).','start'],
   ['Wie funktionieren die Minispiele?','Es gibt vier Arten: Zeiger-Balken (Überfall, Verteidigen), Tresor-Drehrad (Übernahme), Pakete (Hack) und Alarm-Lichter (Coups, Großcoups, Geldtransporter, Schmuggel). Überall zählen bis zu 3 Treffer, Perfekt bringt etwas mehr. Bei Angriffen auf KI-Banden und leichten Coups kannst du „schnell erledigen“ wählen, das zählt wie 2 Treffer. Gegen Mitspieler wird immer gespielt.','kampf'],
   ['Wer entscheidet, ob mein Angriff klappt?','Seit Beta 5.1.1 der Server. Dein Handy schickt nur deine Treffer im Minispiel, die Chance am Knopf ist dieselbe wie vorher.','kampf'],
+  ['Warum greift mich eine KI-Bande abends an?','Das ist ihre Rache: Du hast sie zu oft überfallen, gehackt oder ihnen Läden abgenommen. Der Kurier warnt dich vorher, dann hast du Zeit, Türsteher hinzuschicken. Wehrst du sie ab, gibt es Ruf. Lässt du sie eine Weile in Ruhe, beruhigen sie sich.','kampf'],
   ['Wie erschließe ich einen Stadtteil?','Ab Stufe 3 tippst du auf einen schraffierten Stadtteil mit 🔑. Das kostet 10 % deines sauberen Geldes, mindestens 5.000, und geht einmal pro Woche (ab Sonntag 20 Uhr wieder). Danach hat der Stadtteil 4 Plätze für alle, den ersten bekommst du mit einem Späti geschenkt. In der ersten halben Stunde darf jede Bande dort nur einen Laden haben.','stadt'],
   ['Warum kostet mein neuer Laden mehr als angegeben?','Ab deinem 15. Laden gibt es den Bauzuschlag: jeder neue Laden 4 % mehr pro Laden, höchstens das Doppelte. Der Preis im Bau-Fenster ist schon der richtige.','stadt'],
   ['Was bringt mein Heimatviertel?','Checkst du im Crew-Tab daheim ein, verteidigen deine Läden in diesem Viertel 24 Std. lang mit +2, so viel wie fast ein Türsteher. In den letzten 6 Std. kannst du verlängern, dann gilt der Bonus wieder 24 Std. ab dem Verlängern. Wer nicht in Nürnberg wohnt, wählt eine Wahlheimat und bekommt dort dauerhaft +1. Liegt dein Viertel noch brach, gilt der Bonus, sobald es jemand erschließt.','kampf'],
@@ -6159,7 +6171,7 @@ const FAQ=[
   ['Kann ich nur durch Läden in den Knast kommen?','Nein. Läden heizen höchstens bis 80. In den Knast bringen dich nur Angriffe und anonyme Tipps, die dich über 80 treiben. Wer nur baut, bekommt Kontrollen und Viertel-Razzien, aber nie die große Razzia.','pol'],
   ['Wie knacke ich den Safe?','Tipp unten links neben den Coups auf 🔢. Gib 4 Ziffern ein, einmal am Tag. Was gepasst hat, steht danach im Kurier, auch für alle anderen. Hinweise bekommst du mit Glück bei Coups und Überfällen und im Knast vom Zellennachbarn. Jeden Sonntag um 20 Uhr gibt es einen neuen Code.','akt'],
   ['Was passiert, während ich offline bin?','Die Stadt läuft weiter: Kassen füllen sich, Geld wird gewaschen, Löhne laufen, und andere Banden können dich angreifen. Von der Polizei gibt es während deiner Abwesenheit höchstens ein Ereignis und nie die große Razzia. Beim nächsten Öffnen siehst du, was passiert ist.','start'],
-  ['Wer sind die KI-Banden?','Schäufele-Syndikat (🥊 Schläger-Boss Schäufele-Schorsch), Lebkuchen-Clan (💼 Geschäftsfrau Oma Lebkuchen) und Die Drei im Weggla (🎲 Zocker, die Weggla-Brüder). Sie bauen, wachsen und greifen ab und zu an. Sie spielen immer dann eine Runde, wenn jemand online ist.','stadt'],
+  ['Wer sind die KI-Banden?','Schäufele-Syndikat (🥊 Schläger-Boss Schäufele-Schorsch), Lebkuchen-Clan (💼 Geschäftsfrau Oma Lebkuchen) und Die Drei im Weggla (🎲 Zocker, die Weggla-Brüder). Sie bauen, wachsen und greifen ab und zu an. Wer sie oft angreift, muss abends mit ihrer Rache rechnen. Sie spielen immer dann eine Runde, wenn jemand online ist.','stadt'],
   ['Wie funktioniert BratCoin, und wann mache ich Gewinn?','Du kaufst mit Bargeld und verkaufst gegen sauberes Geld. Beim Kauf gehen 12 % als Mixer-Gebühr weg, deshalb brauchst du etwa 14 % Kursplus für Gewinn. Den Kurs machen die Spieler: Käufe treiben ihn hoch, Verkäufe drücken ihn, dazu kommen Nachrichten im Kurier. Unter Geld siehst du deinen Einstand und deinen Gewinn oder Verlust. Geklaute Coins zählen dort mit dem Kurs vom Hack.','geld'],
   ['Kann ich den BratCoin-Kurs selbst hochtreiben?','Ein bisschen, aber es lohnt sich nicht: Du zahlst den Kurs vor deinem Kauf, und die Gebühren von etwa 14 % sind größer als alles, was du selbst bewegen kannst. Wer viel kauft, hilft vor allem denen, die schon Coins haben.','geld'],
   ['Warum ist der BratCoin-Kurs gefallen?','Jemand hat verkauft, eine Nachricht im Kurier hat ihn gedrückt, oder es gab eine große Razzia oder Übernahme. Bewegt sich der Kurs um 5 % oder mehr, meldet der Börsenticker im Kurier die Gründe. Was übrig bleibt, ist die Marktlaune, das Auf und Ab, das niemand macht. Jede Bewegung klingt alle 6 Stunden zur Hälfte ab.','geld'],
@@ -6484,6 +6496,7 @@ function onNewEvent(e){
   if(e.target===me.id&&!isNpc(e.actor)&&(e.kind==='atk'||e.kind==='hack')&&!document.hidden)lsSet(REV_KEY,String(now())); // live gesehen: kein Revanche-Fenster mehr
   if(e.kind==='ally'||e.kind==='betray'||e.kind==='heistk')loadFam().then(()=>{dirty=true});
   if(e.kind==='betray'&&e.target===me.id)toast(e.txt,'bad');
+  if(e.kind==='rache'&&e.target===me.id){toast(e.txt,'bad');if(e.district)ui.alarm={d:e.district,until:now()+20000}} // ab 5.2.4: Rache der KI angekündigt
   if(ui.tab!=='feed')unread++;
   if(srvDn()){ // ab 5.2: Darknet und Ratte rechnet der Server
     if(e.kind==='tip'&&e.target===me.id)toast('📞 Jemand hat dich bei der Polizei verpfiffen: Hitze +'+(+e.amount||TIP_HEAT),'bad');
