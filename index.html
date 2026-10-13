@@ -858,6 +858,23 @@ button.car{cursor:pointer;touch-action:manipulation}
 .dnbar.pk{border-color:var(--clean);background:var(--night2);cursor:pointer}
 .dnbar.pk b{color:var(--clean)}
 .dnbar .btn{flex:none}
+/* 5.3 Rathaus: Leiste im Kurier, Kandidieren, Ergebnis */
+.dnbar.rh{border-color:var(--yellow);background:#2a2f6a}
+.dnbar.rh>div{flex:1;min-width:0}
+.dnbar .rhrow{margin-top:5px;font-size:12.5px;line-height:1.3}
+.dnbar .rhrow span{display:block;color:var(--muted);font-size:11.5px}
+.dnbar .rhrow b{display:block;color:var(--paper);font-size:14px}
+.dnbar.rh .cand{display:block;color:var(--paper);font-size:12.5px;margin-top:3px}
+.dnbar.rh .rhres div{font-size:13.5px;padding:5px 9px}
+.rhkost{background:var(--ink);border-radius:12px;padding:10px 12px;text-align:center;margin:8px 0}
+.rhkost big{display:block;font:400 34px var(--f-display);color:var(--clean);letter-spacing:.02em;line-height:1.1}
+.rhkost small{color:var(--muted);font-size:12.5px}
+.rhres{display:grid;gap:6px;margin:8px 0}
+.rhres div{display:flex;justify-content:space-between;gap:8px;background:var(--ink);border-radius:10px;padding:7px 10px;font-weight:800}
+.rhres div span:first-child{overflow-wrap:anywhere}
+.rhres div.win{background:var(--yellow);color:var(--ink)}
+.choice.rhd{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.choice.rhd .btn{min-width:0;padding:10px 6px;font-size:15px;overflow-wrap:anywhere}
 /* 5.2.2 Die Fürther kommen: Banner, Karte, Viertel-Leiste, Verteidigen, Fürther Invaders, Ergebnis */
 #mapsvg .fa{fill:#ff3b5c;fill-opacity:.38;stroke:none;pointer-events:none;animation:fpulse 1.2s ease-in-out infinite}
 #mapsvg .fh{fill:#2fd27a;fill-opacity:.35;stroke:none;pointer-events:none}
@@ -1254,7 +1271,7 @@ async function savePlayer(){
     // Hitze-Vorwarnung wieder scharf schalten, sobald keine Razzia mehr in Sicht ist
     if(!document.hidden)patch.fg_at=me.last_seen; // ab 4.6.7: ein verstecktes Spiel lässt fg_at in Ruhe
     if(heatSafe())patch.heat_notified=false;
-    if(energyNow()<EMAX)patch.energy_notified=false;
+    if(energyNow()<emax())patch.energy_notified=false;
     if(me.wash_pool!=null){clampPool();patch.wash_pool=me.wash_pool}
     if(srvMoney())MONEY_F.forEach(k=>delete patch[k]); // ab 5.0.4: Geld schreibt nur der Server
     if(srvFight())FIGHT_NO.forEach(k=>delete patch[k]); // ab 5.1.1: Kampfwerte auch
@@ -2405,7 +2422,7 @@ const dnSeen=new Set();
 async function dnLoad(){
   if(!me||!srvDn())return;
   const r=await kampf({act:'dn'}); if(!r||!r.res)return;
-  dnI=r.res; dirty=true; dnNotify(); dnRefresh();
+  dnI=r.res; rhSet(r.res.rh||null); dirty=true; dnNotify(); dnRefresh(); rhNotify();
 }
 function dnUsedK(k){return !!(dnI&&dnI.used&&dnI.used.includes(k))}
 function coinTxt(c){return c==null?'…':de(c,c<10?2:1)}
@@ -2536,13 +2553,134 @@ function ratBanner(){
   if(pk.length)h+=`<button class="dnbar pk" data-act="pkopen" data-id="${pk[0].id}"><b>📦 ${pk.length===1?'Ein Paket wartet auf dich':pk.length+' Pakete warten auf dich'}</b><span>Aufmachen ›</span></button>`;
   const R=dnI.ratte;
   if(R){
-    const sp=R.spuren.length?R.spuren.map(x=>`${SAB_TXT[x.k]?SAB_TXT[x.k][0]:'🐀'} ${DM[x.d]?DM[x.d].name:esc(x.d)} (${x.day})`).join(' · '):'Noch keine Spuren.';
-    const v=R.phase==='wahl'?(R.darf?`<span>${RAT_DARF[R.darf]||''}</span>`:`<button class="btn sm" data-act="rvoteopen">${R.my?'🗳️ Umstimmen':'🗳️ Abstimmen'}</button>`):`<span>${R.phase==='spiel'?'Abstimmung So 18–20 Uhr':'Auflösung ab 20 Uhr'}</span>`;
+    const sp=R.spuren.length?R.spuren.map(x=>`${SAB_TXT[x.k]?SAB_TXT[x.k][0]:'🐀'} ${DM[x.d]?DM[x.d].name:esc(x.d)} (${x.at?tagTxt(+x.at):esc(x.day)})`).join(' · '):'Noch keine Spuren.';
+    const v=R.phase==='wahl'?(R.darf?`<span>${RAT_DARF[R.darf]||''}</span>`:`<button class="btn sm" data-act="rvoteopen">${R.my?'🗳️ Umstimmen':'🗳️ Abstimmen'}</button>`):`<span style="white-space:nowrap">${R.phase==='spiel'?`Abstimmung<br>${tagTxt(sunOf(now()))}<br>18–20 Uhr`:'Auflösung ab 20 Uhr'}</span>`;
     h+=`<div class="dnbar rat"><div><b>🐀 Eine Ratte ist unterwegs</b><small>Spuren: ${sp}</small></div>${v}</div>`;
   }else if(dnI.last)h+=`<div class="dnbar rat"><div><b>🐀 Letzte Ratte: ${esc(dnI.last.name)}</b><small>${dnI.last.caught?'Erwischt!':'Ist durchgekommen.'}</small></div></div>`;
   return h;
 }
 function ratTuer(p,did){let x=p&&p.rat_fx;if(typeof x==='string'){try{x=JSON.parse(x)}catch(e){x=null}}return x&&x.tuer&&x.tuer.d===did&&+x.tuer.until>now()?1:0}
+/* ---------- Ab Beta 5.3 „Rathaus“ ----------
+   In Welten mit money_cfg.rh rechnet die Edge Function kampf die Bürgermeisterwahl (functions/kampf/rathaus.js). Die
+   Infos kommen mit act dn mit (res.rh): Termine, Kandidaten, eigene Stimme, letztes Ergebnis. Die Stadtregel steht in
+   money_cfg (rh_regel, rh_d, rh_until) und gilt für alle: Energie, Kopfgeld und Hitze rechnet kampf, Wäsche kasse. */
+function srvRh(){return srvShop()&&!!moneyCfg.rh}
+const RH_REGELN={energie:'⚡ +1 Energie für alle',kopfgeld:'🎯 Kopfgelder doppelt',wasch:'🧼 Wäsche 5 statt 10 %',hitze:'🚨 Doppelte Hitze in einem Viertel'};
+const RH_KOST={3:[20000,.05],4:[50000,.07],5:[100000,.10],6:[200000,.12],7:[400000,.15]};
+const RH_WHY={zeit:'Das geht gerade nicht (Uhrzeit).',stufe:'Kandidieren kannst du ab Stufe 3.',jung:'Dabei sind Banden ab 7 Tagen.',tage:'Dabei sind Banden, die an mindestens 3 Tagen gespielt haben.',schon:'Du kandidierst schon.',geld:'Zu wenig sauberes Geld.',selbst:'Für dich selbst kannst du nicht stimmen.',ziel:'Diese Bande steht nicht zur Wahl.',vorbei:'Die Zeit für die Regel ist vorbei.',viertel:'Bitte ein Viertel wählen.',art:'Unbekannte Regel.'};
+let rhI=null, rhBusy=false, rhPick=null;
+function regelNow(){const c=moneyCfg||{};return srvRh()&&RH_REGELN[c.rh_regel]&&now()<(+c.rh_until||0)?c.rh_regel:null}
+function regelTxt(k,d){return k==='hitze'?`🚨 Doppelte Hitze in ${d&&DM[d]?DM[d].name:'einem Viertel'}`:RH_REGELN[k]||''}
+/* „Mittwoch, 14.10.“ (deutsche Zeit, Wochentag ausgeschrieben) */
+function tagTxt(ms){try{return new Intl.DateTimeFormat('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',timeZone:'Europe/Berlin'}).format(ms)}catch(e){return ''}}
+/* Der Sonntag dieser Woche (Ratten-Abstimmung) */
+function sunOf(t){for(let k=0;k<7;k++){const x=t+k*864e5;if(tagTxt(x).startsWith('Sonntag'))return x}return t}
+const tsd=n=>Math.round(+n||0).toLocaleString('de-DE');
+function rhKost(){const l=Math.min(7,myLevel()),k=RH_KOST[l];return k?Math.max(k[0],Math.round((+me.clean||0)*k[1])):null}
+function rhSet(x){
+  rhI=x; if(!x||!moneyCfg)return;
+  moneyCfg.rh_mayor=x.mayor?x.mayor.id:null;
+  if(x.regel){moneyCfg.rh_regel=x.regel.k;moneyCfg.rh_d=x.regel.d;moneyCfg.rh_until=x.regel.until}else moneyCfg.rh_regel=null;
+}
+function rhStimmen(n){return `${n} ${n===1?'Stimme':'Stimmen'}`}
+function rhRes(L,small){
+  if(L.how==='allein')return `<div class="rhres"><div class="win"><span>🏅 Sieger</span><span>${esc(L.win.name)}</span></div></div>`;
+  return `<div class="rhres">${L.n.map(x=>`<div${small&&x.id===L.win.id?' class="win"':''}><span>${esc(x.name)}</span><span>${rhStimmen(x.v)}</span></div>`).join('')}</div>${small?'':`<div class="rhres"><div class="win"><span>🏅 Sieger</span><span>${esc(L.win.name)}</span></div></div>`}`;
+}
+/* Kurier: Leiste unter der Ratten-Leiste */
+function rhBanner(){
+  if(!srvRh()||!rhI)return '';
+  const I=rhI, T=I.T, names=a=>a.map(c=>esc(c.name)).join(', ');
+  const row=(l,v)=>`<div class="rhrow"><span>${l}</span><b>${v}</b></div>`;
+  const bar=(inner,btn)=>`<div class="dnbar rh"><div>${inner}</div>${btn||''}</div>`;
+  if(I.phase==='kampf'){
+    const b=I.ich.kand?'<span>✅ Du kandidierst</span>':'<button class="btn sm" data-act="rhkand">Kandidieren</button>';
+    return bar(`<b>🏛️ Bürgermeisterwahl</b>${row('Amtierender Bürgermeister',I.mayor?esc(I.mayor.name)+' 🏅':'noch keiner')}${row('Wahl',`${tagTxt(T.vote)}, 18–21 Uhr`)}${row('Kandidaten',I.cand.length?names(I.cand):'noch keine')}`,b);
+  }
+  const vbtn=list=>I.ich.darf?`<span>${RH_WHY[I.ich.darf]||''}</span>`:list.some(c=>c.id!==me.id)?`<button class="btn sm" data-act="rhvote">${I.my?'🗳️ Umstimmen':'🗳️ Abstimmen'}</button>`:'';
+  if(I.phase==='wahl'){
+    if(!I.cand.length)return bar(`<b>🏛️ Bürgermeisterwahl</b><small>Niemand kandidiert. Nächste Wahl: ${tagTxt(T.vote+7*864e5)}, 18–21 Uhr</small>`);
+    return bar(`<b>🏛️ Wahl läuft</b><small>Heute, ${tagTxt(T.vote)}, bis 21 Uhr</small><span class="cand">Kandidaten: ${names(I.cand)}</span>`,vbtn(I.cand));
+  }
+  if(I.phase==='stich'||I.phase==='stichwarten'){
+    const st=I.stich||[], on=I.phase==='stich';
+    return bar(`<b>🏛️ Gleichstand: Stichwahl!</b><small>${on?`Heute, ${tagTxt(T.s0)}, bis 21 Uhr`:`${tagTxt(T.s0)}, 18–21 Uhr`}</small><span class="cand">${st.map(c=>esc(c.name)).join(' gegen ')}</span>`,on?vbtn(st):'');
+  }
+  if(I.phase==='zaehlen')return bar('<b>🏛️ Die Stimmen werden gezählt</b><small>Das Ergebnis kommt gleich in den Kurier.</small>');
+  const L=I.last;
+  if(!L||L.week!==I.week)return bar(`<b>🏛️ Bürgermeisterwahl</b><small>Diese Woche hat niemand kandidiert. Nächste Wahl: ${tagTxt(T.vote+7*864e5)}, 18–21 Uhr</small>`);
+  const rg=L.regel?`Regel bis ${tagTxt(L.until)}, 21 Uhr: ${regelTxt(L.regel,L.d)}`:L.waehlen?'':'Diese Woche gilt keine Stadtregel.';
+  const how=L.how==='allein'?'<small>Ohne Gegenkandidat.</small>':L.how==='los'?'<small>Wieder Gleichstand, das Los hat entschieden.</small>':'';
+  return bar(`<b>🏛️ Bürgermeisterwahl: Ergebnis</b>${rhRes(L)}${how}${rg?`<small>${rg}</small>`:''}`,L.waehlen?'<button class="btn sm" data-act="rhregel">Regel wählen</button>':'');
+}
+function rhKandHTML(){
+  const I=rhI, l=Math.min(7,myLevel()), k=RH_KOST[l], c=rhKost(), low=me.clean<c;
+  return `<div class="mbox" role="dialog" aria-label="Kandidieren"><div class="mtop"><span></span><h3>🏛️ Kandidieren</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
+    <p class="small muted" style="text-align:center">Als Bürgermeister bestimmst du eine Woche lang eine Stadtregel für alle.</p>
+    <div class="rhkost"><small>Deine Kandidatur · Stufe ${l} ${RUF_TITLE[l-1]}</small><big>${tsd(c)} ✦</big><small>mindestens ${tsd(k[0])} oder ${Math.round(k[1]*100)} % deines sauberen Geldes</small></div>
+    <ul class="list"><li><span>🔐 Das Geld wandert in den Sparkassen-Safe</span></li><li><span>🗳️ ${tagTxt(I.T.vote)}, 18–21 Uhr wird gewählt, die Mehrheit gewinnt</span></li></ul>
+    ${low?`<p class="small muted" style="text-align:center">Zu wenig sauberes Geld: Du hast ${tsd(me.clean)} ✦</p>`:''}
+    <button class="btn wide" style="margin-top:12px" data-act="rhkandgo" ${low||rhBusy?'disabled':''}>Kandidieren · ${tsd(c)}</button>
+    <button class="btn ghost wide" style="margin-top:8px" data-act="close">Abbrechen</button></div>`;
+}
+function rhVoteHTML(){
+  const I=rhI; if(!I)return '';
+  const list=(I.phase==='stich'?I.stich||[]:I.cand).filter(c=>c.id!==me.id);
+  return `<div class="mbox" role="dialog" aria-label="Bürgermeisterwahl"><div class="mtop"><span></span><h3>🏛️ Wer wird Bürgermeister?</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
+    <p class="small muted">Eine Stimme pro Bande, geheim. Für dich selbst kannst du nicht stimmen. Bis 21 Uhr kannst du umstimmen.</p>
+    <div class="choice">${list.map(c=>`<button class="btn ${I.my===c.id?'':'dark'}" data-act="rhv" data-o="${c.id}" ${rhBusy?'disabled':''}>${esc(c.name)}</button>`).join('')}</div>
+    <button class="btn ghost wide" style="margin-top:10px" data-act="rhv" data-o="" ${rhBusy||!I.my?'disabled':''}>Enthalten</button></div>`;
+}
+function rhRegelHTML(){
+  const L=rhI&&rhI.last; if(!L)return '';
+  if(rhPick==='hitze')return `<div class="mbox" role="dialog" aria-label="Stadtregel"><div class="mtop"><span></span><h3>🚨 Welches Viertel?</h3><button class="back" data-act="rhpick" data-k="" aria-label="Zurück">×</button></div>
+    <p class="small muted" style="text-align:center">Dort gibt es eine Woche lang doppelte Hitze für alle.</p>
+    <div class="choice rhd">${D.map(d=>`<button class="btn dark" data-act="rhr" data-k="hitze" data-d="${d.id}" ${rhBusy?'disabled':''}>${esc(d.name)}</button>`).join('')}</div></div>`;
+  return `<div class="mbox" role="dialog" aria-label="Stadtregel"><h3 class="gt">DU BIST BÜRGERMEISTER!</h3><div class="bigico">🏅</div>
+    ${rhRes(L,true)}
+    <p class="small muted" style="text-align:center">Wähle die Regel für die nächste Woche. Sie gilt für alle.</p>
+    <div class="choice">${Object.keys(RH_REGELN).map(k=>`<button class="btn dark" data-act="${k==='hitze'?'rhpick':'rhr'}" data-k="${k}" ${rhBusy?'disabled':''}>${RH_REGELN[k]}</button>`).join('')}</div></div>`;
+}
+function rhRefresh(){const m=document.getElementById('modal');if(!m||m.hidden)return;const h=String(m.innerHTML);
+  if(h.indexOf('aria-label="Bürgermeisterwahl"')>=0)showModal(rhVoteHTML(),true);else if(h.indexOf('aria-label="Stadtregel"')>=0)showModal(rhRegelHTML(),true);else if(h.indexOf('aria-label="Kandidieren"')>=0)showModal(rhKandHTML(),true)}
+async function rhAct(act,body){
+  rhBusy=true; rhRefresh();
+  try{
+    const r=await kampf({act,...(body||{})});
+    if(r&&r.res&&!r.why&&!r.error&&!r.off)return r.res;
+    const w=r&&(r.why||r.error), t=!(r&&r.off)&&RH_WHY[w];
+    if(t)toast(t,'bad');else fightWhy(r);
+    return null;
+  }finally{rhBusy=false;renderHUD()}
+}
+function rhKandOpen(){
+  const I=rhI; if(!I||I.phase!=='kampf')return;
+  if(myLevel()<3){toast(RH_WHY.stufe,'bad');return}
+  if(I.ich.darf){toast(RH_WHY[I.ich.darf]||'','bad');return}
+  showModal(rhKandHTML(),true);
+}
+async function rhKand(){
+  if(rhBusy)return;
+  const x=await rhAct('rh_kand'); closeModal(); if(!x)return dnLoad();
+  toast(`🏛️ Du kandidierst! ${tsd(x.cost)} ✦ sind im Sparkassen-Safe.`,'good'); dnLoad();
+}
+async function rhVote(o){
+  if(rhBusy)return;
+  const x=await rhAct('rh_stimme',{o}); if(!x)return dnLoad();
+  if(rhI)rhI.my=o||null;
+  toast(o?`🗳️ Deine Stimme: ${ownerInfo(o).name}`:'🗳️ Du enthältst dich.','good'); showModal(rhVoteHTML(),true); dirty=true;
+}
+async function rhRegel(k,d){
+  if(rhBusy)return;
+  const x=await rhAct('rh_regel',{k,d:d||''}); if(!x)return dnLoad();
+  rhPick=null; closeModal(); toast(`🏛️ Stadtregel: ${regelTxt(x.k,x.d)}`,'good');
+  await loadMoneyCfg(); dnLoad(); renderHUD();
+}
+/* Neuer Bürgermeister: Regel-Fenster einmal von selbst */
+function rhNotify(){
+  const L=rhI&&rhI.last, m=document.getElementById('modal'); if(!L||!L.waehlen||!m||!m.hidden||pendingRes)return;
+  const key='imperium-rh-'+L.week; if(lsGet(key))return; lsSet(key,'1'); rhPick=null; showModal(rhRegelHTML(),true);
+}
 /* Umbenennen: einmal pro Bande (Banden werden zum Saisonstart gelöscht, also einmal pro Saison) */
 function nameTaken(n){const l=n.toLowerCase();return Object.values(players).some(p=>p.id!==me.id&&p.name.toLowerCase()===l)||Object.values(NPC).some(x=>x.name.toLowerCase()===l)}
 async function renameGang(){
@@ -2740,6 +2878,7 @@ function attackReq(kind,victim){
   const kb=knastBlock(); if(kb)return kb; // ab 5.1
   if(kind==='uebernahme'&&victim&&jailOn(victim)&&jailLost(victim)>=1)return '🚔 Sitzt im Knast und hat schon einen Laden verloren. Mehr gibt es erst, wenn sie draußen ist';
   if(kind==='uebernahme'&&!unlocked('uebernahme')&&!(victim&&isNpc(victim)))return lockTxt('uebernahme'); // ab 5.2.2: KI-Läden ab Stufe 1
+  if(kind==='uebernahme'&&victim&&newbieProt(victim))return '🍼 Neulingsschutz: Übernahme geht nicht'; // Neulingsschutz-Fix: vorher sperren, nicht erst nach dem Minispiel
   if(kind==='hack')return !unlocked('hack')?lockTxt('hack'):me.crew.h>=1?null:'Braucht 1 Hacker';
   // Ab Beta 4.8: Trupp im Auto, pro Gegner nur ein Angriff gleichzeitig
   if(victim&&tripOn(victim))return `Dein Trupp ist schon dort, zurück in ${dur(Math.ceil((+tripOn(victim).until-now())/1000))}`;
@@ -2919,9 +3058,11 @@ function newbieProt(o){if(isNpc(o)||o===me.id)return false;const l=levelOf(o);re
 
 /* Energie: 1 alle 20 Minuten, höchstens 5 (Serien-Bonus darf darüber) */
 const EMAX=5, EN_MS=20*60000;
-function energyNow(){const e=me.energy==null?EMAX:+me.energy,at=+me.energy_at||now();if(e>=EMAX)return e;return Math.min(EMAX,e+Math.floor((now()-at)/enMs()))}
-function energyNext(){const e=energyNow();if(e>=EMAX)return 0;const at=+me.energy_at||now();const used=Math.floor((now()-at)/enMs());return Math.max(1,Math.ceil((at+(used+1)*enMs()-now())/1000))}
-function setEnergy(v){const cur=energyNow(),at=+me.energy_at||now();if(cur<EMAX){const used=Math.floor((now()-at)/enMs());me.energy_at=at+used*enMs()}else me.energy_at=now();me.energy=v;if(v>=EMAX)me.energy_at=now()}
+// ab 5.3: Stadtregel „+1 Energie für alle“ hebt die Obergrenze auf 6
+function emax(){return EMAX+(regelNow()==='energie'?1:0)}
+function energyNow(){const M=emax(),e=me.energy==null?M:+me.energy,at=+me.energy_at||now();if(e>=M)return e;return Math.min(M,e+Math.floor((now()-at)/enMs()))}
+function energyNext(){const e=energyNow();if(e>=emax())return 0;const at=+me.energy_at||now();const used=Math.floor((now()-at)/enMs());return Math.max(1,Math.ceil((at+(used+1)*enMs()-now())/1000))}
+function setEnergy(v){const M=emax(),cur=energyNow(),at=+me.energy_at||now();if(cur<M){const used=Math.floor((now()-at)/enMs());me.energy_at=at+used*enMs()}else me.energy_at=now();me.energy=v;if(v>=M)me.energy_at=now()}
 
 /* Coups an echten Nürnberger Orten. Alle 2 Stunden drei neue (leicht, mittel, schwer) pro Bande. */
 function geoP(lon,lat){return [(lon-10.975)*0.65025*4000,(49.545-lat)*4000]}
@@ -3058,7 +3199,7 @@ function coupModal(){
   else if(coupTab==='lm')body=strip(lmSectHTML());
   else body=strip(heistHTML());
   return `<div class="mbox" role="dialog" aria-label="Coups"><div class="mtop"><span></span><h3>Coups</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
-    <div class="enrow"><b>⚡ ${e} / ${EMAX} Energie</b><span>${e>=EMAX?'voll':`+1 in ${dur(nx)}`}</span></div>
+    <div class="enrow"><b>⚡ ${e} / ${emax()} Energie</b><span>${e>=emax()?'voll':`+1 in ${dur(nx)}`}</span></div>
     ${knastBlock()?`<p class="warn">${knastBlock()} <button class="minib" data-act="knast">Zum Knast</button></p>`:''}
     ${sunMul()>1?`<p class="small">☀️ Sonne über Nürnberg: Coups bringen gerade +20 % Beute.</p>`:''}
     <h4>✅ Tagesziele${d.streak?` · 🔥 ${d.streak} ${d.streak===1?'Tag':'Tage'}`:''}</h4>${goalsMini()}
@@ -5358,16 +5499,16 @@ function viewGeld(){
   return seg+fc+pol;
 }
 function viewFeed(){
-  const kindOf=e=>e.kind==='hack'?'atk':e.kind==='def'?(e.target===me.id?'win':'info'):e.kind==='join'||e.kind==='tip'||e.kind==='paket'||e.kind==='ratte'||e.kind==='ally'||e.kind==='deal'||e.kind==='heistk'?'info':e.kind==='betray'?'atk':e.kind==='smugx'||e.kind==='rache'?(e.target===me.id?'atk':'info'):e.kind==='taunt'?'taunt':e.kind;
+  const kindOf=e=>e.kind==='hack'?'atk':e.kind==='def'?(e.target===me.id?'win':'info'):e.kind==='join'||e.kind==='tip'||e.kind==='paket'||e.kind==='ratte'||e.kind==='wahl'||e.kind==='ally'||e.kind==='deal'||e.kind==='heistk'?'info':e.kind==='betray'?'atk':e.kind==='smugx'||e.kind==='rache'?(e.target===me.id?'atk':'info'):e.kind==='taunt'?'taunt':e.kind;
   const today=(()=>{try{return new Intl.DateTimeFormat('de-DE',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'Europe/Berlin'}).format(now())}catch(e){return ''}})();
-  const top=events.find(e=>['atk','win','cop','hack'].includes(e.kind));
+  const top=events.find(e=>['atk','win','cop','hack','wahl'].includes(e.kind)); // ab 5.3: Wahl als Schlagzeile
   const ftabs=`<div class="seg ftabs"><button data-act="ftab" data-k="news" class="${ui.feedTab!=='funk'?'on':''}">📰 Zeitung</button><button data-act="ftab" data-k="funk" class="${ui.feedTab==='funk'?'on':''}">📻 Funk${(()=>{const n=dmUnread()+unreadOf('city');return n?` <b class="nb">${n>9?'9+':n}</b>`:''})()}</button></div>`;
   if(ui.feedTab==='funk'){markRead(ui.chan||'city');return ftabs.replace(/ <b class="nb">[^<]*<\/b>/,(()=>{const n=dmUnread()+unreadOf('city');return n?` <b class="nb">${n>9?'9+':n}</b>`:''})())+funkHTML()}
   const item=e=>{const mine=e.target===me.id&&e.actor!==me.id&&(e.kind==='atk'||e.kind==='hack');
     return `<li class="fe ${mine?'atk':kindOf(e)} ${e.actor&&ownerInfo(e.actor)?'hasav':''}">${e.actor&&ownerInfo(e.actor)?`<span class="fav tap" data-act="gang" data-o="${e.actor}">${portrait(e.actor,34)}</span>`:''}<time>${ago(+e.ts)}</time><p>${esc(e.txt)}</p>${mine&&e.actor&&!revDone.has(e.id)?`<div><button class="btn pink sm" data-act="rev" data-id="${e.id}">🔥 Rache an ${esc(ownerInfo(e.actor).name)}</button></div>`:''}${reactBar(e)}</li>`};
   return ftabs+`<section class="paper"><div class="mast">NÜRNBERGER<br>UNTERGRUND-KURIER</div><div class="dateline"><span>${today}</span><span>Preis: 1 Bratwurst</span></div>
     ${top?`<div class="headline"><small>Schlagzeile</small><h3>${esc(top.txt)}</h3><span>${ago(+top.ts)}</span>${reactBar(top)}</div>`:'<div class="headline"><h3>Ruhige Nacht in Nürnberg. Verdächtig ruhig.</h3></div>'}</section>
-  ${ratBanner()}
+  ${ratBanner()}${rhBanner()}
   ${events.length?`<ul class="feed">${events.filter(e=>e!==top&&!HIDE_EV.has(e.kind)).map(item).join('')}</ul>`:`<p class="muted" style="text-align:center">Noch ruhig in der Stadt. Das bleibt nicht lange so.</p>`}`;
 }
 const revDone=new Set();
@@ -5523,6 +5664,13 @@ document.addEventListener('click',e=>{
     case 'pkpol':paketGo(a.dataset.id,true);return;
     case 'rvoteopen':showModal(voteHTML());return;
     case 'rvote':ratVote(a.dataset.o);return;
+    case 'rhkand':rhKandOpen();return; // ab 5.3: Rathaus
+    case 'rhkandgo':rhKand();return;
+    case 'rhvote':showModal(rhVoteHTML(),true);return;
+    case 'rhv':rhVote(a.dataset.o||'');return;
+    case 'rhregel':rhPick=null;showModal(rhRegelHTML(),true);return;
+    case 'rhpick':rhPick=a.dataset.k||null;showModal(rhRegelHTML(),true);return;
+    case 'rhr':rhRegel(a.dataset.k,a.dataset.d);return;
     case 'coups':showModal(coupModal());return;
     case 'couptab':coupTab=a.dataset.t;showModal(coupModal(),true);return;
     case 'knast':showModal(knastModal());return;
@@ -5696,7 +5844,7 @@ function doReload(){
 }
 
 /* ---------- Menü, Anleitung, FAQ, Versionsverlauf ---------- */
-const CURRENT_VERSION='Beta 5.2.4.4', SEEN_KEY='imperium-seen-version';
+const CURRENT_VERSION='Beta 5.3', SEEN_KEY='imperium-seen-version';
 /* ---------- Ab Beta 5.0 „Wahrzeichen“: drei gleichzeitig, Kaiserburg und Plärrer fest, das dritte wechselt sonntags um 20 Uhr ----------
    Erobert wird nur über die Datenbank-Funktion landmark_attack (der Server würfelt, feste Verteidigung 10, Türsteher zählen nicht).
    Tabelle landmarks: {id, district, pos, active, owner, since, shield_until}, owner null = Stadtwache. */
@@ -5731,7 +5879,7 @@ function lmDName(l){return (DM[l.d]&&DM[l.d].name)||(GEO[l.d]&&GEO[l.d].name)||l
 function ubBonus(did){return me&&UBAHN.has(did)&&holds(me.id,'plaerrer')?1:0}
 function lmBon(o,type){let m=1;lmOn().forEach(l=>{if(l.type&&l.type[type]&&holds(o,l.id))m*=l.type[type]});return m}
 function enMs(){return me&&holds(me.id,'bratwurst')?EN_MS/1.2:EN_MS}
-function washFee(){return me&&holds(me.id,'flughafen')?.05:.1}
+function washFee(){return me&&holds(me.id,'flughafen')||regelNow()==='wasch'?.05:.1} // ab 5.3 auch Stadtregel
 function lmChance(id,n){const l=LMM[id],a=atkPow(n)+ubBonus(l.d);return clamp(a/(a+LM_DEF),.05,.95)}
 const LM_WHY={level:'Wahrzeichen gibt es ab Stufe 3.',inactive:'Dieses Wahrzeichen ist diese Woche nicht umkämpft.',mine:'Das gehört schon dir.',one:'Pro Bande nur ein Wahrzeichen.',shield:'Gerade erst erobert: Schonzeit läuft noch.',ally:'🤝 Das hält dein Spezl.',crew:'Zu wenig Schläger daheim.',player:'Deine Bande wurde nicht gefunden.'};
 function lmBlock(id){
@@ -5834,6 +5982,13 @@ function dayPhase(t){t=t||now();const s=sunTimes(t),D=40*60000;if(t>s.rise+D&&t<
 function applyPhase(){const svg=document.getElementById('mapsvg'),box=document.getElementById('mapbox');if(!svg)return;const p=dayPhase();['day','dusk','night'].forEach(k=>{svg.classList.toggle(k,k===p);if(box)box.classList.toggle(k,k===p)})}
 
 const VERSIONS=[
+  {v:'Beta 5.3',date:'13.10.2026',title:'Rathaus',items:[
+    '🏛️ Bürgermeisterwahl: Ab Stufe 3 kannst du kandidieren. Mittwoch 18 bis 21 Uhr wählen alle Banden, die Mehrheit gewinnt',
+    '🗳️ Eine Stimme pro Bande, geheim. Bei Gleichstand gibt es am Donnerstag eine Stichwahl',
+    '📜 Der Bürgermeister bestimmt eine Woche lang eine Stadtregel für alle und trägt 🏅 am Namen',
+    '📰 Alles zur Wahl steht im Kurier unter der Ratten-Leiste',
+    '🐀 Ratten-Leiste mit Wochentag und Datum',
+    '🍼 Neulingsschutz: Übernahme ist jetzt gleich gesperrt']},
   {v:'Beta 5.2.4.4',date:'13.10.2026',title:'Coups aufgeräumt',items:[
     '🎯 Coups-Fenster aufgeräumt: Tagesziele stehen oben, Coups, Wahrzeichen und Großcoups haben eigene Reiter',
     '✅ Am Coups-Knopf siehst du, wie viele Tagesziele du heute schon geschafft hast']},
@@ -6172,6 +6327,7 @@ const GUIDE=[
   ['📞 Anonymer Tipp','Im 💻 Darknet einer anderen Bande hetzt du ihr die Polizei auf den Hals: ihre Hitze +15, höchstens bis 99. Kostet BratCoin im Wert von 2.500, einmal am Tag. Mit 20 % Chance fliegst du selbst auf: +10 Hitze für dich, und der Kurier nennt deinen Namen. Nicht gegen Spezln und Banden mit Neulingsschutz.','pol'],
   ['💻 Darknet','Ab Stufe 3 (Kiezbande). Tipp auf eine andere Bande, dann auf 💻 Darknet. Dort gibt es 📞 Anonymer Tipp (BratCoin im Wert von 2.500), 🗞️ Gerücht (Wert 1.500), 📦 Paket (Wert 2.000) und 💰 Kopfgeld (sauberes Geld). Jeder Dienst geht einmal am Tag, ausgegebene Coins sind weg. Keine Coins? „+ Coins kaufen“ bringt dich direkt zum BratCoin. 🗞️ Gerücht: Du wählst einen von sechs Sätzen über die Bande, er steht im Kurier, wahr oder erfunden. Mit 20 % Chance steht dein Name dabei. 📦 Paket: Lebkuchen mit 1.000, 2.500 oder 5.000 deines sauberen Gelds (nur zwischen Banden ab 7 Tagen) oder eine Stinkbombe (einer ihrer Läden verliert die Einnahmen einer Stunde). Die Bande sieht nicht, was drin ist und von wem es kommt. Gibt sie es bei der Polizei ab, sind die Lebkuchen weg, und bei einer Stinkbombe fliegt der Absender auf (+15 Hitze).','pol'],
   ['🐀 Die Ratte','Jeden Montag ab 8 Uhr wird heimlich eine aktive Bande ab Stufe 3 zur Ratte, nie zweimal hintereinander und nur, wenn mindestens 3 Banden mitspielen. Nur sie selbst erfährt es. Sie hat 3 Sabotagen: 🚪 Türsteher bestechen (2 Std. einer weniger), 🎯 Coup platzen lassen (der nächste Coup einer Bande platzt) und 💩 Stinkbombe. Der Kurier meldet jede Sabotage 2 bis 6 Stunden später, nur mit Viertel und Wochentag. Sonntag von 18 bis 20 Uhr stimmen alle Banden ab, die mindestens 7 Tage dabei sind und an 3 Tagen gespielt haben (Leiste im Kurier). Hat die Ratte allein die meisten Stimmen, ist sie erwischt. Wer richtig getippt hat, bekommt 10.000 sauber. Kommt sie durch, bekommt sie 25.000 sauber und eine Woche 🐀 am Namen.','stadt'],
+  ['🏛️ Rathaus','Jede Woche wird ein Bürgermeister gewählt. Kandidieren kann jede Bande ab Stufe 3 bis Mittwoch 18 Uhr (Leiste im Kurier). Das kostet den Mindestbetrag deiner Stufe oder einen Anteil deines sauberen Geldes, was höher ist: Stufe 3 20.000 oder 5 %, Stufe 4 50.000 oder 7 %, Stufe 5 100.000 oder 10 %, Stufe 6 200.000 oder 12 %, Stufe 7 400.000 oder 15 %. Das Geld wandert in den Sparkassen-Safe. Mittwoch von 18 bis 21 Uhr wählen alle Banden, die mindestens 7 Tage dabei sind und an 3 Tagen gespielt haben: eine Stimme pro Bande, geheim, nicht für sich selbst, Enthalten geht auch, umstimmen bis 21 Uhr. Die Mehrheit gewinnt. Bei Gleichstand gibt es Donnerstag 18 bis 21 Uhr eine Stichwahl, danach entscheidet das Los. Der Bürgermeister trägt eine Woche 🏅 am Namen und wählt bis zum nächsten Mittag eine Stadtregel, die für alle bis zum nächsten Wahlergebnis gilt: ⚡ +1 Energie (6 statt 5), 🎯 Kopfgelder doppelt (wer es setzt, zahlt normal), 🧼 Wäsche 5 statt 10 % oder 🚨 doppelte Hitze in einem Viertel seiner Wahl.','stadt'],
   ['🪙 BratCoin','BratCoin kaufst du mit Bargeld und verkaufst ihn gegen sauberes Geld (12 % Gebühr beim Kauf, 2 % beim Verkauf). Der Kurs ist für alle gleich und wird von den Spielern gemacht: Jede 10.000 Kauf treibt ihn um 1 % hoch, Verkäufe drücken ihn, höchstens 5 % pro Geschäft. Du zahlst immer den Kurs vor deinem eigenen Geschäft. Nachrichten im Kurier bewegen ihn um 8 bis 20 %, eine große Razzia drückt ihn um 3 %, ruhige Stunden ohne Überfälle heben ihn ein wenig. Alles zusammen wirkt höchstens ±20 % und klingt alle 6 Stunden zur Hälfte ab, dazu schwankt er leicht von selbst. Vorsicht: Hacker klauen 12 % deiner Coins, Razzien 20 bis 40 %. Geschäfte ab 20.000 meldet der Kurier mit Namen.','geld'],
   ['🥃 Ware & Lager','Brennerei (🥃 Fusel, etwas Hitze) und Schrottplatz (🔩 Teile) baust du ab Stufe 2 (Eckbande). Sie füllen sich wie eine Kasse: 4 pro Stunde, mit jeder Stufe mehr, nach 3 Stunden voll. Abholen geht mit „Kassieren“ auf der Karte. Die Ware liegt dann im Lager (Crew-Tab → 📦 Lager). Dort verkaufst du sie jederzeit an den Hehler (600 pro Fusel, 500 pro Teil) oder baust Ausrüstung daraus. Ein gelungener Überfall auf dich raubt 20 % vom Lager, die Polizei lässt es in Ruhe.','geld'],
   ['🧰 Ausrüstung','Ab Stufe 3 (Kiezbande) baust du im Lager Ausrüstung aus Ware. 🗝️ Dietrich (3 Teile): Beim nächsten Überfall auf einen Laden mit Sicherung zählen Stahltür, Kamera und Tresor nicht. 🦺 Schutzweste (2 Teile, 1 Fusel): Der nächste Überfall auf dich trifft auf 20 % mehr Verteidigung. 🚀 Nitro (2 Teile, 3 Fusel): Schaltest du es im Angriffsfenster an, macht dieser Überfall oder diese Übernahme keine Hitze, und dein Trupp ist sofort zurück. Ohne Schalter bleibt es im Lager. Dietrich und Schutzweste wirken von selbst. Von jeder Sorte hast du höchstens 3. Wie viele du hast, steht im Lager und im Angriffsfenster; nach jedem Angriff siehst du, was verbraucht wurde und was übrig ist. Bei Übernahme und Hack hilft der Dietrich nicht. Bricht ein Angriff ab, bekommst du die Ausrüstung zurück. Etwa jeder 5. gelungene Coup bringt welche mit.','kampf'],
@@ -6265,6 +6421,8 @@ const FAQ=[
   ['Ich habe ein Paket bekommen. Aufmachen?','Drin sind Lebkuchen mit sauberem Geld oder eine Stinkbombe, von außen sieht man es nicht. Aufmachen: Lebkuchen bringen das Geld, eine Stinkbombe kostet einen deiner Läden die Einnahmen einer Stunde. Bei der Polizei abgeben: Lebkuchen sind weg, bei einer Stinkbombe kennt die ganze Stadt den Absender. Wartende Pakete stehen oben im Kurier.','pol'],
   ['Wie finde ich die Ratte?','Lies den Kurier: Jede Sabotage steht dort mit Viertel und Wochentag, aber erst 2 bis 6 Stunden später. Wer hat dort Läden, wer war da unterwegs, wer hat einen Grund? Sonntag 18 bis 20 Uhr tippst du im Kurier auf 🗳️ Abstimmen. Liegst du richtig, bekommst du 10.000 sauber, auch wenn die anderen falsch liegen.','stadt'],
   ['Bin ich diese Woche die Ratte?','Das erfährt nur deine Bande: Sobald du das Spiel öffnest, zeigt es dir ein Fenster, und im 💻 Darknet jeder anderen Bande steht der Knopf 🐀 Sabotage. Sonst bist du es nicht.','stadt'],
+  ['Wie werde ich Bürgermeister?','Ab Stufe 3 im Kurier auf „Kandidieren“ tippen, spätestens Mittwoch 18 Uhr. Dann von 18 bis 21 Uhr möglichst viele Banden überzeugen, für dich zu stimmen. Die Mehrheit gewinnt.','stadt'],
+  ['Was bringt der Bürgermeister?','Eine Woche 🏅 am Namen und eine Stadtregel nach seiner Wahl. Sie gilt für alle gleich, auch für ihn selbst, bis zum nächsten Wahlergebnis.','stadt'],
   ['Wie bekomme ich ein Kopfgeld?','Raub eine Bande mit Kopfgeld erfolgreich aus oder übernimm einen ihrer Läden. Das ganze Kopfgeld landet sofort als sauberes Geld bei dir. Ein Hack zählt nicht.','kampf'],
   ['Kann mich mein Spezl angreifen?','Nein, solange das Bündnis läuft, auch nicht in den 24 Stunden nach dem Auflösen. Nur wer verrät, darf sofort wieder angreifen und trägt dafür 7 Tage die 🐍 Schlange.','stadt'],
   ['Warum kann ich meinem Spezl noch kein Geld schicken?','Geld schicken geht erst, wenn das Bündnis einen Tag alt ist und beide Banden mindestens 7 Tage dabei sind. Dann höchstens 20.000 am Tag, 20 % davon behält der Geldbote. Angebote mit Ware gehen auch ohne Bündnis, aber ebenfalls erst ab 7 Tagen.','geld'],
@@ -6312,7 +6470,7 @@ const CHAPTERS=[
   {id:'akt',ico:'🎯',name:'Aktionen',sub:'Coups, Safe, Großcoups, Tagesziele, Transporter, Schmuggel',order:['🎯 Coups','🔢 Sparkassen-Safe','💰 Großcoups','🛷 Lebkuchen-Schmuggel','✅ Tagesziele & ⭐ Ruf','🚚 Geldtransporter','🍺 Feierabend-Coup','📦 Bestellungen']},
   {id:'kampf',ico:'👊',name:'Kampf',sub:'Angreifen, Duell, Ausrüstung, Kopfgeld',order:['👊 Angreifen','🚨 Überfall als Duell','🥊 Hilfe im Duell','🚪 Türsteher & Sicherung','🚗 Autos & Trupp','🧰 Ausrüstung','💰 Kopfgeld','🎯 Spitzenreiter-Prämie','🏴 Zielscheibe','⚔️ Revanche','👑 Viertel kontrollieren']},
   {id:'pol',ico:'🚨',name:'Polizei',sub:'Hitze, Razzien, Knast, Darknet',order:['🚨 Polizei-Hitze','🚔 Knast','💻 Darknet','📞 Anonymer Tipp']},
-  {id:'stadt',ico:'🏴',name:'Banden & Stadt',sub:'Live-Stadt, Spieltag, Wetter, Bündnis, Boss, Ratte, Fürther, Kurier',order:['🟢 Live-Stadt','⚽ Club-Spieltag','🌧️ Wetter','🤝 Bündnis','🎩 Boss','🏆 Boss der Woche','🐀 Die Ratte','🍀 Die Fürther kommen','🎄 Feste','🏴 Banden','📰 Kurier','📻 Stadtfunk','📻 Funkgerät & Mitteilungen']}];
+  {id:'stadt',ico:'🏴',name:'Banden & Stadt',sub:'Live-Stadt, Spieltag, Wetter, Bündnis, Boss, Ratte, Rathaus, Fürther, Kurier',order:['🟢 Live-Stadt','⚽ Club-Spieltag','🌧️ Wetter','🤝 Bündnis','🎩 Boss','🏆 Boss der Woche','🐀 Die Ratte','🏛️ Rathaus','🍀 Die Fürther kommen','🎄 Feste','🏴 Banden','📰 Kurier','📻 Stadtfunk','📻 Funkgerät & Mitteilungen']}];
 function chTiles(act,list){return `<div class="chtiles">${CHAPTERS.map(c=>{const n=list.filter(x=>x[2]===c.id).length;return `<button class="cht" data-act="${act}" data-k="${c.id}"><span>${c.ico}</span><b>${c.name}</b><small>${act==='fch'?n+' Fragen':c.sub}</small></button>`}).join('')}</div>`}
 function chHead(title,back){return `<div class="mtop"><button class="back" data-act="${back}" aria-label="Zurück zur Übersicht">‹</button><h3>${title}</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>`}
 function showGuide(ch){
@@ -6573,6 +6731,7 @@ function onNewEvent(e){
     if(e.kind==='paket'&&e.target===me.id){toast('📦 Ein Paket für dich! Absender unbekannt.','ev');dnLoad()}
     if(e.kind==='ratte'||(e.kind==='info'&&/^🐀/.test(e.txt||'')))dnLoad();
   }
+  if(e.kind==='wahl'||(e.kind==='info'&&/^🏛️/.test(e.txt||''))){loadMoneyCfg().then(()=>{dnLoad();renderHUD()});if(e.kind==='wahl'&&e.actor!==me.id)toast(e.txt,'ev')} // ab 5.3: Rathaus
   if(e.kind==='tip'&&e.target===me.id){applyTips().then(()=>{savePlayer();renderHUD()})}
   if(e.target===me.id&&(e.kind==='hack'||lootOf(e)))applyHacks().then(()=>{savePlayer();dirty=true});
   if(e.target===me.id&&e.actor!==me.id){
