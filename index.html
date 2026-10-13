@@ -773,7 +773,7 @@ button.car{cursor:pointer;touch-action:manipulation}
 .actbar .coupbtn .btn,.actbar .collectbtn .btn{border:3px solid var(--ink);border-radius:12px}
 .actbar .btn.violet{order:1;flex:none;padding:0 14px}
 .actbar .btn.safe{order:2;flex:none;width:72px;background:var(--teal);color:var(--ink);flex-direction:column;gap:0;padding:0 4px}
-.actbar .btn.safe .n{background:none;padding:0;font-size:11.5px;line-height:13px}
+.actbar .btn.safe .n{background:none;padding:0;font-size:11.5px;line-height:13px}.btn.safe.zu{background:#7f8bb5}.btn.safe.zu .n{color:#11132a;opacity:.85}
 .actbar .collectbtn .btn{order:3;flex:1}
 .actbar .collectbtn:empty~.coupbtn .btn.violet{flex:1}
 .actbar .btn .n{flex:none}
@@ -796,7 +796,7 @@ button.car{cursor:pointer;touch-action:manipulation}
 .kline{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0 6px;padding:8px 10px;background:var(--heat);color:var(--ink);border:2px solid var(--ink);border-radius:10px;box-shadow:2px 2px 0 var(--ink)}
 .kline span{font-size:12.5px;font-weight:600}
 .safebox .sdoor{display:grid;gap:10px;justify-items:center;margin:4px 0 10px;padding:14px 12px;border:4px solid var(--ink);border-radius:16px;background:radial-gradient(circle at 50% 40%,#5d6396,#373c74 70%);box-shadow:3px 3px 0 var(--ink)}
-.safebox .spot{display:grid;justify-items:center;line-height:1.15}.safebox .spot small{color:var(--muted);font-size:12px}.safebox .spot b{font-family:var(--f-display);font-size:30px;letter-spacing:.5px}.safebox .spot span{font-size:12px;color:var(--muted)}
+.safebox .spot{display:grid;justify-items:center;line-height:1.15}.safebox .spot small{color:var(--muted);font-size:12px}.safebox .spot b{font-family:var(--f-display);font-size:30px;letter-spacing:.5px}.safebox .spot span{font-size:12px;color:var(--muted)}.safebox .spot .snew{font-style:normal;font-size:12px;margin-top:6px;padding:3px 10px;border:2px solid var(--ink,#11132a);border-radius:999px;background:rgba(91,230,180,.14);text-align:center}.safebox .spot .snew b{font-family:inherit;font-size:12px;letter-spacing:0;color:var(--clean,#5be6b4)}
 .safebox .scode{display:flex;gap:8px}
 .safebox .scode i{font-style:normal;width:44px;height:54px;display:grid;place-items:center;border:3px solid var(--ink);border-radius:10px;background:var(--night);color:var(--faint);font-family:var(--f-display);font-size:30px;box-shadow:2px 2px 0 var(--ink)}
 .safebox .scode i.known{background:var(--yellow);color:var(--ink)}
@@ -2073,8 +2073,9 @@ const SAFE_ICO='<svg class="sico" viewBox="0 0 40 40" width="22" height="22" ari
 function safeBtn(){
   if(!me||!srvMoney())return '';
   if(!safeInfo&&now()-safeAt>30000){safeAt=now();loadSafe()}
-  const s=safeInfo; return `<button class="btn sm safe" data-act="safe" aria-label="Sparkassen-Safe">${SAFE_ICO}<span class="n">${s?(s.winner?'✓':dots(s.pot)):'Safe'}</span></button>`;
+  const s=safeInfo; return `<button class="btn sm safe${s&&s.winner?' zu':''}" data-act="safe" aria-label="Sparkassen-Safe">${SAFE_ICO}<span class="n">${s?(s.winner?'🔒 '+kShort(safeNew(s)):dots(s.pot)):'Safe'}</span></button>`;
 }
+function safeNew(s){return s&&s.winner?Math.max(0,Math.round((+s.pot||0)-(+s.won||0))):0} // nach dem Knacken weiter eingezahlt, kommt Sonntag in den neuen Safe
 function safeBlock(){
   const s=safeInfo; if(!s)return 'Der Safe lädt noch';
   if(s.winner)return 'Geknackt. Sonntag um 20 Uhr steht ein neuer Safe da';
@@ -2089,7 +2090,7 @@ function safeModal(){
   const bl=safeBlock(), left=Math.max(0,Math.ceil((+s.ends-now())/1000)), when=left>86400?'Sonntag um 20 Uhr':'in '+dur(left);
   const win=s.winner?ownerInfo(s.winner):null;
   return `<div class="mbox safebox" role="dialog" aria-label="Sparkassen-Safe"><div class="mtop"><span></span><h3>Sparkassen-Safe</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
-    <div class="sdoor"><div class="spot"><small>${s.winner?'Geknackt von':'Im Safe'}</small><b class="${s.winner?'':'c-clean'}">${s.winner?esc(win?win.name:'?'):dots(s.pot)+' ✦'}</b><span>${s.winner?`Beute ${dots(s.won)} ✦ · neuer Safe ${when}`:`neuer Code ${when}`}</span></div>
+    <div class="sdoor"><div class="spot"><small>${s.winner?'Geknackt von':'Im Safe'}</small><b class="${s.winner?'':'c-clean'}">${s.winner?esc(win?win.name:'?'):dots(s.pot)+' ✦'}</b><span>${s.winner?`Beute ${dots(s.won)} ✦ · neuer Safe ${when}`:`neuer Code ${when}`}</span>${safeNew(s)>0?`<em class="snew">💰 Schon wieder <b>${dots(safeNew(s))} ✦</b> drin. Die kommen in den neuen Safe.</em>`:''}</div>
       <div class="scode">${[1,2,3,4].map(i=>`<i class="${H[i]!=null?'known':''}">${H[i]!=null?H[i]:'?'}</i>`).join('')}</div></div>
     ${s.winner?'':`<input id="safein" class="inp safein" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="4 Ziffern" value="${[1,2,3,4].every(i=>H[i]!=null)?[1,2,3,4].map(i=>H[i]).join(''):''}" ${bl?'disabled':''}>
     <button class="btn wide" data-act="safetry" ${bl?'disabled':''}>🔢 Knacken<span class="sub">${bl||'Ein Versuch pro Tag. Der Kurier zeigt, welche Stellen gepasst haben.'}</span></button>`}
@@ -5649,7 +5650,7 @@ function doReload(){
 }
 
 /* ---------- Menü, Anleitung, FAQ, Versionsverlauf ---------- */
-const CURRENT_VERSION='Beta 5.2.4', SEEN_KEY='imperium-seen-version';
+const CURRENT_VERSION='Beta 5.2.4.1', SEEN_KEY='imperium-seen-version';
 /* ---------- Ab Beta 5.0 „Wahrzeichen“: drei gleichzeitig, Kaiserburg und Plärrer fest, das dritte wechselt sonntags um 20 Uhr ----------
    Erobert wird nur über die Datenbank-Funktion landmark_attack (der Server würfelt, feste Verteidigung 10, Türsteher zählen nicht).
    Tabelle landmarks: {id, district, pos, active, owner, since, shield_until}, owner null = Stadtwache. */
@@ -5787,6 +5788,8 @@ function dayPhase(t){t=t||now();const s=sunTimes(t),D=40*60000;if(t>s.rise+D&&t<
 function applyPhase(){const svg=document.getElementById('mapsvg'),box=document.getElementById('mapbox');if(!svg)return;const p=dayPhase();['day','dusk','night'].forEach(k=>{svg.classList.toggle(k,k===p);if(box)box.classList.toggle(k,k===p)})}
 
 const VERSIONS=[
+  {v:'Beta 5.2.4.1',date:'13.10.2026',title:'Safe zu bis Sonntag',items:[
+    '🔢 Geknackter Safe: Der Knopf wird grau mit Schloss und zeigt, wie viel schon wieder für den neuen Safe drin ist']},
   {v:'Beta 5.2.4',date:'13.10.2026',title:'Rache der KI',items:[
     '⚔️ Rache der KI: Wer KI-Banden oft überfällt oder ihnen Läden abnimmt, muss abends mit ihrer Rache rechnen. Der Kurier warnt dich vorher',
     '🛡️ Wehrst du die Rache ab, gibt es Ruf',
@@ -6081,7 +6084,7 @@ function stufenHTML(){
 const GUIDE=[
   ['🍀 Die Fürther kommen','Jeden Samstag um 20 Uhr greift die Kleeblatt-Gang aus Fürth an, 30 Minuten lang, in den 5 Vierteln, die Fürth am nächsten liegen. Um 19:45 und 20 Uhr kommt eine Mitteilung, oben auf der Karte zeigt ein Banner die Viertel und die Zeit. Tipp auf ein Viertel und auf 🛡️ Verteidigen: Im Minispiel verjagt jeder Treffer einen Fürther, egal wem das Viertel gehört. Nach jeder Runde 1 Min. Pause. In Viertel, die noch nicht frei sind, kommen alle 5 Minuten Fürther nach. Ein Viertel ohne Fürther ist gehalten. Hält Nürnberg am Ende 3 von 5, bekommt jede Bande, die mitverteidigt hat, 50 Ruf, die beste steht im Kurier. Sonst lacht Fürth im Kurier, mehr passiert nicht. Je mehr Banden mitspielen, desto mehr Fürther kommen. Das Minispiel wechselt jede Woche. Fürther Invaders: Zieh die Bratwurstbude hin und her, sie schießt von allein, die U1 oben bringt +3. Fürther raus!: Tipp die Fürther in den Fenstern weg, die Oma kostet 2. Kleeblatt-Ninja: Wisch durch die Fürther, ein Kleeblatt bringt +2, ein zerschnittener Lebkuchen kostet 2.','stadt'],
   ['🎓 Erste Schritte','Neue Banden sehen auf der Karte „Erste Schritte“: fünf kleine Aufgaben, jede mit 1.000 Bargeld und ⭐ 20 Ruf, alle zusammen mit 3.000 und ⚡ 2 obendrauf.','start'],
-  ['🔢 Sparkassen-Safe','Neben den Coups unten links sitzt der 🔢 Safe. Jeden Sonntag um 20 Uhr steht ein neuer Safe mit einem Code aus 4 Ziffern da. Er startet mit 10.000 und wächst mit 10 % aller Wäsche-Gebühren und Bestechungen in der Stadt, dazu Kaution und Richter-Schmiergeld. Jede Bande hat einen Versuch pro Tag (nicht aus dem Knast). Danach steht im Kurier, welche Stellen gepasst haben, etwa „4-7-?-?“, das sehen alle. Hinweise („Stelle 2 ist eine 7“) fallen mit etwas Glück bei Coups und Überfällen ab, und im Knast verrät der Zellennachbar eine Ziffer. Wer den Code knackt, bekommt den ganzen Topf als sauberes Geld, alle bekommen Bescheid. Knackt ihn bis Sonntag 20 Uhr niemand, verrät der Kurier den Code und das Geld wandert in den neuen Safe.','akt'],
+  ['🔢 Sparkassen-Safe','Neben den Coups unten links sitzt der 🔢 Safe. Jeden Sonntag um 20 Uhr steht ein neuer Safe mit einem Code aus 4 Ziffern da. Er startet mit 10.000 und wächst mit 10 % aller Wäsche-Gebühren und Bestechungen in der Stadt, dazu Kaution und Richter-Schmiergeld. Jede Bande hat einen Versuch pro Tag (nicht aus dem Knast). Danach steht im Kurier, welche Stellen gepasst haben, etwa „4-7-?-?“, das sehen alle. Hinweise („Stelle 2 ist eine 7“) fallen mit etwas Glück bei Coups und Überfällen ab, und im Knast verrät der Zellennachbar eine Ziffer. Wer den Code knackt, bekommt den ganzen Topf als sauberes Geld, alle bekommen Bescheid. Dann ist der Knopf grau mit 🔒 bis Sonntag 20 Uhr. Was bis dahin wieder hineinfließt, steht daneben und kommt in den neuen Safe. Knackt ihn bis Sonntag 20 Uhr niemand, verrät der Kurier den Code und das Geld wandert in den neuen Safe.','akt'],
   ['🎯 Coups','Tipp auf 🎯 auf der Karte, auf „Coups“ unten links oder auf ⚡ oben. Alle 2 Stunden gibt es drei neue Coups: leicht (⚡1), mittel (⚡2) und schwer (⚡3). Im Minispiel blinken Alarm-Lichter, die du nachtippst. Jede Runde kommt ein Licht dazu, das ergibt bis zu 3 Treffer. Bei leichten Coups brauchst du einen Treffer, bei mittleren und schweren zwei. Leichte Coups kannst du auch „schnell erledigen“, das zählt wie 2 Treffer. Gelingt der Coup, gibt es Bargeld und Ruf, manchmal einen Glücksfund. Coups machen etwas Hitze. Energie lädt sich alle 20 Minuten um 1 auf, höchstens 5.','akt'],
   ['✅ Tagesziele & ⭐ Ruf','Jeden Tag gibt es drei Ziele: zwei wie Coups machen, kassieren oder waschen und eins mit Mitspielern, also einen Überfall auf eine echte Bande gewinnen, auf Kurier-Meldungen anderer Banden reagieren oder nach einem Kampf einen Spruch hinterlassen. Jedes bringt Bargeld und Ruf, alle drei zusammen Bonus-Ruf, 2 Energie und verlängern deine Serie. Ruf bekommst du auch fürs Bauen und für gewonnene Angriffe. Mit jeder Stufe wird etwas freigeschaltet, siehe ⭐ Stufen.','akt'],
   ['⭐ Stufen',stufenHTML(),'start'],
@@ -6169,7 +6172,7 @@ const FAQ=[
   ['Kann ich alles verlieren?','Nein. Dein letztes Geschäft kann dir niemand per Übernahme abnehmen, und du kannst es auch nicht abreißen, nur umbauen. Geld und Läden kannst du aber durch Überfälle, Übernahmen und Razzien verlieren.','start'],
   ['Ich sitze im Knast. Was jetzt?','Tipp oben auf der Karte auf 🚔 KNAST. Du kannst einmal ausbrechen (Minispiel, klappt es, bist du sofort frei, sonst 30 Minuten länger) oder Kaution zahlen: 10 % deines Geldes, mindestens 1.000. Hast du einen Spezl, bekommt er eine Mitteilung und kann für dich zahlen. Oder du sitzt die 2 Stunden ab und wirtschaftest so lange weiter. Mehr als einen Laden kann dir in der Zeit niemand abnehmen.','pol'],
   ['Kann ich nur durch Läden in den Knast kommen?','Nein. Läden heizen höchstens bis 80. In den Knast bringen dich nur Angriffe und anonyme Tipps, die dich über 80 treiben. Wer nur baut, bekommt Kontrollen und Viertel-Razzien, aber nie die große Razzia.','pol'],
-  ['Wie knacke ich den Safe?','Tipp unten links neben den Coups auf 🔢. Gib 4 Ziffern ein, einmal am Tag. Was gepasst hat, steht danach im Kurier, auch für alle anderen. Hinweise bekommst du mit Glück bei Coups und Überfällen und im Knast vom Zellennachbarn. Jeden Sonntag um 20 Uhr gibt es einen neuen Code.','akt'],
+  ['Wie knacke ich den Safe?','Tipp unten links neben den Coups auf 🔢. Gib 4 Ziffern ein, einmal am Tag. Was gepasst hat, steht danach im Kurier, auch für alle anderen. Hinweise bekommst du mit Glück bei Coups und Überfällen und im Knast vom Zellennachbarn. Jeden Sonntag um 20 Uhr gibt es einen neuen Code. Ist der Knopf grau mit 🔒, hat ihn schon jemand geknackt. Dann heißt es warten bis Sonntag, das Geld daneben liegt dann im neuen Safe.','akt'],
   ['Was passiert, während ich offline bin?','Die Stadt läuft weiter: Kassen füllen sich, Geld wird gewaschen, Löhne laufen, und andere Banden können dich angreifen. Von der Polizei gibt es während deiner Abwesenheit höchstens ein Ereignis und nie die große Razzia. Beim nächsten Öffnen siehst du, was passiert ist.','start'],
   ['Wer sind die KI-Banden?','Schäufele-Syndikat (🥊 Schläger-Boss Schäufele-Schorsch), Lebkuchen-Clan (💼 Geschäftsfrau Oma Lebkuchen) und Die Drei im Weggla (🎲 Zocker, die Weggla-Brüder). Sie bauen, wachsen und greifen ab und zu an. Wer sie oft angreift, muss abends mit ihrer Rache rechnen. Sie spielen immer dann eine Runde, wenn jemand online ist.','stadt'],
   ['Wie funktioniert BratCoin, und wann mache ich Gewinn?','Du kaufst mit Bargeld und verkaufst gegen sauberes Geld. Beim Kauf gehen 12 % als Mixer-Gebühr weg, deshalb brauchst du etwa 14 % Kursplus für Gewinn. Den Kurs machen die Spieler: Käufe treiben ihn hoch, Verkäufe drücken ihn, dazu kommen Nachrichten im Kurier. Unter Geld siehst du deinen Einstand und deinen Gewinn oder Verlust. Geklaute Coins zählen dort mit dem Kurs vom Hack.','geld'],
