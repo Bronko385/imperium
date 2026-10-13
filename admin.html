@@ -78,6 +78,7 @@ label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--m
 .log .t{color:var(--muted);width:42px;flex:none;font-variant-numeric:tabular-nums}
 .log .v{margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dv{border-top:1px solid var(--panel2);padding-top:6px}.dv:first-of-type{border:0;padding-top:0}.dv.off b{color:var(--faint)}.dv .sm{font-size:12px;line-height:1.45}
 .mut{color:var(--muted);font-size:12px;text-align:center}
 .lock{font-size:46px;text-align:center}
 .qr{background:#fff;border:3px solid var(--ink);border-radius:12px;padding:10px;width:190px;height:190px;margin:0 auto}
@@ -284,6 +285,32 @@ function vGangs() {
     ${g.armed ? '' : '<div class="chip red" style="justify-self:start">Geld rechnet gerade das Spiel, nicht der Server</div>'}
     ${rows || '<div class="mut">Keine Bande gefunden.</div>'}`;
 }
+// Geräte in Klartext: Gerät · iOS/Android · Browser; das genaue iPhone-Modell steht nicht in der Kennung.
+// Safari meldet ab iOS 26 eine eingefrorene System-Version, die echte steht in „Version/…“.
+function uaInfo(ua) {
+  if (!ua) return 'Gerät unbekannt';
+  if (!/^Mozilla\//.test(ua)) { const t = /^curl\//i.test(ua) ? 'curl' : /python/i.test(ua) ? 'Python' : /node|undici|axios|deno|bun/i.test(ua) ? 'Node' : ua.split(/[\s/]/)[0].slice(0, 20); return `Programm (${t})`; }
+  const ios = /iPhone|iPad/.test(ua), sv = (ua.match(/Version\/([\d.]+)/) || [])[1], os = ((ua.match(/OS (\d+(?:_\d+)*) like Mac/) || [])[1] || '').replace(/_/g, '.');
+  const dev = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : 'Computer';
+  if (ios) {
+    const v = sv && +sv.split('.')[0] >= 26 ? sv : os;
+    const br = /CriOS/.test(ua) ? 'Chrome' : /FxiOS/.test(ua) ? 'Firefox' : /EdgiOS/.test(ua) ? 'Edge' : / Safari\//.test(ua) ? 'Safari' : 'Home-Bildschirm';
+    return `${dev}${v ? ` · iOS ${v}` : ''} · ${br}`;
+  }
+  const br = /SamsungBrowser/.test(ua) ? 'Samsung' : /Firefox\//.test(ua) ? 'Firefox' : /Edg\//.test(ua) ? 'Edge' : /Chrome\/(\d+)/.test(ua) ? `Chrome ${ua.match(/Chrome\/(\d+)/)[1]}` : /Safari\//.test(ua) ? 'Safari' : 'Browser';
+  const av = (ua.match(/Android ([\d.]+)/) || [])[1];
+  return `${dev}${av && av !== '10' ? ` ${av}` : ''} · ${br}`;
+}
+const dayT = (t) => new Date(t).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' }).replace(',', '');
+function devCard(g) {
+  const ds = g.devs || []; if (!ds.length) return '';
+  const on = ds.filter((d) => !d.revoked), off = ds.filter((d) => d.revoked);
+  const grp = {}; off.forEach((d) => { const k = uaInfo(d.ua); const x = (grp[k] ||= { n: 0, a: d.ts, b: d.ts }); x.n++; x.a = Math.min(x.a, d.ts); x.b = Math.max(x.b, d.ts); });
+  const last = (d) => Math.max(d.last || 0, on.length === 1 ? g.p.seen || 0 : 0);
+  const rows = on.map((d, i) => `<div class="dv"><b>${esc(uaInfo(d.ua))}</b><div class="sm">angemeldet seit ${esc(dayT(d.ts))} · zuletzt ${g.p.on && on.length === 1 ? 'gerade online' : esc(when(last(d)))}${i === 0 && g.shared && g.shared.length ? `<br>Anschluss geteilt mit: ${esc(g.shared.join(', '))}` : ''}</div></div>`).join('')
+    + Object.entries(grp).map(([k, x]) => `<div class="dv off"><b>${x.n > 1 ? `${x.n}× ` : ''}${esc(k)}</b><div class="sm">${esc(dayT(x.a))}${x.n > 1 && x.b - x.a > 60e3 ? `–${esc(dayT(x.b).slice(-5))}` : ''} · ${x.n > 1 ? 'alle ' : ''}abgemeldet</div></div>`).join('');
+  return `<div class="card" style="gap:6px"><h3>📱 Geräte</h3>${rows}${!on.length && g.shared && g.shared.length ? `<div class="sm">Anschluss geteilt mit: ${esc(g.shared.join(', '))}</div>` : ''}<div class="sm" style="color:var(--faint)">Das genaue iPhone-Modell verrät der Browser nicht.</div></div>`;
+}
 function vGang() {
   const g = S.data.gang; if (!g || g.p.id !== S.gang) return loading();
   const p = g.p;
@@ -298,6 +325,7 @@ function vGang() {
     <div class="pills"><div class="m"><small>Bar</small><b class="d">${fmt(p.bar)}</b></div><div class="m"><small>Sauber</small><b class="c">${fmt(p.clean)}</b></div><div class="m"><small>Coins</small><b class="k">${coin(p.coins)}</b></div></div>
     <div class="sm">${p.born ? `Gegründet ${esc(when(p.born))} · ` : ''}Ruf ${fmt(p.ruf)} · ${g.dev.n} ${g.dev.n === 1 ? 'Gerät' : 'Geräte'} · Hitze <span class="h">${Math.round(p.heat)} %</span> · ${p.on ? '🟢 online' : esc(when(p.seen))}</div>
   </div>
+  ${devCard(g)}
   <div class="two"><button class="btn mint" data-a="s-book">💸 GELD<span class="sub">gutschreiben / abziehen</span></button><button class="btn teal" data-a="s-code">🔑 NEUER CODE<span class="sub">alle Geräte fliegen raus</span></button></div>
   <div class="two"><button class="btn violet" data-a="s-rename">✏️ NAME<span class="sub">umbenennen</span></button><button class="btn ghost" data-a="s-restore">⏪ BACKUP<span class="sub">Stand einer Nacht</span></button></div>
   <button class="btn ghost" data-a="story" data-v="${esc(p.id)}">📜 VERLAUF<span class="sub">alles der letzten 48 Std. in Klartext</span></button>
