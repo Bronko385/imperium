@@ -2035,23 +2035,23 @@ function jailLost(o){const j=jailOn(o);if(!j)return 0;return events.filter(e=>e.
 function judgeCoins(){return JUDGE_VAL/priceAt(now())}
 function knastChip(){
   if(!me||!jailOn(me.id))return '';
-  return `<button class="chipb knast" data-act="knast"><b>🚔 KNAST</b>frei in ${dur(jailLeft(me.id))}${jailOf(me).tried?'':' · Ausbruch?'}</button>`;
+  return `<button class="chipb knast" data-act="knast"><b>🚔 KNAST</b>frei in ${dur(jailLeft(me.id))}${jailOf(me).tried&&!jailOf(me).trap?'':' · Ausbruch?'}</button>`;
 }
 function knastModal(){
   const j=jailOn(me.id);
   if(!j)return `<div class="mbox" role="dialog" aria-label="Knast"><div class="mtop"><span></span><h3>Knast</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
     <p>🚶 Du bist wieder draußen.</p><button class="btn wide" data-act="close">Fertig</button></div>`;
-  const bail=bailOf(me), can=me.bar+me.clean>=bail, sp=allyOf(me.id), hint=(safeInfo&&safeInfo.hints||[]).find(h=>h.src==='knast');
+  const trap=!!j.trap, bail=bailOf(me), can=!trap&&me.bar+me.clean>=bail, sp=allyOf(me.id), hint=(safeInfo&&safeInfo.hints||[]).find(h=>h.src==='knast');
   const tot=Math.max(1,+j.until-+j.at), pct=Math.round(100*clamp((now()-+j.at)/tot,0,1));
   return `<div class="mbox knastbox" role="dialog" aria-label="Knast"><div class="mtop"><span></span><h3>Knast</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
     <div class="kcell"><div class="kbars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="kboss">${portrait(me.id,64)}</div></div>
     <div class="ktime"><b>frei in ${dur(jailLeft(me.id))}</b><div class="qbar"><i style="width:${pct}%"></i></div>${j.judge?'<small>⚖️ Jemand hat den Richter geschmiert: 1 Std. länger.</small>':''}</div>
     <p class="small">Wirtschaften geht weiter: bauen, kassieren, waschen, Crew. Angriffe, Coups, Tipps und der Safe warten, bis du draußen bist. Im Knast verlierst du höchstens einen Laden.</p>
-    <button class="btn violet wide" data-act="kbreak" ${j.tried?'disabled':''}>🪚 Ausbrechen<span class="sub">${j.tried?'Du hattest deinen Versuch schon.':'1 Versuch: 3 Gitterstäbe durchsägen. Klappt es, bist du sofort frei, sonst 30 Min. länger.'}</span></button>
-    <button class="btn mint wide" data-act="kbail" ${can?'':'disabled'}>💸 Kaution zahlen · ${fmt(bail)}<span class="sub">${can?'10 % deines Geldes, erst Bargeld, dann sauber. Du bist sofort frei.':'Dafür reicht dein Geld gerade nicht.'}</span></button>
+    <button class="btn violet wide" data-act="kbreak" ${j.tried&&!trap?'disabled':''}>🪚 Ausbrechen<span class="sub">${trap?'3 Gitterstäbe durchsägen. Klappt es, bist du sofort frei, sonst 30 Min. länger.':j.tried?'Du hattest deinen Versuch schon.':'1 Versuch: 3 Gitterstäbe durchsägen. Klappt es, bist du sofort frei, sonst 30 Min. länger.'}</span></button>
+    <button class="btn mint wide" data-act="kbail" ${can?'':'disabled'}>💸 Kaution zahlen · ${fmt(bail)}<span class="sub">${trap?'Der Richter lehnt jede Kaution ab.':can?'10 % deines Geldes, erst Bargeld, dann sauber. Du bist sofort frei.':'Dafür reicht dein Geld gerade nicht.'}</span></button>
     ${sp?`<p class="small muted">🤝 ${esc(ownerInfo(sp).name)} weiß Bescheid und kann die Kaution für dich zahlen.</p>`:''}
     <h4>🔢 Zellennachbar</h4>
-    <p class="small">${hint?`Er hat dir verraten: <b>Stelle ${hint.pos} ist eine ${hint.digit}</b>. Das steht auch im Safe.`:'Er flüstert dir gleich etwas über den Sparkassen-Safe.'}</p>
+    <p class="small">${trap&&!hint?'Er schnarcht nur.':hint?`Er hat dir verraten: <b>Stelle ${hint.pos} ist eine ${hint.digit}</b>. Das steht auch im Safe.`:'Er flüstert dir gleich etwas über den Sparkassen-Safe.'}</p>
     <button class="btn ghost wide" data-act="close">Absitzen</button></div>`;
 }
 async function knastCall(q){
@@ -2059,16 +2059,19 @@ async function knastCall(q){
   if(!r)throw new Error('Keine Verbindung');
   return r.kn||{ok:false,why:'?'};
 }
-const KN_WHY={frei:'Die Bande ist schon draußen.',schon:'Das ging schon einmal.',geld:'Dafür reicht dein Geld nicht.',spezl:'Das geht nur bei deinem Spezl.',knast:'Aus dem Knast heraus geht das nicht.',ziel:'Diese Bande gibt es hier nicht.',art:'Geht nicht.'};
+const KN_WHY={falle:'Der Richter lehnt jede Kaution ab.',frei:'Die Bande ist schon draußen.',schon:'Das ging schon einmal.',geld:'Dafür reicht dein Geld nicht.',spezl:'Das geht nur bei deinem Spezl.',knast:'Aus dem Knast heraus geht das nicht.',ziel:'Diese Bande gibt es hier nicht.',art:'Geht nicht.'};
 function knastBreak(){
-  const j=jailOn(me.id); if(!j||j.tried)return;
+  const j=jailOn(me.id); if(!j||(j.tried&&!j.trap))return;
   playGame('ausbruch',(mult,hits)=>guard(async()=>{
     const k=await knastCall({a:'ausbruch',hits});
     if(!k.ok){showResult(false,'GEHT NICHT',KN_WHY[k.why]||'Geht gerade nicht.','');return}
     if(k.win){
       addEvent({kind:'info',actor:me.id,txt:`🏃 Ausbruch! ${me.name} hat sich aus dem Knast gesägt und ist wieder auf der Straße.`});
       showResult(true,'AUSGEBROCHEN!','Drei Stäbe, ein Bettlaken, ab über die Mauer.','🚶 Du bist frei','c-yellow',true);
-    }else showResult(false,'ERWISCHT!','Der Wärter hat die Säge gefunden.','🚔 30 Min. länger','',true);
+    }else{
+      if(k.trap)addEvent({kind:'info',actor:me.id,txt:`🚔 Ausbruch gescheitert! Der Boss von ${me.name} sitzt schon wieder.`});
+      showResult(false,'ERWISCHT!','Der Wärter hat die Säge gefunden.','🚔 30 Min. länger','',true);
+    }
     dirty=true;
   }),{title:'AUSBRUCH!',sub:'Drei Gitterstäbe. Säg sie durch!',btn:'SÄGEN',mode:'bar'});
 }

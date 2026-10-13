@@ -131,9 +131,6 @@ const coin = (n) => (+n || 0).toLocaleString('de-DE', { maximumFractionDigits: 2
 const hm = (t) => new Date(t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' });
 const when = (t) => { if (!t) return '–'; const d = Date.now() - t; if (d < 90e3) return 'gerade'; if (d < 3600e3) return `vor ${Math.round(d / 60e3)} Min.`; if (d < 86400e3) return `vor ${Math.round(d / 3600e3)} Std.`; const n = Math.round(d / 86400e3); return n === 1 ? 'gestern' : `vor ${n} Tagen`; };
 const dayhm = (t) => { const d = new Date(t), now = new Date(); const same = d.toDateString() === now.toDateString(); return same ? hm(t) : d.toLocaleDateString('de-DE', { weekday: 'short', timeZone: 'Europe/Berlin' }); };
-const KIND = { admin: 'Admin-Buchung', collect: 'Kasse geleert', raid: 'Razzia', coinbuy: 'BratCoin gekauft', coinsell: 'BratCoin verkauft', rob: 'Überfall', duel: 'Überfall-Duell', take: 'Übernahme', hack: 'Hack', coup: 'Coup', truck: 'Geldtransporter', heist: 'Großcoup', smug: 'Schmuggel', order: 'Auftrag', sell: 'Ware verkauft', goal: 'Tagesziel', step: 'Schritte', ring: 'Brunnen', radio: 'Radio', drivers: 'Fahrer', shop: 'Laden', offer: 'Angebot', bounty: 'Kopfgeld', boss: 'Boss der Woche', lmwin: 'Wahrzeichen-Prämie', fest: 'Fest', lm: 'Wahrzeichen', heat: 'Hitze', tip: 'Tipp', bribe: 'Bestechung', frei: 'Freikaufen', nitro: 'Nitro', build: 'Laden gebaut', up: 'Ausbau', conv: 'Umbau', sec: 'Sicherheit', crew: 'Crew', tipcost: 'Tipp gekauft', bosschg: 'Bosswechsel', open: 'Erschließen', bountyset: 'Kopfgeld gesetzt', gift: 'Geschenk', pay: 'Bezahlt', loss: 'Verlust', back: 'Rückbuchung' };
-const kname = (k) => KIND[k] || k;
-const WHY = { art: 'unbekannte Art', bezug: 'Bezug fehlt', geld: 'nicht gedeckt', oft: 'zu oft', preis: 'Preis zu niedrig', zuviel: 'über dem Deckel' };
 const ERR = { auth: 'Nicht angemeldet.', mfa: 'Zwei-Faktor-Code fehlt.', admin: 'Dieses Konto ist kein Admin.', gang: 'Bande nicht gefunden.', why: 'Bitte einen Grund angeben.', amt: 'Betrag fehlt.', name: 'Name: 2 bis 18 Zeichen.', confirm: 'Name stimmt nicht.', txt: 'Text fehlt.', busy: 'Gerade viel los, bitte nochmal.', notinbackup: 'Die Bande steht nicht in dieser Sicherung.', server: 'Serverfehler, bitte später nochmal.' };
 
 function toast(t, bad) { const e = document.createElement('div'); e.className = 'toast' + (bad ? ' bad' : ''); e.textContent = t; document.body.appendChild(e); setTimeout(() => e.remove(), 2600); }
@@ -203,24 +200,15 @@ async function verify() {
     if (error) return toast('Code falsch oder abgelaufen.', true);
     await api('hello');
   } catch (e) { console.warn(e); if (S.step !== 'login') toast(ERR[e.code] || 'Das hat nicht geklappt.', true); return; } finally { S.busy = false; }
+  try { await loadApp(); } catch (e) { console.warn(e); return toast('Konsole lädt gerade nicht.', true); }
   S.step = 'app'; S.mfa = null; poke(); show('gangs');
 }
-
-// ---------- Laden der Reiter ----------
-async function show(tab, extra) {
-  S.tab = tab; if (tab !== 'gang' && tab !== 'story') S.gang = null; Object.assign(S, extra || {});
-  render();
-  await run(async () => {
-    if (tab === 'gangs') S.data.gangs = await api('gangs');
-    if (tab === 'gang') S.data.gang = await api('gang', { id: S.gang });
-    if (tab === 'flags' && S.seg === 'story') S.data.story = await api('story');
-    else if (tab === 'flags') S.data.flags = await api(S.seg === 'big' ? 'big' : S.seg === 'admin' ? 'log' : 'flags');
-    if (tab === 'story') S.data.story = await api('story', { id: S.gang });
-    if (tab === 'city') S.data.chat = await api('chat');
-    if (tab === 'log') S.data.log = await api('log');
-    if (tab === 'srv') { const [s, n] = await Promise.all([api('status'), api('stats')]); S.data.srv = s.s; S.data.stats = n; }
-  });
-  render();
+// Der Rest der Konsole steht nicht in dieser öffentlichen Datei: Der Server schickt ihn erst nach Anmeldung mit Code.
+async function loadApp() {
+  if (typeof appClick === 'function') return;
+  const r = await api('app');
+  const el = document.createElement('script'); el.textContent = r.js; document.body.appendChild(el);
+  if (typeof appClick !== 'function') throw new Error('app');
 }
 
 // ---------- Ansichten ----------
@@ -228,9 +216,9 @@ function render() {
   const app = S.step === 'app';
   $('#who').innerHTML = app ? `${esc(WORLD)}<br><button data-a="logout">Abmelden</button>` : '';
   $('#tabs').classList.toggle('hide', !app);
-  if (app) $('#tabs').innerHTML = [['gangs', '👥', 'Banden'], ['flags', '⚠️', 'Auffällig'], ['city', '📣', 'Stadt'], ['log', '📜', 'Protokoll'], ['srv', '🩺', 'Server']]
-    .map(([k, i, t]) => `<button class="tab${S.tab === k || (k === 'gangs' && (S.tab === 'gang' || S.tab === 'story')) ? ' on' : ''}" data-a="tab" data-v="${k}"><i>${i}</i>${t}</button>`).join('');
-  $('#main').innerHTML = S.step === 'login' ? vLogin() : S.step === 'enroll' ? vEnroll() : S.step === 'code' ? vCode() : vApp();
+  const ready = typeof vApp === 'function';
+  if (app) $('#tabs').innerHTML = ready ? appTabs() : '';
+  $('#main').innerHTML = S.step === 'login' ? vLogin() : S.step === 'enroll' ? vEnroll() : S.step === 'code' ? vCode() : ready ? vApp() : '<div class="mut">Lädt …</div>';
 }
 function vLogin() {
   return `<div class="lock" style="margin-top:40px">🔐</div>
@@ -263,300 +251,10 @@ function vEnroll() {
     <input id="otp" class="inp code6" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="000000">
     <button class="btn" data-a="verify">BESTÄTIGEN</button></div>`;
 }
-function vApp() {
-  if (S.tab === 'gangs') return vGangs();
-  if (S.tab === 'gang') return vGang();
-  if (S.tab === 'flags') return vFlags();
-  if (S.tab === 'story') return `<button class="btn ghost sm" style="justify-self:start" data-a="gang" data-v="${esc(S.gang)}">‹ ${esc(G() ? G().name : 'BANDE')}</button><h2>📜 Verlauf</h2>` + vStory();
-  if (S.tab === 'city') return vCity();
-  if (S.tab === 'log') return vLog();
-  if (S.tab === 'srv') return vSrv();
-  return '';
-}
-const loading = () => '<div class="mut">Lädt …</div>';
-
-function vGangs() {
-  const g = S.data.gangs; if (!g) return loading();
-  const q = (S.q || '').toLowerCase();
-  const rows = g.list.filter((p) => !q || p.name.toLowerCase().includes(q)).map((p) => `
-    <button class="row${p.flags ? ' warn' : ''}" data-a="gang" data-v="${esc(p.id)}"><span class="dot" style="background:${esc(p.color)}"></span>
-      <div><div class="nm">${esc(p.name)}${p.flags ? ` <span class="chip red">⚠️ ${p.flags}</span>` : ''}</div><div class="sm">Ruf ${fmt(p.ruf)} · ${p.on ? '🟢 online' : esc(when(p.seen))}</div></div>
-      <div class="r"><span class="d">💵 ${fmt(p.bar)}</span><br><span class="c">🧼 ${fmt(p.clean)}</span></div></button>`).join('');
-  return `<input id="q" class="inp" placeholder="🔎 Bande suchen …" value="${esc(S.q || '')}" autocomplete="off">
-    ${g.armed ? '' : '<div class="chip red" style="justify-self:start">Geld rechnet gerade das Spiel, nicht der Server</div>'}
-    ${rows || '<div class="mut">Keine Bande gefunden.</div>'}`;
-}
-// Geräte in Klartext: Gerät · iOS/Android · Browser; das genaue iPhone-Modell steht nicht in der Kennung.
-// Safari meldet ab iOS 26 eine eingefrorene System-Version, die echte steht in „Version/…“.
-function uaInfo(ua) {
-  if (!ua) return 'Gerät unbekannt';
-  if (!/^Mozilla\//.test(ua)) { const t = /^curl\//i.test(ua) ? 'curl' : /python/i.test(ua) ? 'Python' : /node|undici|axios|deno|bun/i.test(ua) ? 'Node' : ua.split(/[\s/]/)[0].slice(0, 20); return `Programm (${t})`; }
-  const ios = /iPhone|iPad/.test(ua), sv = (ua.match(/Version\/([\d.]+)/) || [])[1], os = ((ua.match(/OS (\d+(?:_\d+)*) like Mac/) || [])[1] || '').replace(/_/g, '.');
-  const dev = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : 'Computer';
-  const pcOs = dev !== 'Computer' ? '' : /Windows/.test(ua) ? 'Windows' : /Macintosh/.test(ua) ? 'Mac' : /CrOS/.test(ua) ? 'ChromeOS' : /Linux/.test(ua) ? 'Linux' : '';
-  if (ios) {
-    const v = sv && +sv.split('.')[0] >= 26 ? sv : os;
-    const br = /CriOS/.test(ua) ? 'Chrome' : /FxiOS/.test(ua) ? 'Firefox' : /EdgiOS/.test(ua) ? 'Edge' : / Safari\//.test(ua) ? 'Safari' : 'Home-Bildschirm';
-    return `${dev}${v ? ` · iOS ${v}` : ''} · ${br}`;
-  }
-  const br = /SamsungBrowser/.test(ua) ? 'Samsung' : /Firefox\//.test(ua) ? 'Firefox' : /Edg\//.test(ua) ? 'Edge' : /Chrome\/(\d+)/.test(ua) ? `Chrome ${ua.match(/Chrome\/(\d+)/)[1]}` : /Safari\//.test(ua) ? 'Safari' : 'Browser';
-  const av = (ua.match(/Android ([\d.]+)/) || [])[1];
-  return `${dev}${av && av !== '10' ? ` ${av}` : ''}${pcOs ? ` · ${pcOs}` : ''} · ${br}`;
-}
-const dayT = (t) => new Date(t).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' }).replace(',', '');
-// Anbieter und Ort einer IP (vom Server), Flagge aus dem Ländercode
-const flagOf = (cc) => (cc && /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map((c) => 127397 + c.charCodeAt(0))) : '');
-const land = (cc) => { if (!cc) return ''; if (cc === 'US') return 'USA'; try { return new Intl.DisplayNames(['de'], { type: 'region' }).of(cc); } catch (_) { return cc; } };
-const orgN = (o) => String(o || '').replace(/,?\s+(Inc|LLC|GmbH|AG|Ltd|SE|B\.V)\.?$/i, '').trim() || 'Anbieter unbekannt';
-const today = (t) => dayT(t).slice(0, 5) === dayT(Date.now()).slice(0, 5);
-const rng = (a, b) => (today(a) ? hm(a) : dayT(a)) + (b - a >= 60e3 ? `–${dayT(a).slice(0, 5) === dayT(b).slice(0, 5) ? hm(b) : dayT(b)}` : '');
-function connCard(g) {
-  const cs = g.conns || []; if (!cs.length) return '';
-  const grp = {};
-  cs.forEach((c) => { const k = c.geo ? `${orgN(c.geo.org)} · ${c.geo.city || land(c.geo.cc)} ${flagOf(c.geo.cc)}`.trim() : /^\d+\.\d+\.\d+\./.test(c.ip) ? c.ip.replace(/\.\d+$/, '.x') : c.ip; (grp[k] ||= []).push(c); });
-  const also = (l) => { const a = [...new Set(l.flatMap((c) => c.also || []))]; return a.length ? `<br><b class="also">auch ${esc(a.join(', '))}</b>` : ''; };
-  const rows = Object.entries(grp).map(([k, l]) => {
-    const a = Math.min(...l.map((c) => c.from)), b = Math.max(...l.map((c) => c.to));
-    if (l.length === 1) return `<tr><td>${esc(k)}<br><span class="ip">${esc(l[0].ip)}</span></td><td>${esc(rng(a, b))}${also(l)}</td></tr>`;
-    const pre = l.every((c) => c.ip.replace(/\.\d+$/, '') === l[0].ip.replace(/\.\d+$/, '')) && /\./.test(l[0].ip) ? l[0].ip.replace(/\.\d+$/, '.x') : 'verschiedene';
-    return `<tr><td colspan="2"><details><summary><table><tr><td style="border:0">${esc(k)} · ${l.length} Adressen ▾<br><span class="ip">${esc(pre)}</span></td><td style="border:0">${esc(rng(a, b))}${also(l)}</td></tr></table></summary>
-      <table>${l.map((c) => `<tr><td class="ip">${esc(c.ip)}</td><td>${esc(rng(c.from, c.to))}${also([c])}</td></tr>`).join('')}</table></details></td></tr>`;
-  }).join('');
-  return `<div class="net"><b style="font-size:13px">🌐 Anschlüsse (7 Tage)</b><table>${rows}</table></div>`;
-}
-function devCard(g) {
-  const ds = g.devs || []; if (!ds.length) return '';
-  const on = ds.filter((d) => !d.revoked), off = ds.filter((d) => d.revoked);
-  const grp = {}; off.forEach((d) => { const k = uaInfo(d.ua); const x = (grp[k] ||= { n: 0, a: d.ts, b: d.ts }); x.n++; x.a = Math.min(x.a, d.ts); x.b = Math.max(x.b, d.ts); });
-  const last = (d) => Math.max(d.last || 0, on.length === 1 ? g.p.seen || 0 : 0);
-  const shared = !(g.conns || []).length && g.shared && g.shared.length ? g.shared : null;
-  const w = g.warn, warn = w ? `<div class="warn">⚠️ ${w.n} ${w.n === 1 ? 'Adresse' : 'Adressen'} in 24 Std.${w.geo && w.geo.hosting ? ` über Rechenzentrum (${esc(orgN(w.geo.org))}, ${esc(land(w.geo.cc))})` : ''}: wohl VPN, Cloud-Browser oder KI-Agent</div>` : '';
-  // Wechsel: welches Gerät danach angemeldet wurde, wenn es eine andere Art ist
-  const swap = (k, b) => { const nx = ds.filter((d) => d.ts > b).sort((x, y) => x.ts - y.ts)[0]; const kn = nx && uaInfo(nx.ua).split(' · ')[0]; return kn && kn !== k.split(' · ')[0] ? ` (Wechsel auf ${kn} ${hm(nx.ts)})` : ''; };
-  let warned = false;
-  const rows = on.map((d, i) => `<div class="dv"><b>${esc(uaInfo(d.ua))}</b><div class="sm">angemeldet seit ${esc(dayT(d.ts))} · zuletzt ${g.p.on && on.length === 1 ? 'gerade online' : esc(when(last(d)))}${i === 0 && shared ? `<br>Anschluss geteilt mit: ${esc(shared.join(', '))}` : ''}</div>${!warned && /^Computer/.test(uaInfo(d.ua)) && (warned = true) ? warn : ''}</div>`).join('')
-    + Object.entries(grp).map(([k, x]) => `<div class="dv off"><b>${x.n > 1 ? `${x.n}× ` : ''}${esc(k)}</b><div class="sm">${esc(dayT(x.a))}${x.n > 1 && x.b - x.a > 60e3 ? `–${esc(dayT(x.b).slice(-5))}` : ''} · ${x.n > 1 ? 'alle ' : ''}abgemeldet${esc(swap(k, x.b))}</div></div>`).join('');
-  return `<div class="card" style="gap:6px"><h3>📱 Geräte</h3>${rows}${!on.length && shared ? `<div class="sm">Anschluss geteilt mit: ${esc(shared.join(', '))}</div>` : ''}${connCard(g)}<div class="sm" style="color:var(--faint)">Das genaue iPhone-Modell verrät der Browser nicht.</div></div>`;
-}
-function vGang() {
-  const g = S.data.gang; if (!g || g.p.id !== S.gang) return loading();
-  const p = g.p;
-  const log = g.log.slice(0, 12).map((r) => {
-    const v = (+r.d.bar || 0) + (+r.d.clean || 0), c = +r.d.coins || 0;
-    const val = !r.ok ? '<span class="h">abgelehnt</span>' : v ? `<span class="${v > 0 ? 'd' : ''}">${v > 0 ? '+' : '−'}${fmt(Math.abs(v))}</span>` : c ? `<span class="k">${c > 0 ? '+' : '−'}${coin(Math.abs(c))} 🪙</span>` : '';
-    return `<div><span class="t">${dayhm(r.ts)}</span>${r.ok ? '' : '⚠️ '}${esc(kname(r.k))}${r.k === 'admin' && r.ref ? ` <span class="sm">„${esc(r.ref)}“</span>` : ''}<span class="v">${val}</span></div>`;
-  }).join('');
-  return `<button class="btn ghost sm" style="justify-self:start" data-a="tab" data-v="gangs">‹ BANDEN</button>
-  <div class="card">
-    <div style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:${esc(p.color)};width:16px;height:16px"></span><h2>${esc(p.name)}</h2>${g.flags ? `<span class="chip red" style="margin-left:auto">⚠️ ${g.flags}</span>` : ''}</div>
-    <div class="pills"><div class="m"><small>Bar</small><b class="d">${fmt(p.bar)}</b></div><div class="m"><small>Sauber</small><b class="c">${fmt(p.clean)}</b></div><div class="m"><small>Coins</small><b class="k">${coin(p.coins)}</b></div></div>
-    <div class="sm">${p.born ? `Gegründet ${esc(when(p.born))} · ` : ''}Ruf ${fmt(p.ruf)} · ${g.dev.n} ${g.dev.n === 1 ? 'Gerät' : 'Geräte'} · Hitze <span class="h">${Math.round(p.heat)} %</span> · ${p.on ? '🟢 online' : esc(when(p.seen))}</div>
-  </div>
-  ${devCard(g)}
-  <div class="two"><button class="btn mint" data-a="s-book">💸 GELD<span class="sub">gutschreiben / abziehen</span></button><button class="btn teal" data-a="s-code">🔑 NEUER CODE<span class="sub">alle Geräte fliegen raus</span></button></div>
-  <div class="two"><button class="btn violet" data-a="s-rename">✏️ NAME<span class="sub">umbenennen</span></button><button class="btn ghost" data-a="s-restore">⏪ BACKUP<span class="sub">Stand einer Nacht</span></button></div>
-  <button class="btn ghost" data-a="story" data-v="${esc(p.id)}">📜 VERLAUF<span class="sub">alles der letzten 48 Std. in Klartext</span></button>
-  <div class="card" style="gap:6px"><h3>Letzte Buchungen</h3><div class="log">${log || '<div class="sm">Noch keine.</div>'}</div></div>
-  <div class="two"><button class="btn violet" data-a="s-merge" data-v="gang">🔗 ZUSAMMENLEGEN<span class="sub">in eine andere Bande</span></button><button class="btn red" data-a="s-delete">🗑️ LÖSCHEN<span class="sub">mit Namen bestätigen</span></button></div>`;
-}
-// Ein Fall unter „Auffällig“: Symbol, Kopfzeile und kurze Detailzeilen
-const COL = { ware: 'Ware', bar: 'Bargeld', clean: 'Sauber', coins: 'BratCoin', basis: 'Einstand', heat: 'Hitze', ruf: 'Ruf', crew: 'Crew', guards: 'Türsteher', gear: 'Ausrüstung', energy: 'Energie', name: 'Name', color: 'Farbe', home: 'Heimatviertel', boss: 'Boss', wash_pool: 'Waschtopf', reserve: 'Reserve', owner: 'Ladenbesitzer', type: 'Ladenart', lvl: 'Ladenstufe', stock: 'Kasse', sec: 'Sicherheit', laden: 'Laden', insert: 'neu angelegt', delete: 'gelöscht' };
-const span = (a, b) => (!a || hm(a) === hm(b) ? hm(b) : `${hm(a)}–${hm(b)}`);
-function flagView(x) {
-  if (x.kind === 'bad') return ['🚫', `${x.name} · ${x.n}× abgelehnt`,
-    [...(x.by || [{ k: x.k, why: x.why, n: x.n }]).map((b) => `${b.n}× ${kname(b.k)}: ${WHY[b.why] || b.why}`), span(x.from, x.ts)]];
-  if (x.kind === 'fast') return ['📈', `${x.name} · +${fmt(x.v)} in 1 Std.`,
-    [...(x.top || []).map((t) => `${kname(t.k)} +${fmt(t.v)} (${t.n}×)`), span(x.from, x.ts)]];
-  if (x.kind === 'api') return ['🤖', `${x.name} · ${x.n}× per Programm geändert`, [
-    `Geändert: ${x.cols.map((c) => `${COL[c.c] || c.c} ${c.n}×`).join(', ')}`,
-    `Mit: ${x.tools.join(', ')} · ${span(x.from, x.ts)}`,
-    x.other && x.other.length ? `⚠️ An fremder Bande: ${x.other.join(', ')}` : '',
-    x.sameNet === true ? 'Vom selben Anschluss wie das Spiel der Bande' : x.sameNet === false ? '⚠️ Auch von einem anderen Anschluss als das Spiel' : '']];
-  if (x.kind === 'net') return ['🔌', `${x.gangs.length} Banden vom selben Anschluss`, [
-    ...x.gangs.map((g) => `${g.name}: ${g.dev}`),
-    x.sameUa ? '⚠️ Gleiches Gerätemodell und gleiche Version' : 'Verschiedene Geräte',
-    x.both ? 'Schon gleichzeitig online gewesen' : '⚠️ Nie gleichzeitig online',
-    x.nets > 1 ? `${x.nets} gemeinsame Anschlüsse` : 'Kann auch WLAN oder Mobilfunk sein, den mehrere nutzen'], x.gangs];
-  if (x.kind === 'pair') return ['🔁', `${x.gangs[0].name} und ${x.gangs[1].name} nie gleichzeitig online`, [
-    `${x.swaps}× direkt abgewechselt (unter 15 Min.)`,
-    `Online in 7 Tagen: ${x.gangs.map((g) => `${g.name} ${String(g.h).replace('.', ',')} Std.`).join(', ')}`,
-    x.sameNet ? '⚠️ Vom selben Anschluss' : ''], x.gangs];
-  if (x.kind === 'give') return ['🎁', `${x.name} gibt ${x.share} % an ${x.toName} ab`, [
-    `Gegründet ${when(x.born)}`, `+${fmt(x.v)} an ${x.toName}: ${x.ks.join(', ')}`], [{ id: x.to, name: x.toName }, { id: x.id, name: x.name }]];
-  if (x.kind === 'hop') return ['🔄', `${x.name} · ${x.n}× Gerät gewechselt`, ['Per Bandencode auf ein anderes Gerät geholt, das alte flog jeweils raus', 'Teilen sich vielleicht mehrere Leute den Code', span(x.from, x.ts)]];
-  if (x.kind === 'remote') {
-    const gl = x.geo ? `${orgN(x.geo.org)}${x.geo.city ? `, ${x.geo.city}` : ''}${x.geo.cc ? ` (${land(x.geo.cc)})` : ''}` : '';
-    const h = Math.max(0.1, Math.round((x.ts - x.from) / 360e3) / 10);
-    return ['🖥️', `${x.name} · fernbedient?`, [
-      [uaInfo(x.ua).replace(/^Computer · /, ''), gl].filter(Boolean).join(' · '),
-      `${x.n} ${x.n === 1 ? 'Adresse' : 'Adressen'} in ${String(h).replace('.', ',')} Std.${x.prev ? ` · vorher ${x.prev.dev}${x.prev.also && x.prev.also.length ? ` im Anschluss von ${x.prev.also.join(', ')}` : ''}${x.prev.city ? ` (${x.prev.city})` : ''}` : ''}`], x.gangs];
-  }
-  if (x.kind === 'bot') return ['🤖', `${x.name} · vielleicht ein Bot`, [
-    x.hours >= 18 ? `⚠️ In ${x.hours} von 24 Std. online, längste Pause ${x.gap} Std.` : `In ${x.hours} von 24 Std. online`,
-    x.takt ? `⚠️ ${x.takt.n} Aktionen im gleichen Takt, alle ${x.takt.every}` : ''], [{ id: x.id, name: x.name }]];
-  const net = x.nets === 1 ? (x.n === 1 ? 'Ein Anschluss' : 'Alle vom selben Anschluss') : x.nets > 1 ? `${x.nets} verschiedene Anschlüsse` : 'Anschluss unbekannt';
-  return ['📱', `${x.name} · ${x.n === 1 ? 'neues Gerät' : x.n + ' neue Geräte'}`, [
-    (x.kinds || []).filter((k) => k.k !== 'unbekannt').map((k) => `${k.n}× ${k.k}`).join(', ') || 'Gerätart unbekannt',
-    `${net}${x.oldNet === true ? ', wie bisher' : x.oldNet === false ? ', neu für diese Bande' : ''} · ${span(x.from, x.ts)}`,
-    x.prog ? `⚠️ ${x.prog === x.n ? 'Alle' : x.prog} per Programm statt aus dem Spiel` : '',
-    x.revoked ? `${x.revoked} davon schon abgemeldet` : '']];
-}
-function vFlags() {
-  const seg = `<div class="seg">${[['bad', '⚠️ Auffällig'], ['story', '📜 Verlauf'], ['big', '💰 Große'], ['admin', '🛠️ Admin']].map(([k, t]) => `<button class="${S.seg === k ? 'on' : ''}" data-a="seg" data-v="${k}">${t}</button>`).join('')}</div>`;
-  if (S.seg === 'story') return seg + vStory();
-  const f = S.data.flags; if (!f) return seg + loading();
-  let rows = '';
-  const RATE = ['🟢 NORMAL', '🟡 PRÜFEN', '🔴 VERDÄCHTIG'];
-  if (S.seg === 'bad') {
-    const cnt = [0, 1, 2].map((l) => f.list.filter((x) => (x.lvl || 0) === l).length);
-    rows = `<div class="rsum"><div><b>${cnt[2]}</b>🔴 verdächtig</div><div><b>${cnt[1]}</b>🟡 prüfen</div><div><b>${cnt[0]}</b>🟢 normal</div></div>` + f.list.map((x, i) => {
-      if (!x.lvl && !S.green) return '';
-      const [ico, head, lines, gs] = flagView(x);
-      const det = lines.filter(Boolean).map((l) => `<div class="sm det">${esc(l)}</div>`).join('');
-      const badge = `<div><span class="rate l${x.lvl || 0}">${RATE[x.lvl || 0]}</span> <span class="sm">${esc(x.why || '')}</span></div>`;
-      const row = `<button class="row" data-a="gang" data-v="${esc(x.id)}" style="align-items:flex-start"><span style="font-size:20px">${ico}</span><div><div class="nm">${esc(head)}</div>${badge}${det}</div><div class="r">›</div></button>`;
-      const acts = !gs || !x.lvl ? [] : [
-        ...(gs.length > 1 ? [`<button class="btn violet" data-a="s-merge" data-v="${i}">🔗 ZUSAMMEN</button>`] : []),
-        ...gs.map((g) => `<button class="btn red" data-a="fdel" data-v="${i}|${esc(g.id)}">${S.sure === `fdel${i}|${g.id}` ? `SICHER? ${esc(g.name)}` : `🗑️ ${esc(g.name)}`}</button>`)];
-      return `<div class="flag l${x.lvl || 0}">${row}${acts.length ? `<div class="acts">${acts.join('')}</div>` : ''}</div>`;
-    }).join('') + (cnt[0] ? `<button class="btn ghost" data-a="green">${S.green ? '🟢 Normale ausblenden' : `🟢 ${cnt[0]} normale Meldungen zeigen`}</button>` : '');
-    if (!cnt[1] && !cnt[2] && !S.green) rows = rows.replace('<button class="btn ghost"', '<div class="mut">Nichts Verdächtiges. 👍</div><button class="btn ghost"');
-  }
-  if (S.seg === 'big') rows = f.list.map((x) => `<button class="row" data-a="gang" data-v="${esc(x.id)}"><div><div class="nm">${esc(x.name)}</div><div class="sm">${esc(kname(x.k))} · ${dayhm(x.ts)}</div></div><div class="r ${x.v > 0 ? 'd' : 'h'}">${x.v > 0 ? '+' : '−'}${fmt(Math.abs(x.v))}</div></button>`).join('');
-  if (S.seg === 'admin') rows = `<div class="card" style="gap:6px"><div class="log">${f.list.map(logRow).join('') || '<div class="sm">Noch nichts.</div>'}</div></div>`;
-  return seg + (rows || '<div class="mut">Heute nichts Auffälliges. 👍</div>') + (S.seg === 'bad' ? '<div class="mut">Geld 24 Std., Anschlüsse und Online-Zeiten 7 Tage. Antippen öffnet die Bande.</div>' : '');
-}
-function logRow(x) {
-  const t = admText(x);
-  const who = gname(x.target);
-  return `<div><span class="t">${dayhm(x.ts)}</span><span>${who ? `<b>${esc(who)}</b>: ` : ''}${esc(t)}${x.why ? ` <span class="sm">„${esc(x.why)}“</span>` : ''}</span></div>`;
-}
-function admText(x) {
-  const n = (x.d && x.d.name) || '';
-  return x.act === 'book' ? `${CURI[x.d.cur] || ''} ${x.d.amt > 0 ? '+' : '−'}${x.d.cur === 'coins' ? coin(Math.abs(x.d.amt)) : fmt(Math.abs(x.d.amt))}`
-    : x.act === 'code' ? 'neuer Bandencode' : x.act === 'rename' ? `„${x.d.from}“ → „${x.d.to}“` : x.act === 'delete' ? `Bande „${n}“ gelöscht`
-    : x.act === 'say' ? `📣 „${x.d.txt}“${x.d.push ? ' + Push' : ''}` : x.act === 'hide' ? `Chat ausgeblendet: „${x.d.txt}“` : x.act === 'restore' ? `aus Backup ${x.d.file || ''} zurückgeholt`
-    : x.act === 'merge' ? `„${x.d.name}“ hineingelegt (+${fmt((x.d.bar || 0) + (x.d.clean || 0))}, ${x.d.slots || 0} Läden)`
-    : x.act === 'arm' ? `Geld-Schalter ${x.d.on ? 'AN' : 'AUS'}` : x.act;
-}
-// 📜 Verlauf: eine Zeile in Klartext → [Symbol, Satz]
-const EVI = { atk: '⚔️', def: '🛡️', duel: '⚔️', dres: '⚔️', win: '🏆', cop: '🚓', hack: '💻', taunt: '💬', offer: '📦', offerok: '🤝', deal: '📦', ally: '🤝', allyask: '🤝', betray: '🗡️', bounty: '🎯', heist: '💰', heistk: '💰', lm: '🏛️', lmx: '🏛️', lmwin: '🏛️', tip: '🕵️', join: '🆕', info: '📰' };
-const money = (v) => `${v > 0 ? '+' : '−'}${fmt(Math.abs(v))}`;
-function storyLine(x) {
-  const mins = x.to && x.to - x.ts >= 60e3 ? Math.round((x.to - x.ts) / 60e3) : 0;
-  if (x.t === 'money') return [x.v < 0 ? '💸' : x.c && !x.v ? '🪙' : '💵', `${kname(x.k)}${x.n > 1 ? ` ${x.n}×` : ''}${x.v ? ` ${money(x.v)}` : ''}${x.c ? ` ${x.c > 0 ? '+' : '−'}${coin(Math.abs(x.c))} 🪙` : ''}${x.ref ? ` („${x.ref}“)` : ''}${x.n > 1 && mins ? ` in ${mins} Min.` : ''}`];
-  if (x.t === 'bad') return ['🚫', `${kname(x.k)} abgelehnt${x.n > 1 ? ` (${x.n}×)` : ''}: ${WHY[x.why] || x.why || 'Server sagt nein'}${x.v ? `, wollte ${money(x.v)}` : ''}`];
-  if (x.t === 'api') return ['🤖', `Per Programm (${x.tool}) geändert: ${x.cols.map((c) => COL[c] || c).join(', ')}${x.n > 1 ? ` (${x.n}×)` : ''}${x.other.length ? ` ⚠️ bei fremder Bande ${x.other.map((o) => S.names[o] || 'Bande').join(', ')}` : ''}`];
-  if (x.t === 'dev') return [x.prog ? '⚠️' : '📱', `${x.n > 1 ? `${x.n} neue Geräte` : 'Neues Gerät'} angemeldet: ${x.dev === 'unbekannt' ? 'Gerätart unbekannt' : x.dev}${x.revoked ? ` (${x.n > 1 ? `${x.revoked} ` : ''}inzwischen abgemeldet)` : ''}`];
-  if (x.t === 'hop') return ['🔄', 'Gerät gewechselt: per Bandencode auf ein anderes Gerät geholt, das alte ist abgemeldet'];
-  if (x.t === 'on') return ['🟢', `Im Spiel, ${mins < 60 ? `${Math.max(5, mins)} Min.` : `${String(Math.round(mins / 6) / 10).replace('.', ',')} Std.`}`];
-  if (x.t === 'adm') return ['🛠️', `Admin: ${admText(x)}${x.why ? ` („${x.why}“)` : ''}`];
-  return [EVI[x.kind] || '📰', x.txt];
-}
-function vStory() {
-  const f = S.data.story; if (!f) return loading();
-  S.names = f.names || {};
-  let day = '';
-  const rows = f.list.map((x) => {
-    const [ico, txt] = storyLine(x);
-    const d = new Date(x.ts).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'numeric', timeZone: 'Europe/Berlin' });
-    const head = d !== day ? `<div class="sday">${esc(d)}</div>` : ''; day = d;
-    const tm = x.to && x.to - x.ts >= 60e3 ? `${hm(x.ts)}–${hm(x.to)}` : hm(x.ts);
-    const who = !S.gang && x.g ? `<b>${esc(S.names[x.g] || 'Bande')}</b> ` : '';
-    return `${head}<div class="sline"><span class="t">${tm}</span><span class="i">${ico}</span><span>${who}${esc(txt)}</span></div>`;
-  }).join('');
-  return `<div class="card" style="gap:2px">${rows || '<div class="sm">Nichts passiert.</div>'}</div><div class="mut">${S.gang ? 'Letzte 48 Stunden' : 'Letzte 24 Stunden, alle Banden'}, neueste oben. Gleiche Buchungen kurz hintereinander sind zusammengefasst.</div>`;
-}
-const CURI = { bar: '💵', clean: '🧼', coins: '🪙' };
-function gname(id) { if (!id) return ''; const g = S.data.gangs && S.data.gangs.list.find((p) => p.id === id); return g ? g.name : 'Bande'; }
-function vCity() {
-  const ch = S.data.chat;
-  return `<div class="card"><h2>📣 Durchsage</h2>
-    <textarea id="say" class="inp" maxlength="200" placeholder="z. B. Heute 22 Uhr kurz Pause für ein Update."></textarea>
-    <label class="check"><input type="checkbox" id="sayp" checked> Auch als Push an alle</label>
-    <button class="btn" data-a="say">SENDEN</button>
-    <div class="sm">Erscheint im Kurier mit 📣.</div></div>
-  <div class="card" style="gap:8px"><h2>🧹 Stadt-Chat</h2>
-    ${!ch ? loading() : ch.list.map((m) => `<div class="row" style="cursor:default;align-items:flex-start"><div style="min-width:0"><div class="sm">${esc(m.name)} · ${dayhm(m.ts)}</div><div style="word-break:break-word">${esc(m.txt)}</div></div><button class="btn red sm" style="margin-left:auto" data-a="hide" data-v="${m.id}">${S.sure === 'hide' + m.id ? 'SICHER?' : 'WEG'}</button></div>`).join('') || '<div class="sm">Leer.</div>'}
-    <div class="sm">Direktnachrichten bleiben privat.</div></div>`;
-}
-function vLog() {
-  const l = S.data.log; if (!l) return loading();
-  return `<div class="card" style="gap:6px"><h2>Was du gemacht hast</h2><div class="log">${l.list.map(logRow).join('') || '<div class="sm">Noch nichts.</div>'}</div></div>
-  <div class="mut">Jede Admin-Aktion steht hier. Nichts lässt sich still ändern.</div>`;
-}
-function vSrv() {
-  const s = S.data.srv, n = S.data.stats; if (!s || !n) return loading();
-  const now = Date.now(), cc = s.cashcheck || {}, bk = s.backup || {}, ks = s.kasse || {}, cfg = s.cfg || {};
-  const ccOk = cc.at && cc.ok && now - cc.at < 20 * 60e3, bkOk = bk.at && now - bk.at < 26 * 3600e3, ksOk = (+ks.bad || 0) <= Math.max(3, (+ks.n || 0) * .05);
-  const line = (ok, t, v) => `<div class="stat">${ok ? '✅' : '❌'} ${t}<b>${esc(v)}</b></div>`;
-  return `<div class="card"><h2>🩺 Läuft alles?</h2>
-    ${line(ccOk, 'cashcheck', cc.at ? when(cc.at) : 'nie')}
-    ${line(bkOk, 'Backup', bk.at ? `${when(bk.at)} (${(bk.name || '').split('/').pop()})` : 'keins')}
-    ${line(ksOk, 'Kasse (1 Std.)', `${fmt(ks.n)} Buchungen, ${fmt(ks.bad)} abgelehnt`)}
-  </div>
-  <div class="card"><h2>💰 Geld-Schalter</h2>
-    <div class="sm">${cfg.armed ? 'AN: Der Server rechnet das Geld (normal).' : 'AUS: Das Spiel rechnet das Geld selbst (wie vor 5.0.4).'}</div>
-    <button class="btn ${cfg.armed ? 'red' : 'mint'}" data-a="arm">${S.sure === 'arm' ? 'WIRKLICH?' : cfg.armed ? 'AUSSCHALTEN (NOTFALL)' : 'EINSCHALTEN'}</button></div>
-  <div class="card"><h2>📊 Zahlen</h2>
-    <div class="nums"><div class="m"><small>Online</small><b>${n.on}</b></div><div class="m"><small>Heute aktiv</small><b>${n.today}</b></div>
-    <div class="m"><small>7 Tage aktiv</small><b>${n.week}</b></div><div class="m"><small>Neu heute</small><b>${n.fresh}</b></div>
-    <div class="m"><small>Banden</small><b>${n.n}</b></div><div class="m"><small>Buchungen heute</small><b>${fmt(n.books)}</b></div></div>
-    <div class="sm">Geld aller Banden: ${fmt(n.money)} (bar + sauber)</div></div>`;
-}
-
-// ---------- Blätter (Aktionen an einer Bande) ----------
+// ---------- Blätter ----------
 function sheet(html) { $('#layer').innerHTML = `<div class="dim" data-a="close"></div><div class="sheet">${html}</div>`; }
 function closeSheet() { $('#layer').innerHTML = ''; S.sure = null; }
-const G = () => S.data.gang && S.data.gang.p;
-function sBook() {
-  S.book = S.book || { cur: 'bar', sign: 1 };
-  const b = S.book;
-  sheet(`<h2>💸 Geld buchen</h2>
-    <div class="seg">${[['bar', '💵 Bar'], ['clean', '🧼 Sauber'], ['coins', '🪙 Coins']].map(([k, t]) => `<button class="${b.cur === k ? 'on' : ''}" data-a="bcur" data-v="${k}">${t}</button>`).join('')}</div>
-    <div class="two"><button class="btn ${b.sign < 0 ? 'pink' : 'ghost'}" data-a="bsign" data-v="-1">− ABZIEHEN</button><button class="btn ${b.sign > 0 ? 'mint' : 'ghost'}" data-a="bsign" data-v="1">+ GUTSCHREIBEN</button></div>
-    <input id="bamt" class="inp big" inputmode="decimal" placeholder="0" value="${esc(b.amt || '')}">
-    <div><label for="bwhy">Grund (steht im Protokoll)</label><input id="bwhy" class="inp" maxlength="120" placeholder="z. B. Ausgleich Fehler Razzia" value="${esc(b.why || '')}"></div>
-    <label class="check"><input type="checkbox" id="bkur"${b.kurier ? ' checked' : ''}> Im Kurier melden</label>
-    <button class="btn" data-a="book">BUCHEN</button>`);
-}
-function keepBook() { if (!S.book) return; const a = $('#bamt'), w = $('#bwhy'), k = $('#bkur'); if (a) S.book.amt = a.value; if (w) S.book.why = w.value; if (k) S.book.kurier = k.checked; }
-function sCode(code) {
-  const p = G();
-  sheet(code ? `<h2>🔑 Neuer Bandencode</h2><div class="codebox">${esc(code)}</div><div class="sm">Gib ihn dem Boss von ${esc(p.name)}. Alle Geräte der Bande sind abgemeldet und melden sich mit diesem Code wieder an. Er wird nur jetzt angezeigt.</div><button class="btn" data-a="close">FERTIG</button>`
-    : `<h2>🔑 Neuer Bandencode</h2><div class="sm">Der alte Code von <b>${esc(p.name)}</b> wird ungültig und <b>alle Geräte</b> der Bande werden abgemeldet. Hilft, wenn jemand Fremdes den Code kennt.</div><button class="btn teal" data-a="code">${S.sure === 'code' ? 'WIRKLICH?' : 'NEUEN CODE ERZEUGEN'}</button>`);
-}
-function sRename() {
-  const p = G();
-  sheet(`<h2>✏️ Umbenennen</h2><input id="rn" class="inp" maxlength="18" value="${esc(p.name)}" autocomplete="off"><div class="sm">2 bis 18 Zeichen, wie im Spiel.</div><button class="btn" data-a="rename">SPEICHERN</button>`);
-}
-async function sRestore() {
-  sheet(`<h2>⏪ Aus Backup</h2>${loading()}`);
-  await run(async () => {
-    const r = await api('backups'); const p = G();
-    sheet(`<h2>⏪ Aus Backup</h2><div class="sm">Setzt <b>${esc(p.name)}</b> auf den Stand dieser Nacht: Geld, Crew, Lager und Läden (soweit sie noch frei sind). Am besten, wenn die Bande gerade nicht spielt.</div>
-      ${r.list.map((f) => `<button class="row" data-a="restore" data-v="${esc(f.file)}"><div><div class="nm">${esc(f.file.replace('.json', ''))} · ${new Date(f.at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })}</div><div class="sm">${esc(when(f.at))}</div></div><div class="r">${S.sure === 'restore' + f.file ? '<b class="h">WIRKLICH?</b>' : '›'}</div></button>`).join('') || '<div class="sm">Keine Sicherung gefunden.</div>'}`);
-  });
-}
-// Zusammenlegen: m.src geht in m.dst auf
-function sMerge() {
-  const m = S.merge;
-  if (!m.dst) return sheet(`<h2>🔗 Zusammenlegen</h2><div class="sm"><b>${esc(m.src.name)}</b> geht in welcher Bande auf?</div>
-    ${(S.data.gangs ? S.data.gangs.list : []).filter((g) => g.id !== m.src.id).map((g) => `<button class="row" data-a="mpick" data-v="${esc(g.id)}"><span class="dot" style="background:${esc(g.color)}"></span><div class="nm">${esc(g.name)}</div><div class="r">›</div></button>`).join('') || '<div class="sm">Keine andere Bande.</div>'}`);
-  sheet(`<h2>🔗 Zusammenlegen</h2>
-    <div class="card" style="gap:4px"><div class="nm">${esc(m.src.name)} → ${esc(m.dst.name)}</div>
-    <div class="sm">Bargeld, Sauber, BratCoin, Läden und Wahrzeichen von ${esc(m.src.name)} gehen an ${esc(m.dst.name)}. Danach wird ${esc(m.src.name)} gelöscht. Crew, Ware und Ruf verfallen.</div></div>
-    <button class="btn ghost sm" data-a="mswap">⇄ UMDREHEN</button>
-    <div><label for="mwhy">Grund (steht im Protokoll)</label><input id="mwhy" class="inp" maxlength="120" placeholder="z. B. Zweitbande" value="${esc(m.why || '')}"></div>
-    <button class="btn violet" data-a="merge">${S.sure === 'merge' ? 'WIRKLICH?' : 'ZUSAMMENLEGEN'}</button>`);
-}
-function sDelete() {
-  const p = G();
-  sheet(`<h2>🗑️ Bande löschen</h2><div class="sm">Löscht <b>${esc(p.name)}</b> komplett: Geld, Crew, Geräte, Code, Nachrichten. Ihre Läden werden frei. Der Kurier bleibt. Zurück geht es nur über ein Backup.</div>
-    <div><label for="dn">Zum Bestätigen den Namen eintippen</label><input id="dn" class="inp" autocomplete="off" placeholder="${esc(p.name)}"></div>
-    <button class="btn red" data-a="delete">ENDGÜLTIG LÖSCHEN</button>`);
-}
-
+// (Der Rest der Konsole kommt nach der Anmeldung vom Server.)
 // ---------- Tippen ----------
 document.addEventListener('input', (e) => { if (e.target.id === 'q') { S.q = e.target.value; const pos = e.target.selectionStart; render(); const q = $('#q'); q.focus(); q.setSelectionRange(pos, pos); } });
 document.addEventListener('keydown', (e) => { if (e.key !== 'Enter') return; if (e.target.id === 'pw' || e.target.id === 'em') login(); if (e.target.id === 'otp') verify(); });
@@ -569,54 +267,10 @@ document.addEventListener('click', async (e) => {
     case 'verify': return verify();
     case 'copy': try { await navigator.clipboard.writeText(S.mfa.secret); toast('Schlüssel kopiert.'); } catch (_) { toast('Bitte von Hand abschreiben.', true); } return;
     case 'logout': return logout();
-    case 'tab': return show(v);
-    case 'green': S.green = !S.green; return show('flags');
-    case 'seg': S.seg = v; S.data.flags = null; S.data.story = null; return show('flags');
-    case 'gang': S.gang = v; S.data.gang = null; return show('gang', { gang: v });
-    case 'story': S.data.story = null; return show('story', { gang: v });
     case 'close': return closeSheet();
-    case 's-book': S.book = null; return sBook();
-    case 's-code': S.sure = null; return sCode();
-    case 's-rename': return sRename();
-    case 's-restore': S.sure = null; return sRestore();
-    case 's-delete': return sDelete();
-    case 's-merge': {
-      S.sure = null;
-      if (v === 'gang') { S.merge = { src: { id: G().id, name: G().name } }; if (!S.data.gangs) await run(async () => { S.data.gangs = await api('gangs'); }); return sMerge(); }
-      const gs = flagView(S.data.flags.list[+v])[3]; S.merge = { src: gs[1], dst: gs[0] }; return sMerge();
-    }
-    case 'mpick': { const g = S.data.gangs.list.find((x) => x.id === v); S.merge.dst = { id: g.id, name: g.name }; return sMerge(); }
-    case 'mswap': { const w = $('#mwhy'); S.merge.why = w ? w.value : ''; S.merge = { ...S.merge, src: S.merge.dst, dst: S.merge.src }; S.sure = null; return sMerge(); }
-    case 'merge': {
-      const m = S.merge, w = $('#mwhy'); m.why = w ? w.value.trim() : '';
-      if (!twice('merge')) return sMerge();
-      await run(async () => { const r = await api('merge', { id: m.src.id, into: m.dst.id, confirm: m.src.name, why: m.why }); closeSheet(); toast(`${m.src.name} ist jetzt Teil von ${r.into} (+${fmt(r.bar + r.clean)}, ${r.slots} Läden).`); S.data.gangs = null; S.data.flags = null; });
-      return S.tab === 'gang' ? show('gangs') : show('flags');
-    }
-    case 'fdel': {
-      if (!twice('fdel' + v)) return render();
-      const [i, id] = v.split('|'), g = flagView(S.data.flags.list[+i])[3].find((x) => x.id === id);
-      await run(async () => { await api('delete', { id, confirm: g.name, why: 'Auffällig' }); toast(`${g.name} gelöscht.`); S.data.gangs = null; S.data.flags = null; });
-      return show('flags');
-    }
-    case 'bcur': keepBook(); S.book.cur = v; return sBook();
-    case 'bsign': keepBook(); S.book.sign = +v; return sBook();
-    case 'book': {
-      keepBook(); const b = S.book, amt = parseFloat(String(b.amt || '').replace(/\./g, '').replace(',', '.'));
-      if (!(amt > 0)) return toast('Betrag eingeben.', true);
-      if ((b.why || '').trim().length < 3) return toast('Bitte einen Grund angeben.', true);
-      return run(async () => { const r = await api('book', { id: S.gang, cur: b.cur, amt: b.sign * amt, why: b.why.trim(), kurier: !!b.kurier }); closeSheet(); toast(`Gebucht: ${r.d[b.cur] > 0 ? '+' : '−'}${b.cur === 'coins' ? coin(Math.abs(r.d[b.cur])) : fmt(Math.abs(r.d[b.cur]))} ${CURI[b.cur]}`); S.book = null; await reloadGang(); });
-    }
-    case 'code': if (!twice('code')) return sCode(); return run(async () => { const r = await api('code', { id: S.gang }); sCode(r.code); });
-    case 'rename': { const name = $('#rn').value.trim(); return run(async () => { await api('rename', { id: S.gang, name }); closeSheet(); toast('Umbenannt.'); await reloadGang(); }); }
-    case 'restore': if (!twice('restore' + v)) return sRestore(); return run(async () => { const r = await api('restore', { id: S.gang, file: v }); closeSheet(); toast(`Zurückgeholt: ${r.slots} Läden${r.skipped ? `, ${r.skipped} schon vergeben` : ''}.`); await reloadGang(); });
-    case 'delete': { const c = $('#dn').value.trim(); if (c !== G().name) return toast('Name stimmt nicht.', true); await run(async () => { await api('delete', { id: S.gang, confirm: c }); closeSheet(); toast('Bande gelöscht.'); S.data.gangs = null; }); return show('gangs'); }
-    case 'say': { const txt = $('#say').value.trim(), push = $('#sayp').checked; if (txt.length < 3) return toast('Text fehlt.', true); return run(async () => { const r = await api('say', { txt, push }); $('#say').value = ''; toast(push ? `Gesendet, ${r.sent} Push.` : 'Im Kurier.'); }); }
-    case 'hide': if (!twice('hide' + v)) return render(); return run(async () => { await api('hide', { msg: +v }); toast('Ausgeblendet.'); S.data.chat = await api('chat'); render(); });
-    case 'arm': if (!twice('arm')) return render(); await run(async () => { const on = !(S.data.srv.cfg || {}).armed; await api('arm', { on }); toast(on ? 'Server rechnet wieder.' : 'Spiel rechnet jetzt selbst.'); }); return show('srv');
+    default: if (typeof appClick === 'function') return appClick(a, v, el, twice);
   }
 });
-async function reloadGang() { S.data.gang = await api('gang', { id: S.gang }); render(); }
 
 if (!CFG.url || !CFG.key) $('#main').innerHTML = '<div class="card"><h2>Keine Verbindungsdaten</h2><div class="sm">Diese Datei wurde ohne admin_release.py hochgeladen.</div></div>';
 else render();
