@@ -5509,7 +5509,7 @@ function viewFeed(){
   return ftabs+`<section class="paper"><div class="mast">NÜRNBERGER<br>UNTERGRUND-KURIER</div><div class="dateline"><span>${today}</span><span>Preis: 1 Bratwurst</span></div>
     ${top?`<div class="headline"><small>Schlagzeile</small><h3>${esc(top.txt)}</h3><span>${ago(+top.ts)}</span>${reactBar(top)}</div>`:'<div class="headline"><h3>Ruhige Nacht in Nürnberg. Verdächtig ruhig.</h3></div>'}</section>
   ${ratBanner()}${rhBanner()}
-  ${events.length?`<ul class="feed">${events.filter(e=>e!==top&&!HIDE_EV.has(e.kind)).map(item).join('')}</ul>`:`<p class="muted" style="text-align:center">Noch ruhig in der Stadt. Das bleibt nicht lange so.</p>`}`;
+  ${events.length?`<ul class="feed">${events.filter(e=>e!==top&&!HIDE_EV.has(e.kind)&&(e.kind!=='devout'||e.actor===me.id)).map(item).join('')}</ul>`:`<p class="muted" style="text-align:center">Noch ruhig in der Stadt. Das bleibt nicht lange so.</p>`}`;
 }
 const revDone=new Set();
 function worth(o){
