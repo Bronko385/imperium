@@ -411,12 +411,12 @@ img{max-width:100%}
 .gmini{display:grid;gap:4px;background:var(--night2);border:2px solid var(--ink);border-radius:10px;padding:6px 10px}
 .gmini div{display:grid;grid-template-columns:20px 1fr auto;gap:6px;align-items:center;font-size:12.5px}
 .gmini b{font-weight:600}.gmini small{font-size:11px;color:var(--muted);white-space:nowrap}.gmini .done b{color:var(--clean)}
-.ctabs{display:flex;gap:6px;margin:12px 0 8px}
-.ctabs button{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;background:var(--night2);color:var(--paper);border:2px solid var(--ink);border-radius:10px;padding:5px 2px;font:700 12px var(--f-body);white-space:nowrap;position:relative}
-.ctabs button em{font-style:normal;font-size:17px;line-height:20px}
-@media(max-width:350px){.ctabs button{font-size:11px;letter-spacing:-.2px}}
-.ctabs button.on{background:var(--yellow);color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
-.ctabs i{position:absolute;top:-7px;right:-5px;border:2px solid var(--ink);font-style:normal;background:var(--pink);color:var(--ink);border-radius:999px;padding:0 5px;font-size:11px}
+.cptabs{display:flex;gap:6px;margin:12px 0 8px}
+.cptabs button{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;background:var(--night2);color:var(--paper);border:2px solid var(--ink);border-radius:10px;padding:5px 2px;font:700 12px var(--f-body);white-space:nowrap;position:relative}
+.cptabs button em{font-style:normal;font-size:17px;line-height:20px}
+@media(max-width:350px){.cptabs button{font-size:11px;letter-spacing:-.2px}}
+.cptabs button.on{background:var(--yellow);color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
+.cptabs i{position:absolute;top:-7px;right:-5px;border:2px solid var(--ink);font-style:normal;background:var(--pink);color:var(--ink);border-radius:999px;padding:0 5px;font-size:11px}
 .coup.cmp{grid-template-columns:1fr auto;gap:8px;align-items:center;padding:8px 10px}
 .coup.cmp .cl{display:grid;gap:2px;min-width:0}.coup.cmp .cr{display:grid;gap:6px;justify-items:end}
 .coup.cmp .btn{margin:0;justify-self:end;white-space:nowrap}
@@ -3203,7 +3203,7 @@ function coupModal(){
     ${knastBlock()?`<p class="warn">${knastBlock()} <button class="minib" data-act="knast">Zum Knast</button></p>`:''}
     ${sunMul()>1?`<p class="small">☀️ Sonne über Nürnberg: Coups bringen gerade +20 % Beute.</p>`:''}
     <h4>✅ Tagesziele${d.streak?` · 🔥 ${d.streak} ${d.streak===1?'Tag':'Tage'}`:''}</h4>${goalsMini()}
-    <div class="ctabs">${tabs.map(([k,t])=>`<button class="${coupTab===k?'on':''}" data-act="couptab" data-t="${k}">${t}</button>`).join('')}</div>
+    <div class="cptabs">${tabs.map(([k,t])=>`<button class="${coupTab===k?'on':''}" data-act="couptab" data-t="${k}">${t}</button>`).join('')}</div>
     ${body}
     ${rufBar()}</div>`;
 }
