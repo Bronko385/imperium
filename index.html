@@ -306,6 +306,29 @@ img{max-width:100%}
 .vh b{font-family:var(--f-display);font-weight:400;font-size:20px;letter-spacing:.05em;color:var(--yellow)}
 .vh span{font-size:12px;color:var(--muted)}
 .ver ul{margin:6px 0 0;padding-left:0;list-style:none;display:grid;gap:5px;font-size:13px}
+.vtt{display:block;font-size:13px;color:var(--paper);margin-top:1px}
+/* 13.10.2026 Was ist neu kompakt: ältere Versionen zugeklappt und gruppiert */
+.valtd{min-width:0}
+.valtd>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;background:var(--night2);border:2px solid var(--ink);border-radius:12px;padding:11px 12px;font:700 14px var(--f-body);color:var(--paper);cursor:pointer}
+.valtd>summary::-webkit-details-marker{display:none}
+.valtd>summary span{color:var(--muted);font-weight:400}
+.valtd>summary span::after{content:' ›';display:inline-block;margin-left:2px}
+.valtd[open]>summary span::after{content:' ⌄'}
+.vruhig{margin-top:6px;background:var(--night2);border:2px solid var(--ink);border-radius:12px;padding:2px 12px}
+.vruhig,.vruhig details,.vsub,.vsub>div{min-width:0}
+.vruhig details{border-top:1px solid rgba(255,255,255,.08)}
+.vruhig details:first-child{border-top:0}
+.vruhig summary{list-style:none;display:flex;align-items:baseline;gap:8px;padding:9px 0;cursor:pointer;font-size:13px}
+.vruhig summary::-webkit-details-marker{display:none}
+.vruhig summary b{font-weight:700;color:var(--paper);white-space:nowrap;min-width:30px}
+.vruhig summary .vt{flex:1;min-width:0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vruhig summary .vn{color:var(--muted);font-size:12px;white-space:nowrap}
+.vruhig summary::after{content:'›';color:var(--muted);font-size:15px;transition:transform .15s}
+.vruhig details[open] summary::after{transform:rotate(90deg)}
+.vsub{overflow-wrap:anywhere;margin:0 0 10px;padding-left:10px;border-left:2px solid rgba(255,210,63,.35);display:grid;gap:8px}
+.vsub h5{margin:0 0 3px;font-size:13px;font-weight:700;color:var(--yellow)}
+.vsub h5 span{color:var(--muted);font-weight:400}
+.vsub ul{margin:0;padding:0;list-style:none;display:grid;gap:5px;font-size:13px}
 .prow{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--night2);border:2px solid var(--ink);border-radius:12px;padding:10px 12px}
 .prow b{display:block} .prow span{font-size:11.5px;color:var(--muted)}
 .prow>div{flex:1;min-width:0} .prow .seg{flex:none}
@@ -5985,18 +6008,18 @@ const VERSIONS=[
     '📻 Funkgerät: Wer Mitteilungen einschaltet, bekommt einmal 5.000 Bargeld. 📵 in der Rangliste heißt: Diese Bande hat sie aus',
     '🔄 Kommst du in die App zurück und es gibt eine neue Version, lädt sie gleich von selbst',
     '🛠️ Der Bandenname oben rechts reagiert auf dem iPhone jetzt beim ersten Tipp, und die Bandenübersicht klappt nicht mehr mehrfach auf']},
-  {v:'Beta 4.5',date:'11.10.2026',items:[
+  {v:'Beta 4.5',date:'11.10.2026',title:'Bündnisse',items:[
     '🤝 Bündnisse ab Kiezbande: Zwei Banden werden Spezln und greifen sich nicht mehr an. Das 🤝 steht in der Rangliste',
     '🥊 Wird dein Spezl überfallen, bekommst du eine Mitteilung und kannst in den 5 Minuten freie Schläger schicken (je +2,5 Verteidigung)',
     '📦 Angebote an jede Bande: Fusel, Teile oder Bargeld tauschen. Was du anbietest, ist reserviert und kommt nach 24 Stunden oder bei Absage zurück',
     '💸 Geld schicken im Bündnis: ab 1 Tag Bündnis, 20 % Gebühr, höchstens 20.000 am Tag',
     '🐍 Verrat: Wer das Bündnis bricht, trägt 7 Tage die Schlange, und der Verratene bekommt den Rache-Bonus. In Ruhe auflösen geht mit 24 Stunden Frist',
     '💰 Großcoups: Bundesbank-Filiale, Lebkuchen-Fabrik und Germanisches Nationalmuseum. Einer plant, die anderen haben 2 Stunden zum Einsteigen, jede Bande spielt ihr eigenes Minispiel']},
-  {v:'Beta 4.4.1',date:'11.10.2026',items:[
+  {v:'Beta 4.4.1',date:'11.10.2026',title:'Neue Sprüche',items:[
     '💬 Neue fränkische Sprüche bei Überfällen, für Erfolg und Pleite je acht',
     '💪 Wehrst du einen Überfall ab, kannst du dem Angreifer einen Spruch zurück hinterlassen',
     '🛠️ Beim Überfall auf Mitspieler gibt es die Spruch-Auswahl erst, wenn er geklappt hat, nicht schon beim Start']},
-  {v:'Beta 4.4',date:'11.10.2026',items:[
+  {v:'Beta 4.4',date:'11.10.2026',title:'Brennerei & Schrottplatz',items:[
     '🥃 Neue Läden ab Eckbande: Die Brennerei macht Fusel, der Schrottplatz macht Teile. Beide füllen sich wie eine Kasse',
     '📦 Lager im Crew-Tab: Ware jederzeit an den Hehler verkaufen oder daraus Ausrüstung bauen',
     '🗝️🦺🚗 Ausrüstung ab Kiezbande: Dietrich, Schutzweste und Fluchtwagen wirken beim nächsten Angriff von selbst',
@@ -6005,19 +6028,19 @@ const VERSIONS=[
     '💻 Hacker klauen jetzt auch 12 % der BratCoins, Razzien nehmen 20 bis 40 %',
     '👊 Ein gelungener Überfall auf Mitspieler raubt auch 20 % vom Lager',
     '🏙️ Ein Platz mehr in jedem Viertel: 53 statt 41. Ein Viertel kontrolliert, wer mindestens die Hälfte der Plätze und mehr als jede andere Bande hält']},
-  {v:'Beta 4.3.1',date:'10.10.2026',items:[
+  {v:'Beta 4.3.1',date:'10.10.2026',title:'Meldungen immer sichtbar',items:[
     '✅ Meldungen sind jetzt auch über geöffneten Fenstern zu sehen',
     '💰 Kopfgeld mit Bestätigung: Erst „Ja, aussetzen“, dann siehst du direkt im Fenster, was gebucht ist. Doppelte Tipps zählen nicht mehr doppelt',
     '📖 Anleitung und FAQ in sechs Kapiteln: Einstieg, Geld, Aktionen, Kampf, Polizei, Banden & Stadt',
     '🥊 Crew-Tab aufgeräumt: oben der Umschalter Crew | Wachen, Anheuern steht jetzt ganz oben',
     '🗑️ Eigene Nachrichten im Stadtfunk antippen und löschen',
     '🧼 Strengerer Schimpfwort-Filter, der harmlose Wörter wie „Marsch“ oder „Pissoir“ durchlässt']},
-  {v:'Beta 4.3',date:'10.10.2026',items:[
+  {v:'Beta 4.3',date:'10.10.2026',title:'Stadtfunk',items:[
     '📻 Stadtfunk im Kurier: Stadt-Chat für alle und Direktnachrichten über 💬 in der Übersicht einer Bande, mit Push',
     '🚨 Überfall als Duell: Ein Überfall auf einen Mitspieler läuft jetzt 5 Minuten. Das Opfer bekommt eine Mitteilung und kann sich wehren oder Verstärkung schicken',
     '🚚 Geldtransporter: zweimal am Tag für 30 Minuten in einem Viertel. Wer ihn zuerst knackt, kassiert die Beute, nach 20 Minuten schnappt ihn sich die KI',
     '💰 Kopfgeld: Setz sauberes Geld auf eine Bande (ab Kiezbande). Wer sie ausraubt oder übernimmt, kassiert alles, und die WANTED-Plakate zeigen das höchste Kopfgeld']},
-  {v:'Beta 4.2',date:'10.10.2026',items:[
+  {v:'Beta 4.2',date:'10.10.2026',title:'Bandenboss',items:[
     '🎩 Bandenboss: Wähl Gesicht und Hautton für das Abzeichen deiner Bande, dazu einen Spruch und eine Boss-Art',
     '💼🥊🦊🎲👑 Fünf Boss-Arten mit eigenem Bonus: Geschäftsmann, Schläger, Schlitzohr, Zocker und Pate',
     '🪧 WANTED-Plakate: Die Top 3 der Rangliste hängen mit Boss-Abzeichen und Kopfgeld aus, im Kurier siehst du, wer hinter jeder Meldung steckt',
@@ -6025,7 +6048,7 @@ const VERSIONS=[
     '⭐ Neue Namen für die Ruf-Stufen, sie beschreiben jetzt deine Bande: vom Straßenhaufen bis zum Imperium. Alle Stufen stehen in der Anleitung',
     '🏷️ Viertel-Leiste: Deine Läden tragen jetzt „DEINS“ und einen Rand in deiner Farbe, fremde Kassen zeigen 🎯 Beute',
     '😂 Reaktionen im Kurier sind sofort da und kommen live von allen Spielern, zweimal tippen nimmt sie zurück']},
-  {v:'Beta 4.1',date:'10.10.2026',items:[
+  {v:'Beta 4.1',date:'10.10.2026',title:'Neuer Look',items:[
     '🎨 Neuer Look: Läden als Mini-Icons auf der Karte, neue Tab-Icons, hochzählendes Geld, fliegende Münzen und ein Plopp beim Bauen',
     '📰 Der Kurier ist jetzt eine Zeitung mit Schlagzeile, und unter jeder Meldung kannst du mit 😂 💀 🔥 reagieren',
     '💬 Nach einem gelungenen Angriff kannst du deinem Opfer einen Spruch hinterlassen',
@@ -6037,7 +6060,7 @@ const VERSIONS=[
     '⚖️ Pro Einsatz zählen höchstens 8 Schläger und 3 Fahrer, mehr Leute lohnen sich als Wachen',
     '🏙️ KI-Banden lassen Platz für neue Spieler, neue Banden bekommen immer einen Start-Späti',
     '💤 Wer 3 Tage weg ist, hat nur noch halbe Verteidigung, nach 7 Tagen holen sich KI-Banden seine Läden (der letzte bleibt)']},
-  {v:'Beta 4',date:'10.10.2026',items:[
+  {v:'Beta 4',date:'10.10.2026',title:'Coups',items:[
     '🎯 Coups: Alle 2 Stunden warten drei Aufträge an echten Nürnberger Orten, vom Pfandautomaten am Plärrer bis zum Kunstraub auf der Kaiserburg',
     '⚡ Energie: Jeder Coup kostet Energie, alle 20 Minuten kommt eine dazu (höchstens 5)',
     '🍀 Glücksfunde: Freifahrtschein, Geldkoffer oder ein neuer Schläger',
@@ -6045,12 +6068,12 @@ const VERSIONS=[
     '⭐ Ruf-Stufen vom Kleinganoven bis zur Legende, jede Stufe schaltet etwas frei',
     '🍼 Neulingsschutz: Viel kleinere Banden bringen nur 40 % Beute und lassen sich nicht übernehmen',
     '🏅 Bestehende Banden starten auf einer Stufe, auf der alles freigeschaltet bleibt, was sie schon haben']},
-  {v:'Beta 3.4.1',date:'10.10.2026',items:[
+  {v:'Beta 3.4.1',date:'10.10.2026',title:'Fürth & Erlangen auf der Karte',items:[
     '🗺️ Die Karte zeigt jetzt auch Fürth und Erlangen mit ihren Stadtteilen, noch gesperrt',
     '🏙️ Stadtnamen auf der Karte: Nürnberg, Fürth und Erlangen',
     '🌊 Regnitz und Rednitz fließen jetzt durch die Karte',
     '🔍 Du kannst weiter herauszoomen und alle drei Städte auf einmal sehen']},
-  {v:'Beta 3.4',date:'10.10.2026',items:[
+  {v:'Beta 3.4',date:'10.10.2026',title:'Polizei in drei Stufen',items:[
     '🚨 Polizei in drei Stufen: ab 60 Kontrolle, ab 80 Razzia im heißesten Viertel, erst ab 100 die große Razzia',
     '🌙 Bist du weg, gibt es höchstens ein Polizei-Ereignis und nie die große Razzia',
     '🕰️ Hitze sinkt schneller: 5 pro Stunde, jeder Anwalt 4',
@@ -6059,13 +6082,13 @@ const VERSIONS=[
     '🚪📹🔐 Sicherung pro Laden: Stahltür, Kamera und Tresor',
     '📞 Anonymer Tipp: Hetz anderen Banden die Polizei auf den Hals, mit Risiko',
     '🔥 In der Bandenübersicht siehst du, wie heiß andere Banden sind']},
-  {v:'Beta 3.3.1',date:'10.10.2026',items:[
+  {v:'Beta 3.3.1',date:'10.10.2026',title:'Geldfluss',items:[
     '💸 Neuer Geldfluss im Geld-Tab: Bargeld kommt rein, Wäsche, Löhne und unterm Strich, Schritt für Schritt',
     '🧼 Wäsche-Quote: wie viel Prozent deines Bargelds gerade sauber wird, dazu ein Tipp, was sich lohnt',
     '🏪 Neue Banden: Der Start-Späti wäscht nur Bargeld, das du verdienst. Dein Startgeld bleibt dir zum Bauen',
     '🔔 Die An/Aus-Schalter bei den Mitteilungen werden nicht mehr abgeschnitten',
     '🧱 Die Läden in der Viertel-Leiste haben unten wieder Abstand zum Rand']},
-  {v:'Beta 3.3',date:'10.10.2026',items:[
+  {v:'Beta 3.3',date:'10.10.2026',title:'Finanzübersicht',items:[
     '📊 Finanzübersicht im Geld-Tab: Bargeld und sauberes Geld pro Stunde, Tipp öffnet alle Einnahmen, Löhne und die Wäsche',
     '💰 Hinweis, wenn Kassen voll sind und gerade nichts verdienen',
     '🔁 Läden umbauen oder 🧨 abreißen: 40 % der Investition kommen zurück',
@@ -6074,17 +6097,17 @@ const VERSIONS=[
     '🚨 Tipp auf die Hitze zeigt, woher sie kommt und wann eine Razzia droht, dazu eine Vorwarnung per Mitteilung',
     '🆕 Mitteilung, wenn ein Freund eine neue Bande gründet',
     '📖 Anleitung und FAQ erweitert, mit Kartenlegende']},
-  {v:'Beta 3.2.6',date:'10.10.2026',items:[
+  {v:'Beta 3.2.6',date:'10.10.2026',title:'Tab-Leiste tiefer',items:[
     '📱 Die Tab-Leiste sitzt tiefer, weniger leerer Platz unten und mehr Platz für die Karte']},
-  {v:'Beta 3.2.5',date:'10.10.2026',items:[
+  {v:'Beta 3.2.5',date:'10.10.2026',title:'Tab-Leiste ganz sichtbar',items:[
     '📱 Die Tab-Leiste wird nicht mehr abgeschnitten, und der Abstand unter den Tabs ist kleiner',
     '🖼️ Für die volle Bildschirmhöhe ohne Balken unten und das neue Geldsack-Icon: Spiel einmal neu zum Home-Bildschirm hinzufügen (Anleitung unten)']},
-  {v:'Beta 3.2.3',date:'10.10.2026',items:[
+  {v:'Beta 3.2.3',date:'10.10.2026',title:'Updates zuverlässig',items:[
     '🔄 Updates kommen jetzt zuverlässig an: die App lädt beim Start immer die neueste Version']},
-  {v:'Beta 3.2.2',date:'10.10.2026',items:[
+  {v:'Beta 3.2.2',date:'10.10.2026',title:'Volle Bildschirmhöhe',items:[
     '📱 Der leere Streifen unter der Tab-Leiste ist weg, die App nutzt jetzt die volle Bildschirmhöhe',
     '🧱 Karte und Viertel-Leiste behalten ihre Größe, wenn du zwischen Vierteln wechselst']},
-  {v:'Beta 3.2',date:'10.10.2026',items:[
+  {v:'Beta 3.2',date:'10.10.2026',title:'Mehr Platz',items:[
     '📱 Mehr Platz: Die Karte nutzt jetzt den ganzen Bildschirm, kein leerer Streifen mehr unten',
     '🗺️ Spielbare Viertel heller, gesperrte dunkler, und Viertel mit deinen Läden haben einen Rand in deiner Farbe',
     '⚡ Kassieren und Bauen reagieren sofort, alle Kassen werden mit einer einzigen Anfrage geleert',
@@ -6092,17 +6115,17 @@ const VERSIONS=[
     '💰 Fremde Läden zeigen Bandenname und Beute, lohnende Ziele sind markiert',
     '🔍 Kompaktere Zoom-Knöpfe und eine aufgeräumte Kopfzeile',
     '🎨 Neues App-Icon: der Geldsack (auf dem iPhone sichtbar, wenn du das Spiel neu zum Home-Bildschirm hinzufügst)']},
-  {v:'Beta 3.1',date:'10.10.2026',items:[
+  {v:'Beta 3.1',date:'10.10.2026',title:'Update-Knopf',items:[
     '🔄 Das Spiel merkt jetzt selbst, wenn eine neue Version online ist, und zeigt dir einen Knopf zum Neuladen']},
-  {v:'Beta 3',date:'10.10.2026',items:[
+  {v:'Beta 3',date:'10.10.2026',title:'Volle Kassen melden',items:[
     '💰 Mitteilung, wenn deine Kassen voll sind (einmal pro Füllung, Nachtruhe 23–8 Uhr)',
     '☰ Neues Menü oben rechts mit Anleitung, FAQ und diesem Versionsverlauf',
     '🔔 Mitteilungen für Angriffe und Kassen getrennt ein- und ausschaltbar',
     '🔑 Bandencode und Einladungslink sind jetzt im Menü']},
-  {v:'Beta 2',date:'10.10.2026',items:[
+  {v:'Beta 2',date:'10.10.2026',title:'Push-Mitteilungen',items:[
     '🔔 Push-Mitteilungen, wenn deine Bande angegriffen, gehackt oder von der Polizei besucht wird',
     '📲 Das Spiel lässt sich als App auf den Home-Bildschirm legen']},
-  {v:'Beta 1',date:'10.10.2026',items:[
+  {v:'Beta 1',date:'10.10.2026',title:'Online-Start',items:[
     '🌍 Online-Start: alle Banden auf einer gemeinsamen Nürnberg-Karte',
     '👊 Überfall, Übernahme und Hack gegen Mitspieler und KI-Banden',
     '📰 Untergrund-Kurier mit allem, was in der Stadt passiert, und Rache-Bonus',
@@ -6321,8 +6344,21 @@ function reinstallCard(){
     <p class="num codebox" id="bcode">${esc(myCode||'Im Menü ☰ › Bandencode')}</p>
     <button class="btn wide mint" data-act="copycode">🔑 Bandencode kopieren</button></div>`;
 }
+/* Ab 13.10.2026: neueste Version offen, darunter „Ältere Versionen“ (zugeklappt), gruppiert nach Hauptversion (5.2, 5.1 …) */
+function newsGroups(){
+  const g={},ord=[];
+  VERSIONS.slice(1).forEach(v=>{const k=v.v.replace('Beta ','').split('.').slice(0,2).join('.');if(!g[k]){g[k]=[];ord.push(k)}g[k].push(v)});
+  return ord.map(k=>({k,vs:g[k]}));
+}
+function newsBody(){
+  const li=v=>`<ul>${v.items.map(x=>`<li>${x}</li>`).join('')}</ul>`, v0=VERSIONS[0];
+  const grp=newsGroups().map(({k,vs})=>`<details class="vg"><summary><b>${k}</b><span class="vt">${vs[vs.length-1].title||''}</span><span class="vn">${vs.length} ${vs.length>1?'Updates':'Update'}</span></summary><div class="vsub">${
+    vs.map(v=>`<div><h5>${v.v.replace('Beta ','')} <span>${v.title||''}</span></h5>${li(v)}</div>`).join('')}</div></details>`).join('');
+  return `<div class="ver cur"><div class="vh"><b>${v0.v}</b><span>${v0.date}</span></div><span class="vtt">„${v0.title}“</span>${li(v0)}</div>`
+    +(VERSIONS.length>1?`<details class="valtd"><summary>Ältere Versionen <span>${VERSIONS.length-1}</span></summary><div class="vruhig">${grp}</div></details>`:'');
+}
 function showNews(isPopup){
-  const body=VERSIONS.map((v,i)=>`<div class="ver ${i===0?'cur':''}"><div class="vh"><b>${v.v}</b><span>${v.date}</span></div><ul>${v.items.map(x=>`<li>${x}</li>`).join('')}</ul></div>`).join('');
+  const body=newsBody();
   showModal(`<div class="mbox" role="dialog" aria-label="Was ist neu">${isPopup?`<h3 class="gt">NEU IN ${CURRENT_VERSION.toUpperCase()}</h3>`:mHead('Was ist neu')}${isPopup?`<div class="ver cur"><ul>${VERSIONS[0].items.map(x=>`<li>${x}</li>`).join('')}</ul></div>`:body}
     ${isShortView()?reinstallCard():''}
     ${isPopup?`${pushState()==='off'?'<button class="btn wide mint" data-act="push">🔔 Mitteilungen einschalten</button>':''}<button class="btn wide" data-act="close">Alles klar</button><button class="btn ghost wide sm" data-act="m-news">Alle Versionen ansehen</button>`:''}</div>`);
