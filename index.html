@@ -1128,7 +1128,7 @@ async function refreshSlots(){
   const shop=srvShop(), [sl,sp]=await Promise.all([shop&&me?q(sb.from('slots').select('*').eq('world',WORLD).eq('owner',me.id)):q(sb.from('slots').select('*').eq('world',WORLD)),shop?q(sb.from('slot_pub').select('*').eq('world',WORLD)):null]);
   slots={}; (sp||[]).forEach(s=>{slots[key(s.district,s.idx)]={...s,_pub:true}}); sl.forEach(s=>{slots[key(s.district,s.idx)]=slotIn(s)}); syncOpen()}
 /* Ab 5.1.2: öffentliche Sicht auf fremde Banden (Name, Farbe, Boss, Ruf-Stufe, online, Punkte) */
-function pubNorm(r){const l=+r.lvl||0,p=norm({id:r.id,world:r.world,name:r.name,color:r.color,boss:r.boss,ruf:l?RUF_AT[l-1]:null,last_seen:r.last_seen,renamed:r.renamed,badges:r.badges,fest:r.fest,week_key:r.week_key,push_ok:r.push_ok,rank_pos:r.rank_pos,jail:r.jail});
+function pubNorm(r){const l=+r.lvl||0,p=norm({id:r.id,world:r.world,name:r.name,color:r.color,boss:r.boss,ruf:l?RUF_AT[l-1]:null,last_seen:r.last_seen,renamed:r.renamed,badges:r.badges,fest:r.fest,week_key:r.week_key,push_ok:r.push_ok,rank_pos:r.rank_pos,jail:r.jail,last_d:r.last_d||null});
   p._pub=true;p.week_pts=+r.week_pts||0;p.pts=+r.pts||0;p.born=+r.born||0;return p}
 /* Ab 5.2.1: Ausbau/Sicherung, die der Server noch nicht bestätigt hat, bleiben sichtbar, auch wenn zwischendurch ein älterer Stand ankommt */
 let slotPend={};
@@ -5650,7 +5650,7 @@ function doReload(){
 }
 
 /* ---------- Menü, Anleitung, FAQ, Versionsverlauf ---------- */
-const CURRENT_VERSION='Beta 5.2.4.2', SEEN_KEY='imperium-seen-version';
+const CURRENT_VERSION='Beta 5.2.4.3', SEEN_KEY='imperium-seen-version';
 /* ---------- Ab Beta 5.0 „Wahrzeichen“: drei gleichzeitig, Kaiserburg und Plärrer fest, das dritte wechselt sonntags um 20 Uhr ----------
    Erobert wird nur über die Datenbank-Funktion landmark_attack (der Server würfelt, feste Verteidigung 10, Türsteher zählen nicht).
    Tabelle landmarks: {id, district, pos, active, owner, since, shield_until}, owner null = Stadtwache. */
@@ -5788,6 +5788,8 @@ function dayPhase(t){t=t||now();const s=sunTimes(t),D=40*60000;if(t>s.rise+D&&t<
 function applyPhase(){const svg=document.getElementById('mapsvg'),box=document.getElementById('mapbox');if(!svg)return;const p=dayPhase();['day','dusk','night'].forEach(k=>{svg.classList.toggle(k,k===p);if(box)box.classList.toggle(k,k===p)})}
 
 const VERSIONS=[
+  {v:'Beta 5.2.4.3',date:'13.10.2026',title:'Bosse auf der Karte',items:[
+    '👥 Die Bosse der anderen Banden sind wieder auf der Karte']},
   {v:'Beta 5.2.4.2',date:'13.10.2026',title:'Erster Laden',items:[
     '🏪 Erste Schritte: Auch ein übernommener Laden zählt als erster Laden']},
   {v:'Beta 5.2.4.1',date:'13.10.2026',title:'Safe zu bis Sonntag',items:[
