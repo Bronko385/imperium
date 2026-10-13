@@ -384,6 +384,20 @@ img{max-width:100%}
 .goal{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;background:var(--night2);border:2px solid var(--ink);border-radius:10px;padding:7px 10px}
 .goal b{font-size:13px;display:block;margin-bottom:4px} .goal small{font-size:11px;color:var(--muted);white-space:nowrap}
 .goal.done b{color:var(--clean)}
+.actbar .coupbtn .btn.violet{flex-direction:column;gap:1px}.gchip{display:block;font:700 12px/14px var(--f-body);letter-spacing:0;text-transform:none}
+.gmini{display:grid;gap:4px;background:var(--night2);border:2px solid var(--ink);border-radius:10px;padding:6px 10px}
+.gmini div{display:grid;grid-template-columns:20px 1fr auto;gap:6px;align-items:center;font-size:12.5px}
+.gmini b{font-weight:600}.gmini small{font-size:11px;color:var(--muted);white-space:nowrap}.gmini .done b{color:var(--clean)}
+.ctabs{display:flex;gap:6px;margin:12px 0 8px}
+.ctabs button{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;background:var(--night2);color:var(--paper);border:2px solid var(--ink);border-radius:10px;padding:5px 2px;font:700 12px var(--f-body);white-space:nowrap;position:relative}
+.ctabs button em{font-style:normal;font-size:17px;line-height:20px}
+@media(max-width:350px){.ctabs button{font-size:11px;letter-spacing:-.2px}}
+.ctabs button.on{background:var(--yellow);color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
+.ctabs i{position:absolute;top:-7px;right:-5px;border:2px solid var(--ink);font-style:normal;background:var(--pink);color:var(--ink);border-radius:999px;padding:0 5px;font-size:11px}
+.coup.cmp{grid-template-columns:1fr auto;gap:8px;align-items:center;padding:8px 10px}
+.coup.cmp .cl{display:grid;gap:2px;min-width:0}.coup.cmp .cr{display:grid;gap:6px;justify-items:end}
+.coup.cmp .btn{margin:0;justify-self:end;white-space:nowrap}
+
 .rufbar{display:grid;gap:5px;background:var(--night2);border:2px solid var(--ink);border-radius:10px;padding:8px 10px}
 .rb-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
 .rb-top span,.rufbar small{font-size:11.5px;color:var(--muted)}
@@ -3001,25 +3015,33 @@ function rufBar(){
   const l=myLevel(), r=+me.ruf||0, a=RUF_AT[l-1], b=RUF_AT[l]; const f=b?Math.min(1,(r-a)/(b-a)):1;
   return `<div class="rufbar"><div class="rb-top"><b>⭐ Stufe ${l} · ${titleOf(l)}</b><span>${b?`${r-a} / ${b-a} Ruf bis ${titleOf(l+1)}`:'höchste Stufe'}</span></div><div class="qbar"><i style="width:${Math.round(f*100)}%"></i></div>${b&&unlocksAt(l+1).length?`<small>Nächste Stufe schaltet frei: ${unlocksAt(l+1).join(', ')}</small>`:''}</div>`;
 }
+let coupTab='c';
+function goalChip(){if(!me||me.ruf==null)return '';const d=ensureDaily(),ok=d.g.filter(g=>g.p>=g.n).length;return `<span class="gchip">${ok>=d.g.length?'✅ Ziele erledigt':`✅ Ziele ${ok}/${d.g.length}`}</span>`}
+function goalsMini(){
+  const d=ensureDaily();
+  return `<div class="gmini">${d.g.map(g=>`<div class="${g.p>=g.n?'done':''}"><span>${g.p>=g.n?'✅':'⬜'}</span><b>${GOALS[g.k].txt(g.n)}</b><small>${g.p>=g.n?'':(g.n>=1000?fmt(g.p)+'/'+fmt(g.n):g.p+'/'+g.n)}</small></div>`).join('')}</div>`;
+}
 function coupModal(){
-  const e=energyNow(), nx=energyNext();
-  const offers=coupOffers(), left=Math.ceil((CWIN-(now()%CWIN))/1000);
+  const e=energyNow(), nx=energyNext(), d=ensureDaily();
+  const offers=coupOffers(), left=Math.ceil((CWIN-(now()%CWIN))/1000), cl=coupsLeft(), hasLm=lmOn().length>0;
+  if(coupTab==='lm'&&!hasLm)coupTab='c';
+  const tabs=[['c',`<em>🎯</em>Coups${cl?`<i>${cl}</i>`:''}`],...(hasLm?[['lm','<em>🚩</em>Wahrzeichen']]:[]),['h','<em>💰</em>Großcoups']];
+  const strip=h=>h.replace(/^<h4>[^<]*<\/h4>/,'');
+  let body='';
+  if(coupTab==='c')body=`<div class="coups">${offers.map(c=>{const D=coupD(c),done=coupDone(c.id),lo=coupReward(c,1),hi=coupReward(c,1.6);
+      return `<div class="coup cmp ${done?'done':''}${c.fest?' fest':''}"><div class="cl"><b>${c.name}</b><small>📍 ${c.place} · ${dname(c.d)}</small><small>💵 ${fmt(lo)}–${fmt(hi)} · ⭐ +${D.ruf} · 🚨 +${D.heat}${c.fest?` · ❤️ +${D.hearts}`:''}</small></div>
+        <div class="cr"><span class="chip ${c.fest?'fest':'d'+c.diff}">${c.fest?'🎄 '+D.label:D.label}</span><button class="btn sm ${done?'ghost':''}" data-act="coupgo" data-c="${c.id}" ${done||e<D.e?'disabled':''}>${done?'erledigt':`Los · ⚡ ${D.e}`}</button></div></div>`}).join('')}</div>
+    <p class="small muted">Neue Coups in ${dur(left)}.</p>${smugCoupHTML()}`;
+  else if(coupTab==='lm')body=strip(lmSectHTML());
+  else body=strip(heistHTML());
   return `<div class="mbox" role="dialog" aria-label="Coups"><div class="mtop"><span></span><h3>Coups</h3><button class="back" data-act="close" aria-label="Schließen">×</button></div>
     <div class="enrow"><b>⚡ ${e} / ${EMAX} Energie</b><span>${e>=EMAX?'voll':`+1 in ${dur(nx)}`}</span></div>
     ${knastBlock()?`<p class="warn">${knastBlock()} <button class="minib" data-act="knast">Zum Knast</button></p>`:''}
     ${sunMul()>1?`<p class="small">☀️ Sonne über Nürnberg: Coups bringen gerade +20 % Beute.</p>`:''}
-    <div class="coups">${offers.map(c=>{const D=coupD(c),done=coupDone(c.id),lo=coupReward(c,1),hi=coupReward(c,1.6);
-      return `<div class="coup ${done?'done':''}${c.fest?' fest':''}"><div class="cp-head"><b>${c.name}</b><span class="chip ${c.fest?'fest':'d'+c.diff}">${c.fest?'🎄 '+D.label:D.label}</span></div>
-        <small>📍 ${c.place} · ${dname(c.d)}</small>
-        <small>💵 ${fmt(lo)}–${fmt(hi)} · ⭐ +${D.ruf} · 🚨 +${D.heat} Hitze${D.fund?` · ${Math.round(D.fund*100)} % Glücksfund`:''}${c.fest?` · ❤️ +${D.hearts}`:''}</small>
-        <button class="btn sm ${done?'ghost':''}" data-act="coupgo" data-c="${c.id}" ${done||e<D.e?'disabled':''}>${done?'erledigt':`Los · ⚡ ${D.e}`}</button></div>`}).join('')}</div>
-    <p class="small muted">Neue Coups in ${dur(left)}. Tipp auf 🎯 auf der Karte führt auch hierher.</p>
-    ${lmSectHTML()}
-    ${smugCoupHTML()}
-    ${heistHTML()}
-    <h4>Tagesziele</h4>${goalsHTML()}
-    <h4>Dein Ruf</h4>${rufBar()}
-    <button class="btn wide" data-act="close">Fertig</button></div>`;
+    <h4>✅ Tagesziele${d.streak?` · 🔥 ${d.streak} ${d.streak===1?'Tag':'Tage'}`:''}</h4>${goalsMini()}
+    <div class="ctabs">${tabs.map(([k,t])=>`<button class="${coupTab===k?'on':''}" data-act="couptab" data-t="${k}">${t}</button>`).join('')}</div>
+    ${body}
+    ${rufBar()}</div>`;
 }
 
 /* ---------- Beta 5.2.2: Die Fürther kommen ----------
@@ -4799,7 +4821,7 @@ function viewStadt(m){
   cb.className='collectbtn'+(show?' full':'');
   cb.innerHTML=show?`<button class="btn sm" data-act="collectall"><span class="k1">💵 <span class="lbl">Kassieren</span></span>${st>=1||wi?`<span class="n">${[st>=1?`+${fmt(st)}`:'',...Object.keys(wr.w).map(k=>`${WARE[k].ico} ${wr.w[k]}`)].filter(Boolean).join(' · ')}</span>`:''}</button>`:'';
   const cpb=document.getElementById('coupbtn'), cl=coupsLeft();
-  if(cpb)cpb.innerHTML=`<button class="btn sm violet" data-act="coups">🎯 Coups${cl?`<span class="cbadge" aria-label="${cl} offen">${cl}</span>`:''}</button>${safeBtn()}`;
+  if(cpb)cpb.innerHTML=`<button class="btn sm violet" data-act="coups"><span>🎯 Coups</span>${goalChip()}${cl?`<span class="cbadge" aria-label="${cl} offen">${cl}</span>`:''}</button>${safeBtn()}`;
   document.getElementById('hint').hidden=show||hintDone;
   const db=document.getElementById('dbar'); db.className='dbar'+(ui.dopen?' open':''); db.innerHTML=dbarHTML();
 }
@@ -5479,6 +5501,7 @@ document.addEventListener('click',e=>{
     case 'rvoteopen':showModal(voteHTML());return;
     case 'rvote':ratVote(a.dataset.o);return;
     case 'coups':showModal(coupModal());return;
+    case 'couptab':coupTab=a.dataset.t;showModal(coupModal(),true);return;
     case 'knast':showModal(knastModal());return;
     case 'kbreak':knastBreak();return;
     case 'kbail':knastBail();return;
@@ -5650,7 +5673,7 @@ function doReload(){
 }
 
 /* ---------- Menü, Anleitung, FAQ, Versionsverlauf ---------- */
-const CURRENT_VERSION='Beta 5.2.4.3', SEEN_KEY='imperium-seen-version';
+const CURRENT_VERSION='Beta 5.2.4.4', SEEN_KEY='imperium-seen-version';
 /* ---------- Ab Beta 5.0 „Wahrzeichen“: drei gleichzeitig, Kaiserburg und Plärrer fest, das dritte wechselt sonntags um 20 Uhr ----------
    Erobert wird nur über die Datenbank-Funktion landmark_attack (der Server würfelt, feste Verteidigung 10, Türsteher zählen nicht).
    Tabelle landmarks: {id, district, pos, active, owner, since, shield_until}, owner null = Stadtwache. */
@@ -5788,6 +5811,9 @@ function dayPhase(t){t=t||now();const s=sunTimes(t),D=40*60000;if(t>s.rise+D&&t<
 function applyPhase(){const svg=document.getElementById('mapsvg'),box=document.getElementById('mapbox');if(!svg)return;const p=dayPhase();['day','dusk','night'].forEach(k=>{svg.classList.toggle(k,k===p);if(box)box.classList.toggle(k,k===p)})}
 
 const VERSIONS=[
+  {v:'Beta 5.2.4.4',date:'13.10.2026',title:'Coups aufgeräumt',items:[
+    '🎯 Coups-Fenster aufgeräumt: Tagesziele stehen oben, Coups, Wahrzeichen und Großcoups haben eigene Reiter',
+    '✅ Am Coups-Knopf siehst du, wie viele Tagesziele du heute schon geschafft hast']},
   {v:'Beta 5.2.4.3',date:'13.10.2026',title:'Bosse auf der Karte',items:[
     '👥 Die Bosse der anderen Banden sind wieder auf der Karte']},
   {v:'Beta 5.2.4.2',date:'13.10.2026',title:'Erster Laden',items:[
@@ -6090,7 +6116,7 @@ const GUIDE=[
   ['🎓 Erste Schritte','Neue Banden sehen auf der Karte „Erste Schritte“: fünf kleine Aufgaben, jede mit 1.000 Bargeld und ⭐ 20 Ruf, alle zusammen mit 3.000 und ⚡ 2 obendrauf. Ist kein Platz frei, nimm deinen ersten Laden einer KI-Bande ab.','start'],
   ['🔢 Sparkassen-Safe','Neben den Coups unten links sitzt der 🔢 Safe. Jeden Sonntag um 20 Uhr steht ein neuer Safe mit einem Code aus 4 Ziffern da. Er startet mit 10.000 und wächst mit 10 % aller Wäsche-Gebühren und Bestechungen in der Stadt, dazu Kaution und Richter-Schmiergeld. Jede Bande hat einen Versuch pro Tag (nicht aus dem Knast). Danach steht im Kurier, welche Stellen gepasst haben, etwa „4-7-?-?“, das sehen alle. Hinweise („Stelle 2 ist eine 7“) fallen mit etwas Glück bei Coups und Überfällen ab, und im Knast verrät der Zellennachbar eine Ziffer. Wer den Code knackt, bekommt den ganzen Topf als sauberes Geld, alle bekommen Bescheid. Dann ist der Knopf grau mit 🔒 bis Sonntag 20 Uhr. Was bis dahin wieder hineinfließt, steht daneben und kommt in den neuen Safe. Knackt ihn bis Sonntag 20 Uhr niemand, verrät der Kurier den Code und das Geld wandert in den neuen Safe.','akt'],
   ['🎯 Coups','Tipp auf 🎯 auf der Karte, auf „Coups“ unten links oder auf ⚡ oben. Alle 2 Stunden gibt es drei neue Coups: leicht (⚡1), mittel (⚡2) und schwer (⚡3). Im Minispiel blinken Alarm-Lichter, die du nachtippst. Jede Runde kommt ein Licht dazu, das ergibt bis zu 3 Treffer. Bei leichten Coups brauchst du einen Treffer, bei mittleren und schweren zwei. Leichte Coups kannst du auch „schnell erledigen“, das zählt wie 2 Treffer. Gelingt der Coup, gibt es Bargeld und Ruf, manchmal einen Glücksfund. Coups machen etwas Hitze. Energie lädt sich alle 20 Minuten um 1 auf, höchstens 5.','akt'],
-  ['✅ Tagesziele & ⭐ Ruf','Jeden Tag gibt es drei Ziele: zwei wie Coups machen, kassieren oder waschen und eins mit Mitspielern, also einen Überfall auf eine echte Bande gewinnen, auf Kurier-Meldungen anderer Banden reagieren oder nach einem Kampf einen Spruch hinterlassen. Jedes bringt Bargeld und Ruf, alle drei zusammen Bonus-Ruf, 2 Energie und verlängern deine Serie. Ruf bekommst du auch fürs Bauen und für gewonnene Angriffe. Mit jeder Stufe wird etwas freigeschaltet, siehe ⭐ Stufen.','akt'],
+  ['✅ Tagesziele & ⭐ Ruf','Die Tagesziele stehen oben im Coups-Fenster, wie viele du heute schon hast, zeigt der Coups-Knopf auf der Karte. Um Mitternacht gibt es neue. Jeden Tag gibt es drei Ziele: zwei wie Coups machen, kassieren oder waschen und eins mit Mitspielern, also einen Überfall auf eine echte Bande gewinnen, auf Kurier-Meldungen anderer Banden reagieren oder nach einem Kampf einen Spruch hinterlassen. Jedes bringt Bargeld und Ruf, alle drei zusammen Bonus-Ruf, 2 Energie und verlängern deine Serie. Ruf bekommst du auch fürs Bauen und für gewonnene Angriffe. Mit jeder Stufe wird etwas freigeschaltet, siehe ⭐ Stufen.','akt'],
   ['⭐ Stufen',stufenHTML(),'start'],
   ['🎯 Ziel','Werde Boss der Stadt. Die Rangliste zählt dein Vermögen: Geschäfte, sauberes Geld, Bargeld, BratCoin und jedes Viertel, das du kontrollierst.','start'],
   ['💵 Bargeld verdienen','Wettbüros, Hehlerlager und Clubs füllen laufend ihre Kasse. Nach etwa 3 Stunden ist eine Kasse voll und hört auf zu wachsen. Also regelmäßig abholen, bevor andere sie ausrauben. Dein Geld rechnet der Server, Kassieren braucht deshalb Netz.','geld'],
@@ -6114,7 +6140,7 @@ const GUIDE=[
   ['🏴 Zielscheibe','Die stärkste echte Bande hängt in der Rangliste immer ganz vorn auf dem WANTED-Plakat. Hast du höchstens halb so viele Punkte, bringt dir ein gelungener Überfall auf sie +50 % Prämie obendrauf (bis 10.000) und doppelten Ruf. Ist dieselbe Bande 3 Tage lang vorn, berichtet der Kurier.','kampf'],
   ['⚔️ Revanche','Hat dich eine Bande ausgeraubt oder gehackt, während du weg warst, siehst du das beim Öffnen. Ein Tipp auf „Revanche“ bringt dich zu ihrem Laden mit der vollsten Kasse, und 10 Minuten lang hast du gegen sie +25 % Angriffskraft. Im Kurier geht das weiter über „Rache“.','kampf'],
   ['⚔️ Rache der KI','Die KI-Banden vergessen nicht. Wer sie oft überfällt, hackt oder ihnen Läden abnimmt, macht sie wütend. Dann schlagen sie abends zurück, wenn du gerade spielst. Der Kurier kündigt die Rache vorher an und sagt, wo sie sich sammeln: Schick Türsteher hin! Gewinnt die KI, nimmt sie dir dort einen Laden ab oder legt ihn ein paar Stunden lahm. Wehrst du sie ab, bekommst du Ruf. Lässt du sie in Ruhe, beruhigen sie sich wieder. Höchstens eine Rache am Abend, dein letzter Laden ist sicher, und Banden bis Stufe 2 lassen sie in Ruhe.','kampf'],
-  ['🏰 Wahrzeichen','Drei Wahrzeichen sind jede Woche umkämpft: die 🏰 Kaiserburg, der 🚇 U-Bahnhof Plärrer und ein drittes, das jeden Sonntag wechselt. Ab Stufe 3 findest du sie im Coups-Fenster (🎯 Coups) und in der Viertel-Leiste und stürmst sie mit deinen Schlägern. Verteidigt wird immer mit 10, Türsteher zählen dort nicht, mit 9 Schlägern hast du also 50 % Chance. Jede Bande kann nur eins halten, nach einer Eroberung gibt es 1 Std. Schonzeit. Solange du es hältst, bekommst du seinen Bonus. Beim Plärrer zeigt das Fenster die U-Bahn-Viertel, dort steht dann unten „🚇 +1 Angriff“. Sonntag um 20 Uhr bekommt jeder Halter 10.000 sauber, danach gehört alles wieder der Stadtwache.','stadt'],
+  ['🏰 Wahrzeichen','Drei Wahrzeichen sind jede Woche umkämpft: die 🏰 Kaiserburg, der 🚇 U-Bahnhof Plärrer und ein drittes, das jeden Sonntag wechselt. Ab Stufe 3 findest du sie im Coups-Fenster unter 🚩 Wahrzeichen und in der Viertel-Leiste und stürmst sie mit deinen Schlägern. Verteidigt wird immer mit 10, Türsteher zählen dort nicht, mit 9 Schlägern hast du also 50 % Chance. Jede Bande kann nur eins halten, nach einer Eroberung gibt es 1 Std. Schonzeit. Solange du es hältst, bekommst du seinen Bonus. Beim Plärrer zeigt das Fenster die U-Bahn-Viertel, dort steht dann unten „🚇 +1 Angriff“. Sonntag um 20 Uhr bekommt jeder Halter 10.000 sauber, danach gehört alles wieder der Stadtwache.','stadt'],
   ['🏆 Boss der Woche','Jede Woche zählt dein Ruf seit Sonntag 20 Uhr plus deine Beute geteilt durch 100 (Überfälle, Hacks, Transporter). Den Zwischenstand siehst du im Reiter 🏆 Woche der Rangliste. Sonntag um 20 Uhr bekommt die beste Bande 20.000 sauberes Geld und eine Woche lang den 🏆 neben dem Namen, alle anderen bekommen eine Mitteilung, wer gewonnen hat.','stadt'],
   ['📻 Funkgerät & Mitteilungen','Unter ☰ → Mitteilungen schaltest du sie ein. Beim ersten Mal gibt es einmal 5.000 Bargeld. Banden ohne Mitteilungen haben in der Rangliste ein 📵. Neu ist eine Mitteilung, wenn dich eine Bande überholt (höchstens alle 3 Stunden), und eine bei neuen Versionen. Mitteilungen kommen nur, wenn das Spiel nicht offen ist.','stadt'],
   ['💰 Kopfgeld','Im 💻 Darknet einer anderen Bande kannst du einmal am Tag 5.000, 10.000 oder 25.000 sauberes Geld als Kopfgeld aussetzen, anonym und nur auf Banden ab Stufe 3 (Kiezbande). Mehrere Kopfgelder werden zusammengezählt. Der erste gelungene Überfall oder die erste Übernahme kassiert alles, dein eigenes Kopfgeld kannst du nicht selbst kassieren. Nach 7 Tagen ohne Treffer bekommst du dein Geld zurück. Banden mit Kopfgeld hängen auf den WANTED-Plakaten in der Rangliste, auf der Karte haben ihre Läden einen roten Rand und in der Viertel-Leiste ein 💰.','kampf'],
@@ -6141,7 +6167,7 @@ const GUIDE=[
   ['🗺️ Karte und Viertel','Oben stehen in einer Zeile 💵 Bargeld, 🧼 Sauber, 🪙 BratCoin und 🚨 Hitze, darunter die Karte bis an den Rand. Unten steht das gewählte Viertel. Tipp darauf oder auf ein Viertel der Karte, dann klappen seine Plätze hoch. Der gelbe Knopf „▼ Zuklappen“ oben rechts klappt sie wieder ein.','start'],
   ['📣 Wos is los?','Oben auf der Karte steht immer nur eine Zeile: links wer online ist, daneben der wichtigste Hinweis, zum Beispiel ein Großcoup, Geldtransporter oder Schmuggel. Gibt es mehr, zeigt ein rosa „+2“ die Zahl. Ein Tipp darauf öffnet „Wos is los?“ mit allen Hinweisen: oben, wo du jetzt zuschlagen kannst, darunter, was heute in der Stadt los ist (Club, Feste, Events). Gezoomt wird mit zwei Fingern, ⌖ oben rechts holt die Innenstadt zurück.','start'],
   ['🟢 Live-Stadt','Oben links auf der Karte steht mit 🟢, wie viele Banden gerade online sind, mit ihren Bossen. Ein Tipp zeigt alle Banden der letzten 7 Tage: online oder seit wann offline und in welchem Viertel sie zuletzt waren. Auf der Karte sitzt jeder Boss in seinem zuletzt besuchten Viertel, grüner Punkt heißt online. Geraten zwei Banden aneinander, blitzt es kurz: 💥 BAM! beim Überfall, 🚚 beim Geldtransporter, 🚔 bei der Razzia, 🛷 beim abgefangenen Schmuggel. Läuft ein Überfall zwischen anderen Banden, steht er im Live-Ticker unten auf der Karte; ist dein Spezl das Opfer, hilfst du dort mit „Helfen“.','stadt'],
-  ['💰 Großcoups','Ab Stufe 3 (Kiezbande) im Coup-Fenster: Du planst einen Großcoup (⚡ 3, zwischen 8 und 21 Uhr), alle anderen Banden ab Kiezbande bekommen Bescheid und haben 2 Stunden zum Einsteigen (⚡ 3), höchstens 3 Banden. Danach spielt jede ihr eigenes schweres Minispiel mit Alarm-Lichtern. Wer es schafft, bekommt seinen Anteil: 20.000 zu zweit, 25.000 zu dritt, mit deiner Stufe mehr, dazu ⭐ 40 und 8 Hitze. Steigt keiner ein, gibt es die Energie zurück. Einmal am Tag pro Bande.','akt'],
+  ['💰 Großcoups','Ab Stufe 3 (Kiezbande) im Coups-Fenster unter 💰 Großcoups: Du planst einen Großcoup (⚡ 3, zwischen 8 und 21 Uhr), alle anderen Banden ab Kiezbande bekommen Bescheid und haben 2 Stunden zum Einsteigen (⚡ 3), höchstens 3 Banden. Danach spielt jede ihr eigenes schweres Minispiel mit Alarm-Lichtern. Wer es schafft, bekommt seinen Anteil: 20.000 zu zweit, 25.000 zu dritt, mit deiner Stufe mehr, dazu ⭐ 40 und 8 Hitze. Steigt keiner ein, gibt es die Energie zurück. Einmal am Tag pro Bande.','akt'],
 ];
 const FAQ=[
   ['Wie verteidige ich gegen die Fürther?','Samstag zwischen 20 und 20:30 Uhr ein angegriffenes Viertel antippen (rot auf der Karte oder ⚔️ im Banner) und 🛡️ Verteidigen. Jeder Treffer im Minispiel verjagt einen Fürther, jede Woche gibt es ein anderes Minispiel. Du brauchst keine Schläger und verlierst nichts. Nach jeder Runde 1 Min. Pause, dann gleich wieder. Wer mindestens einmal verteidigt hat, bekommt bei einem Sieg 50 Ruf.','stadt'],
@@ -6191,6 +6217,7 @@ const FAQ=[
   ['Ich habe ein neues Handy. Wie behalte ich meine Bande?','Im Menü ☰ unter Bandencode steht dein geheimer Code (BRAT-…). Auf dem neuen Gerät das Spiel öffnen, bei „Du hast schon eine Bande?“ den Code eingeben, fertig. Das gilt auch, wenn du vom Safari-Tab in die Home-Bildschirm-App wechselst. Gib den Code nicht weiter: Wer ihn hat, spielt deine Bande.','start'],
   ['Warum bekomme ich keine Mitteilungen?','Auf dem iPhone gehen Mitteilungen nur, wenn du das Spiel über das Icon auf dem Home-Bildschirm öffnest und sie im Menü unter Mitteilungen einschaltest. Prüf auch, ob sie in den iPhone-Einstellungen für Imperium erlaubt sind. Unter Mitteilungen schaltest du Angriffe, volle Kassen, Hitze-Vorwarnung und neue Banden einzeln. Alles außer Angriffen kommt nicht zwischen 23 und 8 Uhr. Solange du das Spiel offen hast, kommen gar keine Mitteilungen, du siehst dann alles direkt im Spiel.','start'],
   ['Kann ich schon in Fürth oder Erlangen spielen?','Noch nicht. Beide Städte sind schon auf der Karte, ihre Stadtteile werden mit einem späteren Update freigeschaltet. Bis dahin wird nur in Nürnberg gespielt.','start'],
+  ['Wo finde ich die Tagesziele?','Tipp auf der Karte auf 🎯 Coups. Die Tagesziele stehen ganz oben im Fenster. Am Knopf siehst du schon vorher, wie viele du heute geschafft hast.','akt'],
   ['Was bringt mir der Ruf?','Ruf hebt deine Bande Stufe für Stufe vom Straßenhaufen bis zum Imperium. Jede Stufe schaltet neue Läden, Crew oder Aktionen frei und zeigt allen, wie weit du bist (alle Stufen stehen in der Anleitung unter ⭐ Stufen). Außerdem werden Coups und Tagesziele mit jeder Stufe lohnender. Deinen Fortschritt siehst du im Coup-Fenster und in deiner Bandenübersicht.','start'],
   ['Warum kann ich einen Club oder Hacker nicht kaufen?','Das wird mit dem Ruf freigeschaltet. Beim gesperrten Eintrag steht, ab welcher Stufe es geht. Ruf bekommst du am schnellsten mit Coups und Tageszielen.','start'],
   ['Was ist der Neulingsschutz?','Ist eine Bande mindestens 2 Ruf-Stufen unter dir, bringen Überfall und Hack bei ihr nur 40 % der Beute, eine Übernahme und Anonyme Tipps gehen gar nicht. KI-Banden holen bei Banden auf Stufe 1 und 2 nur die Hälfte.','kampf'],
